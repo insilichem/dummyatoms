@@ -1,7 +1,16 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Get used to importing this in your Py27 projects!
+"""
+Still need to do:
+    -IOSTRING work with
+    -ambermini
+    -for loops
+    -faced octahedral method (lib and orient functions!)
+    -input path error
+    -perfect code
+"""
+
 from __future__ import print_function, division 
 # Python stdlib
 import os
@@ -9,21 +18,13 @@ import subprocess
 # Chimera stuff
 import chimera
 from MetalGeom import gui
-from MetalGeom import geomData
 from MetalGeom import Geometry
-from chimera import Element
 from chimera.molEdit import addAtom
 from chimera import runCommand as rc
 
-#
-# Additional 3rd parties
-# Own
-
-#1metal, tetrahedral
 
 """
-This module contains the business logic of your extension. Normally, it should
-contain the Controller and the Model. Read on MVC design if you don't know about it.
+This module contains the business logic of MetaDummy.
 """
 
 class Controller(object):
@@ -44,6 +45,7 @@ class Controller(object):
     def run(self):
         i=1
         
+        # Create Metal Center Atom
         if self.model.gui.var_MetalSymbol.get().lower() == 'zn':
             Zinc = Atom(model=self.model, symbol='Zn', AtomicNumber=30, mass=65.38, residue='ZNB')
         elif self.model.gui.var_MetalSymbol.get().lower() == 'fe':
@@ -67,12 +69,14 @@ class Controller(object):
         elif self.model.gui.var_MetalSymbol.get().lower() == 'mn':
             Manganese = Atom(model=self.model, symbol='Mn', AtomicNumber=25, mass=54.938, resiude='CRB')
 
+       
+        #if self.model.gui.var_MetalGeometry.get() == 'tetrahedral':
         print('Building dummies...')
-        if self.model.gui.var_MetalGeometry.get() == 'tetrahedral':
-            self.model.chimeraInput(self.model.gui.var_InputPath.get())
-            self.model.tetraedro(Zinc.symbol, Zinc.center, Zinc.dummiesPositions, '/home/daniel/Baixades/amber14')
-        elif self.model.gui.var_MetalGeometry.get() == 'octahedral':
-            self.model.tetraedro(Zinc.symbol, Zinc.AtomCoord[0], Zinc.AtomCoord[1], Zinc.AtomCoord[2], '/home/daniel/Baixades/amber14')
+        self.model.Include_dummies(self.model.gui.var_InputPath.get())
+        print('Building Geometry...')
+        self.model.specify_geometry(Zinc.symbol, Zinc.center, Zinc.dummiesPositions, '/home/daniel/Baixades/amber14')
+        #elif self.model.gui.var_MetalGeometry.get() == 'octahedral':
+            #self.model.specify_geometry(Zinc.symbol, Zinc.AtomCoord[0], Zinc.AtomCoord[1], Zinc.AtomCoord[2], '/home/daniel/Baixades/amber14')
         print('Creating library')
         self.model.creatlib('/home/daniel/Baixades/amber14', Zinc.Residue, i)
         
@@ -103,7 +107,7 @@ class Model(object):
     def __init__(self, gui, *args, **kwargs):
         self.gui = gui
 
-    def chimeraInput(self, inputpath):
+    def Include_dummies(self, inputpath):
 
         #Find metal coord
         model = chimera.openModels.open(inputpath)[0]
@@ -117,7 +121,8 @@ class Model(object):
         #Find dummies coord
         if self.gui.var_MetalGeometry.get() == 'tetrahedral':
             tetrahedral = Geometry.Geometry('tetrahedral')
-        sesion = gui.MetalsDialog()
+        sesion   = gui.MetalsDialog()
+        sesion._toplevel.state('withdrawn')
         ligands=sesion.coordinationTable.data
         metal = sesion.metalsMenu.getvalue()
         rmsd, center, vecs = gui.geomDistEval(tetrahedral, metal, ligands)
@@ -137,6 +142,7 @@ class Model(object):
             pos += 1
 
         dummy_element = chimera.Element('DZ')
+        #USEFOR
         dummy1_coord=chimera.Coord(dummiesPositions[0][0],
                                    dummiesPositions[0][1],
                                    dummiesPositions[0][2])
@@ -179,7 +185,7 @@ class Model(object):
 
 
 
-    def tetraedro(self, met, metal, dum, direcxl):
+    def specify_geometry(self, met, metal, dum, direcxl):
         
         """
         Create a pdb file including a metal center and 4 dummy atoms in tetrahedral geometry.
@@ -237,7 +243,7 @@ class Model(object):
                 f.write("saveoff %s %s/met%d.lib\n"%(RES,direcxl,i))
                 f.write("quit")
         except IOError:
-            print("No se pudo abrir el archivo")
+            print("Impossible to open leaprc file")
 
         os.environ['AMBERHOME'] = direcxl
         command = "$AMBERHOME/bin/tleap -s -f %s/leaprc.metal"%direcxl
@@ -300,7 +306,7 @@ class Model(object):
                         f.write(linea)
 
             except IOError:
-                print('No se pudo abrir el archivo')
+                print('Impossible to open .lib file')
 
         elif self.gui.var_MetalGeometry.get() == 'octahedral':
             lineas=[]
@@ -343,7 +349,7 @@ class Model(object):
                         f.write(linea)
 
             except IOError:
-                print('No se pudo abrir el archivo')
+                print("Impossible to open .lib file")
 
 
 
@@ -427,7 +433,7 @@ class Model(object):
                     f.write("  DZ          0.7671  0.0125\n\n")
 
         except IOError:
-            print("No se pudo abrir el archivo")
+            print("Impossible to open .frcmod file")
 
 
     def createSystem (self, direcxl, pdb, met, i, output):
@@ -445,6 +451,7 @@ class Model(object):
             Metal symbol
 
         """
+        output_name = self.gui.var_OutputName.get()
         filename = "%s/leaprc.final"%direcxl
         with open(filename,"w") as f:
             f.write("logFile leap.log\n")
@@ -472,13 +479,13 @@ class Model(object):
             f.write("addIons sys Na+ 0\n")
             if self.gui.var_WaterBox.get()==1:
                 f.write("solvatebox sys TIP3PBOX 10\n")
-            f.write("saveamberparm sys %s/sys.prmtop %s/sys.inpcrd\n"%(output,output))
-            f.write("savemol2 sys %s/sys.mol2 0\n"%(output))
-            f.write("savepdb sys %s/sys.pdb\n"%(output))
+            f.write("saveamberparm sys %s/%s.prmtop %s/%s.inpcrd\n" % (output, output_name, output, output_name))
+            f.write("savemol2 sys %s/%s.mol2 0\n" % (output, output_name))
+            f.write("savepdb sys %s/%s.pdb\n" % (output, output_name))
             f.write("")
 
-        command = "$AMBERHOME/bin/tleap -s -f %s/leaprc.final"%direcxl
-        process = subprocess.Popen(command, shell=True)
+        command = "$AMBERHOME/bin/tleap -s -f %s/leaprc.final" % direcxl
+        subprocess.Popen(command, shell=True)
 
 
 
@@ -496,32 +503,30 @@ class Atom(Model):
         self.Met_VwRadius = self.model.gui.var_VwRadius.get()
         self.DzMass = self.model.gui.var_DzMass.get()
         self.Dz_Met_BondLenght = self.model.gui.var_Dz_Met_BondLenght.get()
-        self.metal = None
         self.dummiesPositions = []
         self.AtomCoord = () 
-        self.Search_for_AtomCoord()
+        #self.Search_for_AtomCoord()
         self.Search_for_Orientation()
 
+    """
     def Search_for_AtomCoord(self):
         chimera.openModels.closeAllModels()
         sys=chimera.openModels.open(self.model.gui.var_InputPath.get())[0] 
         for atom in sys.atoms:
             if str(atom.name.lower()) == self.symbol.lower():
-                self.metal = atom
                 self.AtomCoord = tuple(atom.coord())
+    """
 
     def Search_for_Orientation(self):
         tetrahedral = Geometry.Geometry('tetrahedral')
         sesion = gui.MetalsDialog()
-        ligands=sesion.coordinationTable.data
+        sesion._toplevel.state('withdrawn')
+        ligands=sesion.coordinationTable.data 
         metal = sesion.metalsMenu.getvalue()
         rmsd, self.center, vecs = gui.geomDistEval(tetrahedral, metal, ligands)
         self.dummiesPositions = []
         for vec in vecs:
             vec.length = self.Dz_Met_BondLenght
             dummyPosition =  self.center + vec
-            print(dummyPosition)
-            print(rmsd)
-            print(self.center)
             self.dummiesPositions.append(dummyPosition)
         return self.dummiesPositions

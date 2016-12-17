@@ -31,7 +31,7 @@ def showUI(callback=None, *args, **kwargs):
     if chimera.nogui:
         tk.Tk().withdraw()
     global ui
-    if not ui: # Edit this to reflect the name of the class!
+    if not ui:
         ui = DummyDialog(*args, **kwargs)
     model = Model(gui=ui)
     controller = Controller(gui=ui, model=model)
