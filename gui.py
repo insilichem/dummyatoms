@@ -83,26 +83,27 @@ class DummyDialog(ModelessDialog):
         self.controller = None
 
         #Initialize Variables
-        self.var_MetalSymbol = tk.StringVar()
-        self.var_InputPath = tk.StringVar()
-        self.var_FilesToLoad = tk.StringVar()
-        self.var_MetalGeometry = tk.StringVar()
-        self.var_MetalCharge = tk.IntVar()
-        self.var_VwRadius = tk.DoubleVar()
-        self.var_DzMass = tk.DoubleVar()
-        self.var_OutputPath= tk.StringVar()
-        self.var_OutputName = tk.StringVar()
-        self.var_WaterBox = tk.IntVar()
-        self.var_Dz_Met_BondLenght = tk.DoubleVar()
+        self.var_metal_symbol = tk.StringVar()
+        self.var_inputpath = tk.StringVar()
+        self.var_files_to_load = tk.StringVar()
+        self.var_metal_geometry = tk.StringVar()
+        self.var_metal_charge = tk.IntVar()
+        self.var_vw_radius = tk.DoubleVar()
+        self.var_dz_mass = tk.DoubleVar()
+        self.var_outputpath= tk.StringVar()
+        self.var_outputname = tk.StringVar()
+        self.var_waterbox = tk.IntVar()
+        self.var_dz_met_bondlenght = tk.DoubleVar()
         self.ui_labels = {}
-        self.var_InputPath.set('/home/daniel/zinbueno.pdb')
-        self.var_OutputPath.set('/home/daniel/md/dummy/')
-        self.var_OutputName.set('sys')
-        self.var_MetalSymbol.set('Zn')
-        self.var_VwRadius.set(3.1)
-        self.var_DzMass.set(3)
-        self.var_Dz_Met_BondLenght.set(0.9)
-        self.var_MetalGeometry.set('tetrahedral')
+        self.var_inputpath.set('/home/daniel/zinbueno.pdb')
+        self.var_outputpath.set('/home/daniel/md/dummy/')
+        self.var_outputname.set('sys')
+        self.var_metal_symbol.set('Zn')
+        self.var_vw_radius.set(3.1)
+        self.var_metal_charge.set(2)
+        self.var_dz_mass.set(3)
+        self.var_dz_met_bondlenght.set(0.9)
+        self.var_metal_geometry.set('tetrahedral')
 
         # Fire up
         ModelessDialog.__init__(self)
@@ -136,98 +137,98 @@ class DummyDialog(ModelessDialog):
         self.canvas.pack(expand=True, fill='both')
 
         # Create all frames
-        frames = [('ui_MetalCenterFrame', 'Metal Center Parameters'),
-                  ('ui_SystemParamFrame', 'System Characteristics')]
+        frames = [('ui_metalcenter_frame', 'Metal Center Parameters'),
+                  ('ui_systemparam_frame', 'System Characteristics')]
         for frame, description in frames:
             setattr(self, frame, tk.LabelFrame(self.canvas, text=description))
 
         # Fill MetalCenterFrame
-        self.ui_MetalSymbol = ttk.Combobox(
-            self.canvas, textvariable=self.var_MetalSymbol)
-        self.ui_MetalSymbol.config(values=('Zn', 'Fe', 'Cd', 'Cu', 'Co', 'Pt', 'Pd', 'Mg', 'V', 'Cr', 'Mn'))
-        self.ui_MetalGeometry = ttk.Combobox(
-            self.canvas, textvariable=self.var_MetalGeometry)
-        self.ui_MetalGeometry.config(values=('tetrahedral', 'octahedral'))
-        self.ui_MetalCharge = tk.Entry(
-            self.canvas, textvariable=self.var_MetalCharge)
-        self.ui_VwRadius = tk.Entry(
-        	self.canvas, textvariable=self.var_VwRadius)
-        self.ui_DzMass = tk.Entry(
-        	self.canvas,textvariable=self.var_DzMass)
-        self.ui_Dz_Met_BondLenght = tk.Entry(
-        	self.canvas, textvariable=self.var_Dz_Met_BondLenght)
+        self.ui_metalsymbol = ttk.Combobox(
+            self.canvas, textvariable=self.var_metal_symbol)
+        self.ui_metalsymbol.config(values=('Zn', 'Fe', 'Cd', 'Cu', 'Co', 'Pt', 'Pd', 'Mg', 'V', 'Cr', 'Mn'))
+        self.ui_metalgeometry = ttk.Combobox(
+            self.canvas, textvariable=self.var_metal_geometry)
+        self.ui_metalgeometry.config(values=('tetrahedral', 'octahedral'))
+        self.ui_metalcharge = tk.Entry(
+            self.canvas, textvariable=self.var_metal_charge)
+        self.ui_vw_radius = tk.Entry(
+        	self.canvas, textvariable=self.var_vw_radius)
+        self.ui_dzmass = tk.Entry(
+        	self.canvas,textvariable=self.var_dz_mass)
+        self.ui_dz_met_bondlenght = tk.Entry(
+        	self.canvas, textvariable=self.var_dz_met_bondlenght)
 
 
-        grid_MetalCenterFrame = [['',''],
-        						 ['Metal Symbol', self.ui_MetalSymbol],
-        						 ['Metal Geometry', self.ui_MetalGeometry],
-                                 ['Metal Charge', self.ui_MetalCharge],
-                                 ['Metal VandeWals Radius', self.ui_VwRadius],
+        grid_metalcenter_frame = [['',''],
+        						 ['Metal Symbol', self.ui_metalsymbol],
+        						 ['Metal Geometry', self.ui_metalgeometry],
+                                 ['Metal Charge', self.ui_metalcharge],
+                                 ['Metal VandeWals Radius', self.ui_vw_radius],
                                  ['',''],
-                                 ['Dummy Mass', self.ui_DzMass],
-                                 ['Metal-Dummy Bond Lenght', self.ui_Dz_Met_BondLenght],
+                                 ['Dummy Mass', self.ui_dzmass],
+                                 ['Metal-Dummy Bond Lenght', self.ui_dz_met_bondlenght],
                                  ['','']]
-        self.auto_grid(self.ui_MetalCenterFrame, grid_MetalCenterFrame)
+        self.auto_grid(self.ui_metalcenter_frame, grid_metalcenter_frame)
 
         # Fill SystemParamFrame
-        self.ui_InputPath = tk.Entry(
-            self.canvas, textvariable=self.var_InputPath)
-        self.ui_BrowseInput = tk.Button(
-            self.canvas, text='...', command=self.Add_Input)
-        self.ui_FilesToLoad = tk.Listbox(
-            self.canvas, listvariable=self.var_FilesToLoad)
-        self.ui_AddFiles = tk.Button(
-            self.canvas, text='+', command=self.Add_Files)
-        self.ui_RemoveFiles = tk.Button(
-            self.canvas, text='-', command=self.Remove_Files)
-        self.ui_OutputPath = tk.Entry(
-            self.canvas, textvariable=self.var_OutputPath)
-        self.ui_BrowseOutput = tk.Button(
-            self.canvas, text='...', command=self.Add_OutputDirect)
-        self.ui_OutputName = tk.Entry(
-            self.canvas, textvariable=self.var_OutputName)
-        self.ui_WaterBox = tk.Checkbutton(
-        	self.canvas, variable=self.var_WaterBox)
+        self.ui_inputpath = tk.Entry(
+            self.canvas, textvariable=self.var_inputpath)
+        self.ui_browseinput = tk.Button(
+            self.canvas, text='...', command=self._add_input)
+        self.ui_files_to_load = tk.Listbox(
+            self.canvas, listvariable=self.var_files_to_load)
+        self.ui_addfiles = tk.Button(
+            self.canvas, text='+', command=self._add_files)
+        self.ui_removefiles = tk.Button(
+            self.canvas, text='-', command=self._remove_files)
+        self.ui_outputpath = tk.Entry(
+            self.canvas, textvariable=self.var_outputpath)
+        self.ui_browseoutput = tk.Button(
+            self.canvas, text='...', command=self.add_outputdirect)
+        self.ui_outputname = tk.Entry(
+            self.canvas, textvariable=self.var_outputname)
+        self.ui_waterbox = tk.Checkbutton(
+        	self.canvas, variable=self.var_waterbox)
 
-        grid_SystemParamFrame = [['Input Path', self.ui_InputPath, self.ui_BrowseInput],
-                                 ['Files to be Loaded', self.ui_FilesToLoad,
-                                 (self.ui_AddFiles, self.ui_RemoveFiles)],
-                                 ['', ('Water Box', self.ui_WaterBox), ''],
-                                 ['Output Path', self.ui_OutputPath, self.ui_BrowseOutput],
-                                 ['Output Name', self.ui_OutputName]]
+        grid_systemparam_frame = [['Input Path', self.ui_inputpath, self.ui_browseinput],
+                                 ['Files to be Loaded', self.ui_files_to_load,
+                                 (self.ui_addfiles, self.ui_removefiles)],
+                                 ['', ('Water Box', self.ui_waterbox), ''],
+                                 ['Output Path', self.ui_outputpath, self.ui_browseoutput],
+                                 ['Output Name', self.ui_outputname]]
                                  
-        self.auto_grid(self.ui_SystemParamFrame, grid_SystemParamFrame)
+        self.auto_grid(self.ui_systemparam_frame, grid_systemparam_frame)
 
         # Grid Frames
-        grid_AllFrames = [(self.ui_MetalCenterFrame, self.ui_SystemParamFrame)]
-        self.auto_grid(self.canvas, grid_AllFrames)
+        grid_allframes = [(self.ui_metalcenter_frame, self.ui_systemparam_frame)]
+        self.auto_grid(self.canvas, grid_allframes)
 
 
-    def Add_Files(self):
-        FilePath = filedialog.askopenfilename(initialdir='~/', filetypes=(
+    def _add_files(self):
+        filepath = filedialog.askopenfilename(initialdir='~/', filetypes=(
             ('Lib File', '*.lib'), ('Frcmod File', '*.frcmod'),('Xml File', '*.xml')))
-        if FilePath:
-            self.ui_FilesToLoad.insert('end', FilePath)
+        if filepath:
+            self.ui_files_to_load.insert('end', filepath)
 
-    def Remove_Files(self):
+    def _remove_files(self):
         """
         Remove the selected stage from the stage listbox
         """
-        selection = self.ui_FilesToLoad.curselection()
+        selection = self.ui_files_to_load.curselection()
         if selection:
-            self.ui_FilesToLoad.delete(selection)
+            self.ui_files_to_load.delete(selection)
 
-    def Add_Input(self):
-        InputPath = filedialog.askopenfilename(initialdir='~/', filetypes=(
+    def _add_input(self):
+        inputpath = filedialog.askopenfilename(initialdir='~/', filetypes=(
             ('pdb File', '*.pdb'), ('Mol2 File', '*.mol2')))
-        if InputPath:
-            self.var_InputPath.set(InputPath)
+        if inputpath:
+            self.var_inputpath.set(inputpath)
 
-    def Add_OutputDirect(self):
-        DirectPath = filedialog.askdirectory(
+    def add_outputdirect(self):
+        directorypath = filedialog.askdirectory(
             initialdir='~/')
-        if DirectPath:
-            self.var_OutputPath.set(DirectPath)
+        if directorypath:
+            self.var_outputpath.set(directorypath)
 
     def Apply(self):
         """
