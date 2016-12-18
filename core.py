@@ -4,7 +4,6 @@
 """
 Still need to do:
     -ambermini #how to do
-    -faced octahedral method (lib and orient functions!)--> tomorrow
     -work with jaime's metal--> tomorrow!
 """
 
@@ -26,6 +25,8 @@ from chimera import runCommand as rc
 
 """
 This module contains the business logic of MetaDummy.
+A GUI to apply cathionc dummy atom method to systems
+with one or more metal centers.
 """
 
 class Controller(object):
@@ -83,7 +84,7 @@ class Controller(object):
 
        
 
-        #Creating temporal directory
+        print('Creating tmp directory...')
         self.model.temp_directory()
         #if self.model.gui.var_metal_geometry.get() == 'tetrahedral':
         print('Building dummies...')
@@ -128,13 +129,12 @@ class Model(object):
         self.gui = gui
 
     def temp_directory(self):
-        print('Creating tmp directory...')
         self.tempdir = tempfile.mkdtemp(prefix="modeller")
         print('Modeller temporary directory: '+ self.tempdir)
 
     def Include_dummies(self, inputpath, metal_class):
 
-
+        
         #Find metal coord
         model = chimera.openModels.open(inputpath)[0]
         dummies=[]
@@ -146,13 +146,15 @@ class Model(object):
 
         #Find dummies coord
         if self.gui.var_metal_geometry.get() == 'tetrahedral':
-            tetrahedral = Geometry.Geometry('tetrahedral')
+            geom = Geometry.Geometry('tetrahedral')
+        elif self.gui.var_metal_geometry.get() == 'octahedral':
+            geom = Geometry.Geometry('octahedron')
         sesion = metal_class.sesion
         #sesion   = gui.MetalsDialog()
-        sesion._toplevel.state('withdrawn')
+        #sesion._toplevel.state('withdrawn')
         ligands=sesion.coordinationTable.data
         metal = sesion.metalsMenu.getvalue()
-        rmsd, center, vecs = gui.geomDistEval(tetrahedral, metal, ligands)
+        rmsd, center, vecs = gui.geomDistEval(geom, metal, ligands)
         dummiespositions = []
         for vec in vecs:
             vec.length = self.gui.var_dz_met_bondlenght.get()
@@ -168,34 +170,47 @@ class Model(object):
         while mol.findResidue(chimera.MolResId(chain, pos)):
             pos += 1
         dummy_element = chimera.Element('DZ')
-        dummy_names = ["D1", "D2", "D3", "D4"]
-        
-        for i, dummy_name in enumerate(dummy_names): 
 
-            dummy_coord=chimera.Coord(dummiespositions[i][0],
-                                       dummiespositions[i][1],
-                                       dummiespositions[i][2])
+        if self.gui.var_metal_geometry.get() == 'tetrahedral':
 
-            dummies.append(addAtom(dummy_name, dummy_element, res, dummy_coord))
+            
+            dummy_names = ["D1", "D2", "D3", "D4"]
+            
+            for i, dummy_name in enumerate(dummy_names): 
 
-        ligands=[] # initialize ligands variable to avoid problems inside addLigands()
-        sesion.addLigands(dummies)
+                dummy_coord=chimera.Coord(dummiespositions[i][0],
+                                           dummiespositions[i][1],
+                                           dummiespositions[i][2])
 
-        #Creating bonds M-DZ and DZ-DZ
-        model.newBond(metal,dummies[i])
+                dummies.append(addAtom(dummy_name, dummy_element, res, dummy_coord))
+                model.newBond(metal,dummies[i])
 
-        model.newBond(dummies[0], dummies[1])
-        model.newBond(dummies[0],dummies[2])
-        model.newBond(dummies[0],dummies[3])
-        model.newBond(dummies[1],dummies[2])
-        model.newBond(dummies[1],dummies[3])
-        model.newBond(dummies[2],dummies[3])
+            ligands=[] # initialize ligands variable to avoid problems inside addLigands()
+            sesion.addLigands(dummies)
+
+        elif self.gui.var_metal_geometry.get() == 'octahedral':
+
+            dummy_names = ["D1", "D2", "D3", "D4", "D5", "D6"]
+            
+            for i, dummy_name in enumerate(dummy_names): 
+
+                dummy_coord=chimera.Coord(dummiespositions[i][0],
+                                           dummiespositions[i][1],
+                                           dummiespositions[i][2])
+
+                dummies.append(addAtom(dummy_name, dummy_element, res, dummy_coord))
+
+            ligands=[] # initialize ligands variable to avoid problems inside addLigands()
+            sesion.addLigands(dummies)
+            
+        metal_class.sesion.Close()
 
         # Saving model
         OutputPath = self.gui.var_outputpath.get()
         Filename = self.gui.var_outputname.get() + '.pdb'
         self.output = os.path.join(self.tempdir, Filename)
         rc('write 0 ' + self.output)
+        
 
 
 
@@ -227,13 +242,13 @@ class Model(object):
                 f.write("END")
 
             elif self.gui.var_metal_geometry.get() == 'octahedral':
-                f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met,x,y,z,met))
-                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(x+0.637,y+0.637,z))
-                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(x+0.637,y-0.637,z))
-                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(x-0.637,y+0.637,z))
-                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(x-0.637,y-0.637,z))
-                f.write("HETATM    6  D5  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(x,y,z+0.9))
-                f.write("HETATM    7  D6  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(x,y,z-0.9))
+                f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, metal[0], metal[1], metal[2], met))
+                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[0][0], dum[0][1], dum[0][2]))
+                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[1][0], dum[1][1], dum[1][2]))
+                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[2][0], dum[2][1], dum[2][2]))
+                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[3][0], dum[3][1], dum[3][2]))
+                f.write("HETATM    6  D5  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[4][0], dum[4][1], dum[4][2]))
+                f.write("HETATM    7  D6  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[5][0], dum[5][1], dum[5][2]))
                 f.write("END")
 
     def creatlib(self, direcxl, RES, i, output, output_name): # ambermini
@@ -341,8 +356,8 @@ class Model(object):
                 lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.1f\n'%(q/6.0)
                 lineas[6]=' "D3" "DY" 0 1 196609 4 -1 %.1f\n'%(q/6.0)
                 lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.1f\n'%(q/6.0)
-                lineas[8]=' "D5" "DZ" 0 1 196609 5 -1 %.1f\n'%(q/6.0)
-                lineas[9]=' "D6" "DZ" 0 1 196609 5 -1 %.1f\n'%(q/6.0)
+                lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.1f\n'%(q/6.0)
+                lineas[9]=' "D6" "DZ" 0 1 196609 7 -1 %.1f\n'%(q/6.0)
                 lineas[11]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
                 lineas[12]=' "D1" "DX" 0 -1 0.0\n'
                 lineas[13]=' "D2" "DY" 0 -1 0.0\n'
@@ -352,15 +367,15 @@ class Model(object):
                 lineas[17]=' "D6" "DZ" 0 -1 0.0\n'
                 lineas.insert(29,'!entry.ZNB.unit.connectivity table  int atom1x  int atom2x  int flags\n')
                 lineas.insert(30, ' 1 2 1\n')
-                lineas.insert(31, ' 1 5 1\n')
+                lineas.insert(31, ' 1 7 1\n')
                 lineas.insert(32, ' 2 3 1\n')
-                lineas.insert(33, ' 2 4 1\n')
-                lineas.insert(34, ' 2 7 1\n')
+                lineas.insert(33, ' 6 5 1\n')
+                lineas.insert(34, ' 5 3 1\n')
                 lineas.insert(35, ' 2 6 1\n')
-                lineas.insert(36, ' 3 5 1\n')
-                lineas.insert(37, ' 4 5 1\n')
-                lineas.insert(38, ' 5 6 1\n')
-                lineas.insert(39, ' 5 7 1\n')
+                lineas.insert(36, ' 7 3 1\n')
+                lineas.insert(37, ' 3 4 1\n')
+                lineas.insert(38, ' 4 6 1\n')
+                lineas.insert(39, ' 7 6 1\n')
 
                 file.close()
 
@@ -553,12 +568,15 @@ class Atom(Model):
         for model in chimera.openModels.list():
             chimera.openModels.close(model)
         model = chimera.openModels.open(inputpath)[0]
-        tetrahedral = Geometry.Geometry('tetrahedral')
+        if self.model.gui.var_metal_geometry.get() == 'tetrahedral':
+            geom = Geometry.Geometry('tetrahedral')
+        elif self.model.gui.var_metal_geometry.get() == 'octahedral':
+            geom = Geometry.Geometry('octahedron')
         self.sesion = gui.MetalsDialog()
         self.sesion._toplevel.state('withdrawn')
         ligands=self.sesion.coordinationTable.data 
         metal = self.sesion.metalsMenu.getvalue()
-        rmsd, self.center, vecs = gui.geomDistEval(tetrahedral, metal, ligands)
+        rmsd, self.center, vecs = gui.geomDistEval(geom, metal, ligands)
         self.dummiespositions = []
         for vec in vecs:
             vec.length = self.dz_met_bondlenght
