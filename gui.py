@@ -7,10 +7,16 @@ from __future__ import print_function, division
 import Tkinter as tk
 import tkFileDialog as filedialog
 import ttk
+import os
+from PIL import Image
+from PIL import ImageTk
+import sys
+import hashlib
 # Chimera stuff
 import chimera
 from chimera.baseDialog import ModelessDialog
 # Additional 3rd parties
+from CGLtk.Table import SortableTable
 
 # Own
 from core import Controller, Model
@@ -47,7 +53,7 @@ STYLES = {
         'width': 20,
     },
     tk.Listbox: {
-        'height': '7',
+        'height': '5',
         'width': '5',
         'background': 'white',
 
@@ -58,8 +64,8 @@ STYLES = {
 
     },
     tk.Checkbutton: {
-        'highlightbackground': chimera.tkgui.app.cget('bg'),
-        'activebackground': chimera.tkgui.app.cget('bg'),
+        #'highlightbackground': chimera.tkgui.app.cget('bg'),
+        #'activebackground': chimera.tkgui.app.cget('bg'),
     }
 }
 
@@ -95,6 +101,7 @@ class DummyDialog(ModelessDialog):
         self.var_waterbox = tk.IntVar()
         self.var_dz_met_bondlenght = tk.DoubleVar()
         self.ui_labels = {}
+        self.var_rmsd = 0.000
         self.var_inputpath.set('/home/daniel/zinbueno.pdb')
         self.var_outputpath.set('/home/daniel/md/dummy/')
         self.var_outputname.set('sys')
@@ -132,13 +139,15 @@ class DummyDialog(ModelessDialog):
         This is the main part of the interface. With this method you code
         the whole dialog, buttons, textareas and everything.
         """
+
         # Create main window
         self.canvas = tk.Frame(parent)
         self.canvas.pack(expand=True, fill='both')
 
         # Create all frames
         frames = [('ui_metalcenter_frame', 'Metal Center Parameters'),
-                  ('ui_systemparam_frame', 'System Characteristics')]
+                  ('ui_systemparam_frame', 'System Characteristics'),
+                  ('ui_table_frame', 'Geometries Table')]
         for frame, description in frames:
             setattr(self, frame, tk.LabelFrame(self.canvas, text=description))
 
@@ -190,6 +199,8 @@ class DummyDialog(ModelessDialog):
         self.ui_waterbox = tk.Checkbutton(
         	self.canvas, variable=self.var_waterbox)
 
+
+
         grid_systemparam_frame = [['Input Path', self.ui_inputpath, self.ui_browseinput],
                                  ['Files to be Loaded', self.ui_files_to_load,
                                  (self.ui_addfiles, self.ui_removefiles)],
@@ -199,9 +210,43 @@ class DummyDialog(ModelessDialog):
                                  
         self.auto_grid(self.ui_systemparam_frame, grid_systemparam_frame)
 
+        # Table
+        gt = self.ui_geometrytable = SortableTable(self.canvas)
+ 
+
+        gt.grid(row=1, rowspan=2, column=0, columnspan=3, sticky="nsew")
+
+        gt.addColumn("Geometry", str, headerPadX=60)
+        gt.addColumn("Coord. Number", 'coordinationNumber', format="%d", headerPadX=70)
+        rmsd = gt.addColumn("Distance RMSD", self.var_rmsd,
+            format="%.3f", font="TkFixedFont", headerPadX=70)
+        gt.addColumn("Similar Geometries",str, headerPadX=80)
+        
+        """
+        #Filling table at the end
+        from geomData import geometries
+
+        if var_metal_geometry.get() == 'tetrahedral':
+            sel = 4
+        elif var_metal_geometry.get() == 'octahedral':
+            sel = 6
+        geoms = [g for g in geoms if sel == g.coordinationNumber]
+        
+        """
+        self.ui_geometrytable.setData([])
+        gt.launch(title="Geometry Table")
+
+        #gt.sortBy(rmsd)
+
         # Grid Frames
-        grid_allframes = [(self.ui_metalcenter_frame, self.ui_systemparam_frame)]
+        grid_allframes = [[self.ui_metalcenter_frame, self.ui_systemparam_frame]]
         self.auto_grid(self.canvas, grid_allframes)
+        self.ui_table_frame.grid(
+            row=len(frames), columnspan=2, sticky='ew', padx=5, pady=5)
+        
+
+       
+
 
 
     def _add_files(self):
@@ -321,3 +366,61 @@ class DummyDialog(ModelessDialog):
                 options['expand'] = False
             widget.pack(in_=parent, **options)
             self._fix_styles(widget)
+
+
+    def _fill_ui_password(self):
+        """
+        Opening  report options
+        """
+        # Create window
+        self.ui_password = tk.Toplevel()
+        self._top_level_frame = tk.Frame(self.ui_password)
+        self._top_level_frame.pack(expand=True, fill='both')
+        self.var_password = tk.StringVar()
+        self.var_username = tk.StringVar()
+        
+        self.ui_title = tk.Label(self._top_level_frame, text='Cathionic Dummy Atom Method', font=("Helvetica", 16))
+        self.ui_password_lab = tk.Label(self._top_level_frame, text= 'Password')
+        self.ui_password_entry = tk.Entry(self._top_level_frame, textvariable = self.var_password, background='white', show="*")
+        self.ui_username_lab = tk.Label(self._top_level_frame, text= 'Username')
+        self.ui_username_entry = tk.Entry(self._top_level_frame, textvariable = self.var_username, background='white')
+
+        self.ui_title.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
+        self.ui_password_lab.grid(row=2, column=1, padx=10, pady=10)
+        self.ui_password_entry.grid(row=2, column=2, padx=10, pady=10)
+        self.ui_username_lab.grid(row=1, column=1, padx=10, pady=10)
+        self.ui_username_entry.grid(row=1, column=2, padx=10, pady=10)
+
+        file =  os.path.join(os.path.dirname(__file__), 'img/logo.png')
+        im = Image.open(file)
+        resized = im.resize((100, 100), Image.ANTIALIAS)
+        tkimage = ImageTk.PhotoImage(resized)
+        self.myvar = tk.Label(self._top_level_frame, image=tkimage)
+        self.myvar.image = tkimage
+        self.myvar.grid(row=1, column=0, rowspan=2, padx=10, pady=10)
+
+
+    def Apply2(self):
+        """
+        Default! Triggered action if you click on an Apply button
+        """
+        try:
+            filename = os.path.join(os.path.dirname(__file__), 'pass.txt')
+            with open(filename, 'r') as f:
+                password = f.readline()[:-1]
+        except Exception:
+            sys.exit('There was a problem reading the file!')
+        password_user_encr = hashlib.sha224(self.var_password.get().encode()).hexdigest()
+        print(password_user_encr)
+        if  (password_user_encr) == (password):
+            self.ui_password.withdraw()
+        else:
+            print('Wrong Username or Password. Try again.')
+            print(str(password))
+        
+
+    def OK2(self):
+        """
+        Default! Triggered action if you click on an OK button
+        """
+        self.Apply2()

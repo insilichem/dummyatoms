@@ -52,34 +52,34 @@ class Controller(object):
             Zinc = Atom(model=self.model, symbol='Zn', atomicnumber=30, mass=65.38, residue='ZNB')
             metal_class = Zinc
         elif self.model.gui.var_metal_symbol.get().lower() == 'fe':
-            Iron = Atom(model=self.model, symbol='Fe', atomicnumber=26, mass=55.845 , residue='FEB')
+            Iron = Atom(model=self.model, symbol='Fe', atomicnumber=26, mass=55.845 , residue='ZNB')
             metal_class = Iron
         elif self.model.gui.var_metal_symbol.get().lower() == 'cd':
-            Cadmium = Atom(model=self.model, symbol='Cd', atomicnumber=48, mass=112.411, resiude='CDB')
+            Cadmium = Atom(model=self.model, symbol='CD', atomicnumber=48, mass=112.411, resiude='ZNB')
             metal_class = Cadmium
         elif self.model.gui.var_metal_symbol.get().lower() == 'cu':
-            Copper = Atom(model=self.model, symbol='Cu', atomicnumber=29, mass=63.546, resiude='CUB')
+            Copper = Atom(model=self.model, symbol='CU', atomicnumber=29, mass=63.546, resiude='ZNB')
             metal_class = Copper
         elif self.model.gui.var_metal_symbol.get().lower() == 'co':
-            Cobalt = Atom(model=self.model, symbol='Co', atomicnumber=27, mass=58.933, resiude='COB')
+            Cobalt = Atom(model=self.model, symbol='CO', atomicnumber=27, mass=58.933, resiude='ZNB')
             metal_class = Cobalt
         elif self.model.gui.var_metal_symbol.get().lower() == 'pt':
-            Platinum = Atom(model=self.model, symbol='Pt', atomicnumber=78, mass=195.084, resiude='PTB')
+            Platinum = Atom(model=self.model, symbol='PT', atomicnumber=78, mass=195.084, resiude='ZNB')
             metal_class = Platinum
         elif self.model.gui.var_metal_symbol.get().lower() == 'pd':
-            Palladium = Atom(model=self.model, symbol='Pd', atomicnumber=46, mass=106.42, resiude='PDB')
+            Palladium = Atom(model=self.model, symbol='PD', atomicnumber=46, mass=106.42, resiude='ZNB')
             metal_class = Palladium
         elif self.model.gui.var_metal_symbol.get().lower() == 'mg':
-            Magnesium = Atom(model=self.model, symbol='Mg', atomicnumber=12, mass=24.305, resiude='MGB')
+            Magnesium = Atom(model=self.model, symbol='MG', atomicnumber=12, mass=24.305, resiude='ZNB')
             metal_class = Magnesium
         elif self.model.gui.var_metal_symbol.get().lower() == 'v':
-            Vanadium = Atom(model=self.model, symbol='V', atomicnumber=23, mass=50.9415, resiude='VB')
+            Vanadium = Atom(model=self.model, symbol='V', atomicnumber=23, mass=50.9415, resiude='ZNB')
             metal_class = Vanadium
         elif self.model.gui.var_metal_symbol.get().lower() == 'cr':
-            Chromium = Atom(model=self.model, symbol='Cr', atomicnumber=24, mass=51.996, resiude='CRB')
+            Chromium = Atom(model=self.model, symbol='CR', atomicnumber=24, mass=51.996, resiude='ZNB')
             metal_class = Chromium
         elif self.model.gui.var_metal_symbol.get().lower() == 'mn':
-            Manganese = Atom(model=self.model, symbol='Mn', atomicnumber=25, mass=54.938, resiude='CRB')
+            Manganese = Atom(model=self.model, symbol='MN', atomicnumber=25, mass=54.938, resiude='ZNB')
             metal_class = Manganese
 
        
@@ -140,8 +140,11 @@ class Model(object):
         dummies=[]
         for atom in model.atoms:
             if str(atom.name.lower()) == self.gui.var_metal_symbol.get().lower():
-                metal = atom
-                coord = metal.coord()
+                try:
+                    metal = atom
+                    coord = metal.coord()
+                except UnboundLocalError:
+                    raise('Atom name should be equal to %s. Be careful with your odb or your Metal Symbol choice.)' % (self.gui.var_metal_symbol.get().lower()))
 
 
         #Find dummies coord
@@ -190,7 +193,7 @@ class Model(object):
 
         elif self.gui.var_metal_geometry.get() == 'octahedral':
 
-            dummy_names = ["D1", "D2", "D3", "D4", "D5", "D6"]
+            dummy_names = ["D1", "D5", "D2", "D3", "D6", "D4"]
             
             for i, dummy_name in enumerate(dummy_names): 
 
@@ -244,11 +247,11 @@ class Model(object):
             elif self.gui.var_metal_geometry.get() == 'octahedral':
                 f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, metal[0], metal[1], metal[2], met))
                 f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[0][0], dum[0][1], dum[0][2]))
-                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[2][0], dum[2][1], dum[2][2]))
-                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[3][0], dum[3][1], dum[3][2]))
-                f.write("HETATM    6  D5  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[4][0], dum[4][1], dum[4][2]))
-                f.write("HETATM    7  D6  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[5][0], dum[5][1], dum[5][2]))
+                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[2][0], dum[2][1], dum[2][2]))
+                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[3][0], dum[3][1], dum[3][2]))
+                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[5][0], dum[5][1], dum[5][2]))
+                f.write("HETATM    6  D5  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[1][0], dum[1][1], dum[1][2]))
+                f.write("HETATM    7  D6  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[4][0], dum[4][1], dum[4][2]))
                 f.write("END")
 
     def creatlib(self, direcxl, RES, i, output, output_name): # ambermini
@@ -313,10 +316,10 @@ class Model(object):
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
                 lineas=list(file)
                 lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(met,met,atm)
-                lineas[4]=' "D1" "DZ" 0 1 196609 2 -1 %.1f\n'%(q/4.0)
-                lineas[5]=' "D2" "DZ" 0 1 196609 3 -1 %.1f\n'%(q/4.0)
-                lineas[6]=' "D3" "DZ" 0 1 196609 4 -1 %.1f\n'%(q/4.0)
-                lineas[7]=' "D4" "DZ" 0 1 196609 5 -1 %.1f\n'%(q/4.0)
+                lineas[4]=' "D1" "DZ" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
+                lineas[5]=' "D2" "DZ" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
+                lineas[6]=' "D3" "DZ" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
+                lineas[7]=' "D4" "DZ" 0 1 196609 5 -1 %.5f\n'%(q/4.0)
                 lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
                 lineas[10]=' "D1" "DZ" 0 -1 0.0\n'
                 lineas[11]=' "D2" "DZ" 0 -1 0.0\n'
@@ -352,12 +355,12 @@ class Model(object):
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
                 lineas=list(file)
                 lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(met,met,atm)
-                lineas[4]=' "D1" "DX" 0 1 196609 2 -1 %.1f\n'%(q/6.0)
-                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.1f\n'%(q/6.0)
-                lineas[6]=' "D3" "DY" 0 1 196609 4 -1 %.1f\n'%(q/6.0)
-                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.1f\n'%(q/6.0)
-                lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.1f\n'%(q/6.0)
-                lineas[9]=' "D6" "DZ" 0 1 196609 7 -1 %.1f\n'%(q/6.0)
+                lineas[4]=' "D1" "DX" 0 1 196609 2 -1 %.5f\n'%(q/6.0)
+                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/6.0)
+                lineas[6]=' "D3" "DY" 0 1 196609 4 -1 %.5f\n'%(q/6.0)
+                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/6.0)
+                lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.5f\n'%(q/6.0)
+                lineas[9]=' "D6" "DZ" 0 1 196609 7 -1 %.5f\n'%(q/6.0)
                 lineas[11]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
                 lineas[12]=' "D1" "DX" 0 -1 0.0\n'
                 lineas[13]=' "D2" "DY" 0 -1 0.0\n'
@@ -366,16 +369,16 @@ class Model(object):
                 lineas[16]=' "D5" "DZ" 0 -1 0.0\n'
                 lineas[17]=' "D6" "DZ" 0 -1 0.0\n'
                 lineas.insert(29,'!entry.ZNB.unit.connectivity table  int atom1x  int atom2x  int flags\n')
-                lineas.insert(30, ' 1 2 1\n')
-                lineas.insert(31, ' 1 7 1\n')
-                lineas.insert(32, ' 2 3 1\n')
-                lineas.insert(33, ' 6 5 1\n')
-                lineas.insert(34, ' 5 3 1\n')
-                lineas.insert(35, ' 2 6 1\n')
-                lineas.insert(36, ' 7 3 1\n')
-                lineas.insert(37, ' 3 4 1\n')
-                lineas.insert(38, ' 4 6 1\n')
-                lineas.insert(39, ' 7 6 1\n')
+                lineas.insert(30, ' 1 5 1\n')
+                lineas.insert(31, ' 1 2 1\n')
+                lineas.insert(32, ' 2 6 1\n')
+                lineas.insert(33, ' 2 4 1\n')
+                lineas.insert(34, ' 6 5 1\n')
+                lineas.insert(35, ' 4 5 1\n')
+                lineas.insert(36, ' 7 2 1\n')
+                lineas.insert(37, ' 5 3 1\n')
+                lineas.insert(38, ' 3 2 1\n')
+                lineas.insert(39, ' 7 5 1\n')
 
                 file.close()
 
@@ -493,6 +496,7 @@ class Model(object):
         filename = "%s/leaprc.final"%direcxl
         with open(filename,"w") as f:
             f.write("logFile leap.log\n")
+            f.write("source /home/daniel/leaprc\n")
             f.write("source %s/dat/leap/cmd/oldff/leaprc.ff99SB\n" % self.amber_path)
             f.write("""addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met))
             f.write("""addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
