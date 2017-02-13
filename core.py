@@ -566,7 +566,8 @@ class Atom(Model):
         sys=chimera.openModels.open(self.model.gui.var_inputpath.get())[0] 
         for atom in sys.atoms:
             if str(atom.name.lower()) == self.symbol.lower():
-                self.AtomCoord = tuple(atom.coord())
+                if atom.element.isMetal():
+                	return atom
 
     def search_for_orientation(self, inputpath):
         for model in chimera.openModels.list():
@@ -578,8 +579,8 @@ class Atom(Model):
             geom = Geometry.Geometry('octahedron')
         self.sesion = gui.MetalsDialog()
         self.sesion._toplevel.state('withdrawn')
+        metal = self.Search_for_AtomCoord
         ligands=self.sesion.coordinationTable.data 
-        metal = self.sesion.metalsMenu.getvalue()
         rmsd, self.center, vecs = gui.geomDistEval(geom, metal, ligands)
         self.dummiespositions = []
         for vec in vecs:
