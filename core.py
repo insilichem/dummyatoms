@@ -559,19 +559,8 @@ class Atom(Model):
         self.met_vwradius = self.model.gui.var_vw_radius.get()
         self.dzmass = self.model.gui.var_dz_mass.get()
         self.dz_met_bondlenght = self.model.gui.var_dz_met_bondlenght.get()
-        self.dummiespositions = []
-        #self.AtomCoord = () 
-        #self.Search_for_AtomCoord()
         self.search_for_orientation(self.model.gui.var_inputpath.get())
 
-    
-    def Search_for_metal(self):
-        chimera.openModels.closeAllModels()
-        sys=chimera.openModels.open(self.model.gui.var_inputpath.get())[0] 
-        for atom in sys.atoms:
-            if str(atom.name.lower()) == self.symbol.lower():
-                if atom.element.isMetal:
-                    return atom
 
 
     def search_for_orientation(self, inputpath):
@@ -582,10 +571,8 @@ class Atom(Model):
             geom = Geometry.Geometry('tetrahedral')
         elif self.model.gui.var_metal_geometry.get() == 'octahedral':
             geom = Geometry.Geometry('octahedron')
-        #self.sesion = gui.MetalsDialog()
-        #self.sesion._toplevel.state('withdrawn')
-        metal = self.Search_for_metal()
-        ligands=search_ligands(metal)
+        metal = self.search_for_metal()
+        ligands=self.search_for_ligands(metal)
         rmsd, self.center, vecs = gui.geomDistEval(geom, metal, ligands)
         self.dummiespositions = []
         for vec in vecs:
@@ -595,69 +582,62 @@ class Atom(Model):
         model.destroy()
         return self.dummiespositions
 
-def search_ligands(metal):
-    data = []
-    coordLim=4.0
-    from numpy import array
-    atoms = array(metal.molecule.atoms)
-    print(atoms)
-    from _multiscale import get_atom_coordinates as gac
-    from _closepoints import find_close_points, BOXES_METHOD
-    ignore, close = find_close_points(BOXES_METHOD,
-        gac(array([metal])), gac(atoms), coordLim)
-    candidates = list(set(atoms[close]))
-    mcrd = metal.coord()
-    candidates.sort(lambda a1, a2: cmp(a1.coord().sqdistance(mcrd),
-                    a2.coord().sqdistance(mcrd)))
-    exclude = []
-    userIncluded = []
-    for candidate in candidates:
-        if candidate == metal:
-            continue
-        if candidate in exclude:
-            continue
-        if candidate not in userIncluded:
-            valence = (candidate.element.number - 2) % 8
-            if valence < 5 or candidate.element.number == 1:
-                continue
-            if candidate.coord().distance(mcrd) > coordLim:
-                break
-            if candidate not in metal.bondsMap:
-                from chimera import angle
-                from chimera.idatm import typeInfo
-                angleOK = True
-                try:
-                    cnGeom = typeInfo[candidate.idatmType].geometry
-                except KeyError:
-                    cnGeom = 0
-                else:
-                    if len(candidate.primaryNeighbors()) == cnGeom:
-                        # no lone pairs, no possibility of deprotonation
-                        continue
-                angleCutoff = [0.0, 72.98, 120.0, 80.0, 72.98][cnGeom]
-                for cnb in candidate.neighbors:
-                    if cnb == metal:
-                        continue
-                    if angle(cnb.coord(), candidate.coord(),
-                                metal.coord()) < angleCutoff:
-                        angleOK = False
-                        break
-                if not angleOK:
-                    continue
-        data.append(candidate)
-    return data
+    def search_for_metal(self):
+        chimera.openModels.closeAllModels()
+        sys=chimera.openModels.open(self.model.gui.var_inputpath.get())[0] 
+        for atom in sys.atoms:
+            if str(atom.name.lower()) == self.symbol.lower():
+                if atom.element.isMetal:
+                    return atom
 
-def addLigands(metal, newLigands=None):
-    from chimera.selection import currentAtoms
-    if newLigands == None:
-        newLigands = set(currentAtoms())
-        if not newLigands:
-            raise UserError("No atoms selected")
-    else:
-        newLigands = set(newLigands)
-    for nl in newLigands:
-        if nl.molecule != metal.molecule:
-            raise UserError("Ligating atoms must be in same model as metal")
-    include, exclude = [], []
-    include.update(newLigands)
-    exclude.difference_update(newLigands)
+    def search_for_ligands(self, metal):
+        data = []
+        coordLim=4.0
+        from numpy import array
+        atoms = array(metal.molecule.atoms)
+        print(atoms)
+        from _multiscale import get_atom_coordinates as gac
+        from _closepoints import find_close_points, BOXES_METHOD
+        ignore, close = find_close_points(BOXES_METHOD,
+            gac(array([metal])), gac(atoms), coordLim)
+        candidates = list(set(atoms[close]))
+        mcrd = metal.coord()
+        candidates.sort(lambda a1, a2: cmp(a1.coord().sqdistance(mcrd),
+                        a2.coord().sqdistance(mcrd)))
+        exclude = []
+        userIncluded = []
+        for candidate in candidates:
+            if candidate == metal:
+                continue
+            if candidate in exclude:
+                continue
+            if candidate not in userIncluded:
+                valence = (candidate.element.number - 2) % 8
+                if valence < 5 or candidate.element.number == 1:
+                    continue
+                if candidate.coord().distance(mcrd) > coordLim:
+                    break
+                if candidate not in metal.bondsMap:
+                    from chimera import angle
+                    from chimera.idatm import typeInfo
+                    angleOK = True
+                    try:
+                        cnGeom = typeInfo[candidate.idatmType].geometry
+                    except KeyError:
+                        cnGeom = 0
+                    else:
+                        if len(candidate.primaryNeighbors()) == cnGeom:
+                            # no lone pairs, no possibility of deprotonation
+                            continue
+                    angleCutoff = [0.0, 72.98, 120.0, 80.0, 72.98][cnGeom]
+                    for cnb in candidate.neighbors:
+                        if cnb == metal:
+                            continue
+                        if angle(cnb.coord(), candidate.coord(),
+                                    metal.coord()) < angleCutoff:
+                            angleOK = False
+                            break
+                    if not angleOK:
+                        continue
+            data.append(candidate)
+        return data
