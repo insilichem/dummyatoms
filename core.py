@@ -21,6 +21,7 @@ from MetalGeom import geomData
 from MetalGeom import Geometry
 from chimera.molEdit import addAtom
 from chimera import runCommand as rc
+from chimera.widgets import MetalOptionMenu
 
 
 
@@ -89,7 +90,7 @@ class Controller(object):
         self.model.temp_directory()
         #if self.model.gui.var_metal_geometry.get() == 'tetrahedral':
         print('Building dummies...')
-        self.model.Include_dummies(self.model.gui.var_inputpath.get(), metal_class)
+        self.model.include_dummies(self.model.gui.var_inputpath.get(), metal_class)
         print('Building Geometry...')
         self.model.specify_geometry(metal_class.symbol, metal_class.center,
             metal_class.dummiespositions, self.model.tempdir)
@@ -104,12 +105,12 @@ class Controller(object):
             metal_class.atomicnumber, metal_class.residue, i)
         
         print('Creating frcmod...')
-        self.model.frcmod(direcxl=self.model.tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
+        self.model.create_frcmod(direcxl=self.model.tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
             i=i, met_vwradius=metal_class.met_vwradius, dz_met_bondlenght=metal_class.dz_met_bondlenght,
             dzmass= metal_class.dzmass)
 
         print('Saving system...')
-        self.model.createSystem(direcxl=self.model.tempdir, pdb=self.model.output,
+        self.model.create_system(direcxl=self.model.tempdir, pdb=self.model.output,
             met=metal_class.symbol, i=i, output='/home/daniel/md/dummy',
             output_name = self.model.gui.var_outputname.get())
 
@@ -136,8 +137,9 @@ class Model(object):
         else:
             self.tempdir = tempfile.mkdtemp(prefix="modeller")
         print('Modeller temporary directory: '+ self.tempdir)
+        return self.tempdir
 
-    def Include_dummies(self, inputpath, metal_class):
+    def include_dummies(self, inputpath, metal_class):
 
         
         #Find metal coord
@@ -389,7 +391,7 @@ class Model(object):
 
               
 
-    def frcmod(self, direcxl,metalmass,dzmass, dz_met_bondlenght, met_vwradius, met,i):
+    def create_frcmod(self, direcxl,metalmass,dzmass, dz_met_bondlenght, met_vwradius, met,i):
         
         """
         Creates a frcmod containig all the parameters about the connectivity of our metal center. (Bonds and angles for met-met and met-Du%sy)
@@ -470,7 +472,7 @@ class Model(object):
             print("Impossible to open .frcmod file")
 
 
-    def createSystem (self, direcxl, pdb, met, i, output, output_name):
+    def create_system (self, direcxl, pdb, met, i, output, output_name):
         """
         
         Creates a leaprc file which is gonna create the prmtop and incrd files to run a MD simulation. Before that we give the option of adding a water box and some extra libraries.
