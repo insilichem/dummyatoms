@@ -15,6 +15,8 @@ import tempfile
 import shutil
 # Chimera stuff
 import chimera
+from chimera import replyobj, UserError
+from chimera.selection import currentAtoms
 from MetalGeom import gui
 from MetalGeom import geomData
 from MetalGeom import Geometry
@@ -139,12 +141,12 @@ class Model(object):
         model = chimera.openModels.open(inputpath)[0]
         dummies=[]
         for atom in model.atoms:
-            if str(atom.name.lower()) == self.gui.var_metal_symbol.get().lower():
+            if str(atom.name.lower()) == self.gui.var_metal_symbol.get().lower() and atom.element.isMetal:
                 try:
                     metal = atom
                     coord = metal.coord()
                 except UnboundLocalError:
-                    raise('Atom name should be equal to %s. Be careful with your odb or your Metal Symbol choice.)' % (self.gui.var_metal_symbol.get().lower()))
+                    raise('Atom name should be equal to %s. Be careful with your db or your Metal Symbol choice.)' % (self.gui.var_metal_symbol.get().lower()))
 
 
         #Find dummies coord
@@ -152,12 +154,14 @@ class Model(object):
             geom = Geometry.Geometry('tetrahedral')
         elif self.gui.var_metal_geometry.get() == 'octahedral':
             geom = Geometry.Geometry('octahedron')
-        sesion = metal_class.sesion
+        #sesion = metal_class.sesion
         #sesion   = gui.MetalsDialog()
         #sesion._toplevel.state('withdrawn')
-        ligands=sesion.coordinationTable.data
-        metal = sesion.metalsMenu.getvalue()
-        rmsd, center, vecs = gui.geomDistEval(geom, metal, ligands)
+        #ligands=sesion.coordinationTable.data
+        #metal = sesion.metalsMenu.getvalue()
+        #rmsd, center, vecs = gui.geomDistEval(geom, metal, ligands)
+        ligands=search_ligands(metal)
+        rmsd, self.center, vecs = gui.geomDistEval(geom, metal, ligands)
         dummiespositions = []
         for vec in vecs:
             vec.length = self.gui.var_dz_met_bondlenght.get()
@@ -185,11 +189,11 @@ class Model(object):
                                            dummiespositions[i][1],
                                            dummiespositions[i][2])
 
-                dummies.append(addAtom(dummy_name, dummy_element, res, dummy_coord))
-                model.newBond(metal,dummies[i])
+                dummy = addAtom(dummy_name, dummy_element, res, dummy_coord)
+                model.newBond(metal, dummy)
 
-            ligands=[] # initialize ligands variable to avoid problems inside addLigands()
-            sesion.addLigands(dummies)
+            #ligands=[] # initialize ligands variable to avoid problems inside addLigands()
+            #sesion.addLigands(dummies)
 
         elif self.gui.var_metal_geometry.get() == 'octahedral':
 
@@ -201,12 +205,12 @@ class Model(object):
                                            dummiespositions[i][1],
                                            dummiespositions[i][2])
 
-                dummies.append(addAtom(dummy_name, dummy_element, res, dummy_coord))
+                metal.molecule.addAtom(dummy_name, dummy_element, res, dummy_coord)
 
-            ligands=[] # initialize ligands variable to avoid problems inside addLigands()
-            sesion.addLigands(dummies)
+            #ligands=[] # initialize ligands variable to avoid problems inside addLigands()
+            #sesion.addLigands(dummies)
             
-        metal_class.sesion.Close()
+        #metal_class.sesion.Close()
 
         # Saving model
         OutputPath = self.gui.var_outputpath.get()
@@ -561,13 +565,14 @@ class Atom(Model):
         self.search_for_orientation(self.model.gui.var_inputpath.get())
 
     
-    def Search_for_AtomCoord(self):
+    def Search_for_metal(self):
         chimera.openModels.closeAllModels()
         sys=chimera.openModels.open(self.model.gui.var_inputpath.get())[0] 
         for atom in sys.atoms:
             if str(atom.name.lower()) == self.symbol.lower():
-                if atom.element.isMetal():
-                	return atom
+                if atom.element.isMetal:
+                    return atom
+
 
     def search_for_orientation(self, inputpath):
         for model in chimera.openModels.list():
@@ -577,10 +582,10 @@ class Atom(Model):
             geom = Geometry.Geometry('tetrahedral')
         elif self.model.gui.var_metal_geometry.get() == 'octahedral':
             geom = Geometry.Geometry('octahedron')
-        self.sesion = gui.MetalsDialog()
-        self.sesion._toplevel.state('withdrawn')
-        metal = self.Search_for_AtomCoord
-        ligands=self.sesion.coordinationTable.data 
+        #self.sesion = gui.MetalsDialog()
+        #self.sesion._toplevel.state('withdrawn')
+        metal = self.Search_for_metal()
+        ligands=search_ligands(metal)
         rmsd, self.center, vecs = gui.geomDistEval(geom, metal, ligands)
         self.dummiespositions = []
         for vec in vecs:
@@ -589,3 +594,70 @@ class Atom(Model):
             self.dummiespositions.append(dummyposition)
         model.destroy()
         return self.dummiespositions
+
+def search_ligands(metal):
+    data = []
+    coordLim=4.0
+    from numpy import array
+    atoms = array(metal.molecule.atoms)
+    print(atoms)
+    from _multiscale import get_atom_coordinates as gac
+    from _closepoints import find_close_points, BOXES_METHOD
+    ignore, close = find_close_points(BOXES_METHOD,
+        gac(array([metal])), gac(atoms), coordLim)
+    candidates = list(set(atoms[close]))
+    mcrd = metal.coord()
+    candidates.sort(lambda a1, a2: cmp(a1.coord().sqdistance(mcrd),
+                    a2.coord().sqdistance(mcrd)))
+    exclude = []
+    userIncluded = []
+    for candidate in candidates:
+        if candidate == metal:
+            continue
+        if candidate in exclude:
+            continue
+        if candidate not in userIncluded:
+            valence = (candidate.element.number - 2) % 8
+            if valence < 5 or candidate.element.number == 1:
+                continue
+            if candidate.coord().distance(mcrd) > coordLim:
+                break
+            if candidate not in metal.bondsMap:
+                from chimera import angle
+                from chimera.idatm import typeInfo
+                angleOK = True
+                try:
+                    cnGeom = typeInfo[candidate.idatmType].geometry
+                except KeyError:
+                    cnGeom = 0
+                else:
+                    if len(candidate.primaryNeighbors()) == cnGeom:
+                        # no lone pairs, no possibility of deprotonation
+                        continue
+                angleCutoff = [0.0, 72.98, 120.0, 80.0, 72.98][cnGeom]
+                for cnb in candidate.neighbors:
+                    if cnb == metal:
+                        continue
+                    if angle(cnb.coord(), candidate.coord(),
+                                metal.coord()) < angleCutoff:
+                        angleOK = False
+                        break
+                if not angleOK:
+                    continue
+        data.append(candidate)
+    return data
+
+def addLigands(metal, newLigands=None):
+    from chimera.selection import currentAtoms
+    if newLigands == None:
+        newLigands = set(currentAtoms())
+        if not newLigands:
+            raise UserError("No atoms selected")
+    else:
+        newLigands = set(newLigands)
+    for nl in newLigands:
+        if nl.molecule != metal.molecule:
+            raise UserError("Ligating atoms must be in same model as metal")
+    include, exclude = [], []
+    include.update(newLigands)
+    exclude.difference_update(newLigands)
