@@ -130,7 +130,11 @@ class Model(object):
         self.gui = gui
 
     def temp_directory(self):
-        self.tempdir = tempfile.mkdtemp(prefix="modeller")
+        if os.path.isdir("dev/shm"):
+            os.makedirs("dev/shm/temp")
+            self.tempdir = "dev/shm/temp"
+        else:
+            self.tempdir = tempfile.mkdtemp(prefix="modeller")
         print('Modeller temporary directory: '+ self.tempdir)
 
     def Include_dummies(self, inputpath, metal_class):
@@ -527,6 +531,7 @@ class Model(object):
         print('Delating temporary directory')
         if os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir)
+
 
 
 
