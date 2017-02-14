@@ -15,6 +15,7 @@ import hashlib
 # Chimera stuff
 import chimera
 from chimera.baseDialog import ModelessDialog
+from chimera.widgets import MetalOptionMenu
 # Additional 3rd parties
 from CGLtk.Table import SortableTable
 
@@ -177,6 +178,7 @@ class DummyDialog(ModelessDialog):
         self.var_dz_mass.set(3)
         self.var_dz_met_bondlenght.set(0.9)
         self.var_metal_geometry.set('tetrahedral')
+        self.metals = []
 
         # Fire up
         ModelessDialog.__init__(self)
@@ -216,7 +218,8 @@ class DummyDialog(ModelessDialog):
                   ('ui_table_frame', 'Geometries Table')]
         for frame, description in frames:
             setattr(self, frame, tk.LabelFrame(self.canvas, text=description))
-
+        #Fill Canvas
+        self.ui_metals_menu = MetalOptionMenu(self.canvas)
         # Fill MetalCenterFrame
         self.ui_metalsymbol = ttk.Combobox(
             self.canvas, textvariable=self.var_metal_symbol)
@@ -278,15 +281,7 @@ class DummyDialog(ModelessDialog):
 
         # Table
         gt = self.ui_geometrytable = SortableTable(self.canvas)
- 
-
-        gt.grid(row=1, rowspan=2, column=0, columnspan=3, sticky="nsew")
-
-        gt.addColumn("Geometry", str, headerPadX=60)
-        gt.addColumn("Coord. Number", 'coordinationNumber', format="%d", headerPadX=70)
-        rmsd = gt.addColumn("Distance RMSD", self.var_rmsd,
-            format="%.3f", font="TkFixedFont", headerPadX=70)
-        gt.addColumn("Similar Geometries",str, headerPadX=80)
+        gt.addColumn("Ligands", str, headerPadX=60)
         
         """
         #Filling table at the end
@@ -305,13 +300,28 @@ class DummyDialog(ModelessDialog):
         #gt.sortBy(rmsd)
 
         # Grid Frames
-        grid_allframes = [[self.ui_metalcenter_frame, self.ui_systemparam_frame]]
-        self.auto_grid(self.canvas, grid_allframes)
-        self.ui_table_frame.grid(
-            row=len(frames), columnspan=2, sticky='ew', padx=5, pady=5)
-        
+        #grid_allframes = [[(self.ui_metalcenter_frame, self.ui_table_frame)],
+                          #[self.ui_systemparam_frame]]
+        #self.auto_grid(self.canvas, grid_allframes)
+        #self.ui_table_frame.grid(row=len(frames), columnspan=2, sticky='ew', padx=5, pady=5)
+        self.metals = self._search_metals()
+        self.ui_metals_menu.setvalue(self.metals)
+        self.ui_metals_menu.grid(row=0, column=0, columnspan=2)
+        self.ui_metalcenter_frame.grid(row=1, column=0)
+        self.ui_table_frame.grid(row=1,column=1)
+        self.ui_systemparam_frame.grid(row=2, column=0, columnspan=2)
 
-       
+    def _search_metals(self):
+        self.metals = []
+        try:
+            model = chimera.openModels.list()[0]
+        except IndexError:
+            return("Open a model")
+        atoms = model.atoms
+        for atom in atoms:
+            if atom.isMetal:
+                self.metals.append(atom)
+        return self.metals   
 
 
 
