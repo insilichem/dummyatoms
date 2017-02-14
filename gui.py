@@ -304,25 +304,12 @@ class DummyDialog(ModelessDialog):
                           #[self.ui_systemparam_frame]]
         #self.auto_grid(self.canvas, grid_allframes)
         #self.ui_table_frame.grid(row=len(frames), columnspan=2, sticky='ew', padx=5, pady=5)
-        self.metals = self._search_metals()
-        self.ui_metals_menu.setvalue(self.metals)
+        #self.metals = self._search_metals()
+        #self.ui_metals_menu.setvalue(self.metals)
         self.ui_metals_menu.grid(row=0, column=0, columnspan=2)
         self.ui_metalcenter_frame.grid(row=1, column=0)
         self.ui_table_frame.grid(row=1,column=1)
         self.ui_systemparam_frame.grid(row=2, column=0, columnspan=2)
-
-    def _search_metals(self):
-        self.metals = []
-        try:
-            model = chimera.openModels.list()[0]
-        except IndexError:
-            return("Open a model")
-        atoms = model.atoms
-        for atom in atoms:
-            if atom.isMetal:
-                self.metals.append(atom)
-        return self.metals   
-
 
 
     def _add_files(self):

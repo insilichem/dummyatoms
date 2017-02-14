@@ -47,79 +47,79 @@ class Controller(object):
         self.gui.buttonWidgets['Run'].configure(command=self.run)
 
     def run(self):
-        i=1
-        metals = self.gui.ui_metals_menu.itemMap.values()
-        for metal in metals:
-        	
+        metal_menu = self.gui.ui_metals_menu
+        self.inputpath = metal_menu.getvalue().molecule.openedAs[0]
         
-        # Create Metal Center Atom
-        if self.model.gui.var_metal_symbol.get().lower() == 'zn':
-            Zinc = Atom(model=self.model, symbol='Zn', atomicnumber=30, mass=65.38, residue='ZNB')
-            metal_class = Zinc
-        elif self.model.gui.var_metal_symbol.get().lower() == 'fe':
-            Iron = Atom(model=self.model, symbol='Fe', atomicnumber=26, mass=55.845 , residue='ZNB')
-            metal_class = Iron
-        elif self.model.gui.var_metal_symbol.get().lower() == 'cd':
-            Cadmium = Atom(model=self.model, symbol='CD', atomicnumber=48, mass=112.411, resiude='ZNB')
-            metal_class = Cadmium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'cu':
-            Copper = Atom(model=self.model, symbol='CU', atomicnumber=29, mass=63.546, resiude='ZNB')
-            metal_class = Copper
-        elif self.model.gui.var_metal_symbol.get().lower() == 'co':
-            Cobalt = Atom(model=self.model, symbol='CO', atomicnumber=27, mass=58.933, resiude='ZNB')
-            metal_class = Cobalt
-        elif self.model.gui.var_metal_symbol.get().lower() == 'pt':
-            Platinum = Atom(model=self.model, symbol='PT', atomicnumber=78, mass=195.084, resiude='ZNB')
-            metal_class = Platinum
-        elif self.model.gui.var_metal_symbol.get().lower() == 'pd':
-            Palladium = Atom(model=self.model, symbol='PD', atomicnumber=46, mass=106.42, resiude='ZNB')
-            metal_class = Palladium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'mg':
-            Magnesium = Atom(model=self.model, symbol='MG', atomicnumber=12, mass=24.305, resiude='ZNB')
-            metal_class = Magnesium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'v':
-            Vanadium = Atom(model=self.model, symbol='V', atomicnumber=23, mass=50.9415, resiude='ZNB')
-            metal_class = Vanadium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'cr':
-            Chromium = Atom(model=self.model, symbol='CR', atomicnumber=24, mass=51.996, resiude='ZNB')
-            metal_class = Chromium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'mn':
-            Manganese = Atom(model=self.model, symbol='MN', atomicnumber=25, mass=54.938, resiude='ZNB')
-            metal_class = Manganese
-
-       
-
         print('Creating tmp directory...')
         self.model.temp_directory()
-        #if self.model.gui.var_metal_geometry.get() == 'tetrahedral':
-        print('Building dummies...')
-        self.model.include_dummies(self.model.gui.var_inputpath.get(), metal_class)
-        print('Building Geometry...')
-        self.model.specify_geometry(metal_class.symbol, metal_class.center,
-            metal_class.dummiespositions, self.model.tempdir)
-        #elif self.model.gui.var_metal_geometry.get() == 'octahedral':
-            #self.model.specify_geometry(Zinc.symbol, Zinc.AtomCoord[0], Zinc.AtomCoord[1], Zinc.AtomCoord[2], '/home/daniel/Baixades/amber14')
-        print('Creating library')
-        self.model.creatlib(self.model.tempdir, metal_class.residue,
-            i, self.model.gui.var_outputpath.get(), self.model.gui.var_outputname.get())
-        
-        print('Adding charges...')
-        self.model.charge(self.model.tempdir, metal_class.charge, metal_class.symbol,
-            metal_class.atomicnumber, metal_class.residue, i)
-        
-        print('Creating frcmod...')
-        self.model.create_frcmod(direcxl=self.model.tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
-            i=i, met_vwradius=metal_class.met_vwradius, dz_met_bondlenght=metal_class.dz_met_bondlenght,
-            dzmass= metal_class.dzmass)
+   
+        metals = metal_menu.itemMap.values()
+        i=1
+        for metal in metals:        
+        # Create Metal Center Atom
+	        if str(metal.element.name).lower() == 'zn':
+	            Zinc = Atom(model=self.model, symbol='Zn', atomicnumber=30, mass=65.38, residue='ZNB')
+	            metal_class = Zinc
+	        elif str(metal.element.name).lower() == 'fe':
+	            Iron = Atom(model=self.model, symbol='Fe', atomicnumber=26, mass=55.845 , residue='ZNB')
+	            metal_class = Iron
+	        elif str(metal.element.name).lower() == 'cd':
+	            Cadmium = Atom(model=self.model, symbol='CD', atomicnumber=48, mass=112.411, resiude='ZNB')
+	            metal_class = Cadmium
+	        elif str(metal.element.name).lower() == 'cu':
+	            Copper = Atom(model=self.model, symbol='CU', atomicnumber=29, mass=63.546, resiude='ZNB')
+	            metal_class = Copper
+	        elif str(metal.element.name).lower() == 'co':
+	            Cobalt = Atom(model=self.model, symbol='CO', atomicnumber=27, mass=58.933, resiude='ZNB')
+	            metal_class = Cobalt
+	        elif str(metal.element.name).lower() == 'pt':
+	            Platinum = Atom(model=self.model, symbol='PT', atomicnumber=78, mass=195.084, resiude='ZNB')
+	            metal_class = Platinum
+	        elif str(metal.element.name).lower() == 'pd':
+	            Palladium = Atom(model=self.model, symbol='PD', atomicnumber=46, mass=106.42, resiude='ZNB')
+	            metal_class = Palladium
+	        elif str(metal.element.name).lower() == 'mg':
+	            Magnesium = Atom(model=self.model, symbol='MG', atomicnumber=12, mass=24.305, resiude='ZNB')
+	            metal_class = Magnesium
+	        elif str(metal.element.name).lower() == 'v':
+	            Vanadium = Atom(model=self.model, symbol='V', atomicnumber=23, mass=50.9415, resiude='ZNB')
+	            metal_class = Vanadium
+	        elif str(metal.element.name).lower() == 'cr':
+	            Chromium = Atom(model=self.model, symbol='CR', atomicnumber=24, mass=51.996, resiude='ZNB')
+	            metal_class = Chromium
+	        elif str(metal.element.name).lower() == 'mn':
+	            Manganese = Atom(model=self.model, symbol='MN', atomicnumber=25, mass=54.938, resiude='ZNB')
+	            metal_class = Manganese
+	        else:
+	        	continue
+
+	        print('Building dummies...')
+	        self.inputpath = self.model.include_dummies(self.inputpath, metal_class)
+	        print('Building Geometry...')
+	        self.model.specify_geometry(metal_class.symbol, metal_class.center,
+	            metal_class.dummiespositions, self.model.tempdir)
+	        #elif self.model.gui.var_metal_geometry.get() == 'octahedral':
+	            #self.model.specify_geometry(Zinc.symbol, Zinc.AtomCoord[0], Zinc.AtomCoord[1], Zinc.AtomCoord[2], '/home/daniel/Baixades/amber14')
+	        print('Creating library')
+	        self.model.creatlib(self.model.tempdir, metal_class.residue,
+	            i, self.model.gui.var_outputpath.get(), self.model.gui.var_outputname.get())
+	        
+	        print('Adding charges...')
+	        self.model.charge(self.model.tempdir, metal_class.charge, metal_class.symbol,
+	            metal_class.atomicnumber, metal_class.residue, i)
+	        
+	        print('Creating frcmod...')
+	        self.model.create_frcmod(direcxl=self.model.tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
+	            i=i, met_vwradius=metal_class.met_vwradius, dz_met_bondlenght=metal_class.dz_met_bondlenght,
+	            dzmass= metal_class.dzmass)
+
+	        print('Process Finished Deleting temp Files')
+	        i+=1
 
         print('Saving system...')
-        self.model.create_system(direcxl=self.model.tempdir, pdb=self.model.output,
-            met=metal_class.symbol, i=i, output='/home/daniel/md/dummy',
+        self.model.create_system(direcxl=self.model.tempdir, pdb=self.inputpath,
+            met=metal_class.symbol, i=i, output=self.gui.var_outputpath.get(),
             output_name = self.model.gui.var_outputname.get())
-
-        print('Process Finished Deleting temp Files')
-
-        i+=1
 
 class Model(object):
 
@@ -132,7 +132,8 @@ class Model(object):
 
     def __init__(self, gui, *args, **kwargs):
         self.gui = gui
-
+        self.lib = []
+        self.frcmod = []
     def temp_directory(self):
         if os.path.isdir("dev/shm"):
             os.makedirs("dev/shm/temp")
@@ -211,6 +212,7 @@ class Model(object):
         Filename = self.gui.var_outputname.get() + '.pdb'
         self.output = os.path.join(self.tempdir, Filename)
         rc('write 0 ' + self.output)
+        return self.output
         
 
 
@@ -270,6 +272,7 @@ class Model(object):
         
         try: 
             filename = "%s/leaprc.metal"%direcxl
+            lib_filename = "%s/met%d.lib"%(direcxl,i)
             with open(filename, 'w') as f:
                 f.write("logFile leap.log\n")
                 f.write("source %s/dat/leap/cmd/oldff/leaprc.ff99SB\n"%direcxl)
@@ -277,7 +280,7 @@ class Model(object):
                 f.write("saveoff %s %s/met%d.lib\n"%(RES,direcxl,i))
                 f.write("quit")
         except IOError:
-            print("Impossible to open leaprc file")
+            raise UserError("Impossible to open leaprc file")
 
  
            
@@ -288,6 +291,7 @@ class Model(object):
         with open(log_file, 'w') as log:
             process = subprocess.Popen(command, stdout=log, stderr=log, shell=True)
             process.wait()
+        self.lib.append(lib_filename)
 
     def charge(self, direcxl,q,met,atm,RES,i):
 
@@ -388,7 +392,7 @@ class Model(object):
                         f.write(linea)
 
             except IOError:
-                print("Impossible to open .lib file")
+                raise UserError("Impossible to open .lib file")
 
 
 
@@ -411,8 +415,8 @@ class Model(object):
         """
 
         try:
-            filename = "%s/zinc%d.frcmod"%(direcxl,i)
-            with open(filename,"w") as f:
+            frcmod_filename = "%s/zinc%d.frcmod"%(direcxl,i)
+            with open(frcmod_filename,"w") as f:
 
                 if self.gui.var_metal_geometry.get() == 'tetrahedral':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
@@ -473,6 +477,8 @@ class Model(object):
 
         except IOError:
             print("Impossible to open .frcmod file")
+
+        self.frcmod.append(frcmod_filename)
 
 
     def create_system (self, direcxl, pdb, met, i, output, output_name):
