@@ -4,7 +4,6 @@
 """
 Still need to do:
     -ambermini #how to do
-    -work with jaime's metal--> tomorrow!
 """
 
 from __future__ import print_function, division 
@@ -27,7 +26,7 @@ from chimera import runCommand as rc
 
 """
 This module contains the business logic of MetaDummy.
-A GUI to apply cathionc dummy atom method to systems
+A GUI to apply cationc dummy atom method to systems
 with one or more metal centers.
 """
 
@@ -148,22 +147,8 @@ class Model(object):
                 except UnboundLocalError:
                     raise('Atom name should be equal to %s. Be careful with your db or your Metal Symbol choice.)' % (self.gui.var_metal_symbol.get().lower()))
 
-
-        #Find dummies coord
-        if self.gui.var_metal_geometry.get() == 'tetrahedral':
-            geom = Geometry.Geometry('tetrahedral')
-        elif self.gui.var_metal_geometry.get() == 'octahedral':
-            geom = Geometry.Geometry('octahedron')
-        #sesion = metal_class.sesion
-        #sesion   = gui.MetalsDialog()
-        #sesion._toplevel.state('withdrawn')
-        #ligands=sesion.coordinationTable.data
-        #metal = sesion.metalsMenu.getvalue()
-        #rmsd, center, vecs = gui.geomDistEval(geom, metal, ligands)
-        ligands=search_ligands(metal)
-        rmsd, self.center, vecs = gui.geomDistEval(geom, metal, ligands)
         dummiespositions = []
-        for vec in vecs:
+        for vec in metal_class.vecs:
             vec.length = self.gui.var_dz_met_bondlenght.get()
             metal_center=chimera.Vector(coord[0],coord[1],coord[2])
             dummyposition =  metal_center + vec
@@ -573,9 +558,9 @@ class Atom(Model):
             geom = Geometry.Geometry('octahedron')
         metal = self.search_for_metal()
         ligands=self.search_for_ligands(metal)
-        rmsd, self.center, vecs = gui.geomDistEval(geom, metal, ligands)
+        rmsd, self.center, self.vecs = gui.geomDistEval(geom, metal, ligands)
         self.dummiespositions = []
-        for vec in vecs:
+        for vec in self.vecs:
             vec.length = self.dz_met_bondlenght
             dummyposition =  self.center + vec
             self.dummiespositions.append(dummyposition)
