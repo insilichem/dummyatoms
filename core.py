@@ -48,6 +48,9 @@ class Controller(object):
 
     def run(self):
         i=1
+        metals = self.gui.ui_metals_menu.itemMap.values()
+        for metal in metals:
+        	
         
         # Create Metal Center Atom
         if self.model.gui.var_metal_symbol.get().lower() == 'zn':
