@@ -91,13 +91,11 @@ def Apply2(var_password, ui_password):
     except Exception:
         sys.exit('There was a problem reading the file!')
     password_user_encr = hashlib.sha224(var_password.encode()).hexdigest()
-    print(password_user_encr)
     if  (password_user_encr) == (password):
        _show_dummy_UI()
        ui_password.destroy()
     else:
         print('Wrong Username or Password. Try again.')
-        print(str(password))
 
 def _show_dummy_UI(callback=None, *args, **kwargs):
     if chimera.nogui:
@@ -312,8 +310,6 @@ class DummyDialog(ModelessDialog):
         setattr(self, metal.name, {})
         next_metal = getattr(self, metal.name)
         next_metal["title"] = metal.name
-        print(self.previous_metal)
-        print(self.metals)
         if self.previous_metal:
             #save previous
             previous_metal = self.previous_metal
@@ -329,7 +325,6 @@ class DummyDialog(ModelessDialog):
                         previous_metal["dz_met_bond"] = self.var_dz_met_bondlenght.get()
                 
             elif not any(dic["title"] == previous_metal["title"] for dic in self.metals):
-                print("b")
                 previous_metal["geom"] = self.var_metal_geometry.get()
                 previous_metal["charge"] =  self.var_metal_charge.get()
                 previous_metal["vw_radius"] = self.var_vw_radius.get()
