@@ -21,6 +21,7 @@ from MetalGeom import geomData
 from MetalGeom import Geometry
 from chimera.molEdit import addAtom
 from chimera import runCommand as rc
+from chimera.widgets import MetalOptionMenu
 
 
 
@@ -46,76 +47,80 @@ class Controller(object):
         self.gui.buttonWidgets['Run'].configure(command=self.run)
 
     def run(self):
-        i=1
+        metal_menu = self.gui.ui_metals_menu
+        self.inputpath = metal_menu.getvalue().molecule.openedAs[0]
         
-        # Create Metal Center Atom
-        if self.model.gui.var_metal_symbol.get().lower() == 'zn':
-            Zinc = Atom(model=self.model, symbol='Zn', atomicnumber=30, mass=65.38, residue='ZNB')
-            metal_class = Zinc
-        elif self.model.gui.var_metal_symbol.get().lower() == 'fe':
-            Iron = Atom(model=self.model, symbol='Fe', atomicnumber=26, mass=55.845 , residue='ZNB')
-            metal_class = Iron
-        elif self.model.gui.var_metal_symbol.get().lower() == 'cd':
-            Cadmium = Atom(model=self.model, symbol='CD', atomicnumber=48, mass=112.411, resiude='ZNB')
-            metal_class = Cadmium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'cu':
-            Copper = Atom(model=self.model, symbol='CU', atomicnumber=29, mass=63.546, resiude='ZNB')
-            metal_class = Copper
-        elif self.model.gui.var_metal_symbol.get().lower() == 'co':
-            Cobalt = Atom(model=self.model, symbol='CO', atomicnumber=27, mass=58.933, resiude='ZNB')
-            metal_class = Cobalt
-        elif self.model.gui.var_metal_symbol.get().lower() == 'pt':
-            Platinum = Atom(model=self.model, symbol='PT', atomicnumber=78, mass=195.084, resiude='ZNB')
-            metal_class = Platinum
-        elif self.model.gui.var_metal_symbol.get().lower() == 'pd':
-            Palladium = Atom(model=self.model, symbol='PD', atomicnumber=46, mass=106.42, resiude='ZNB')
-            metal_class = Palladium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'mg':
-            Magnesium = Atom(model=self.model, symbol='MG', atomicnumber=12, mass=24.305, resiude='ZNB')
-            metal_class = Magnesium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'v':
-            Vanadium = Atom(model=self.model, symbol='V', atomicnumber=23, mass=50.9415, resiude='ZNB')
-            metal_class = Vanadium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'cr':
-            Chromium = Atom(model=self.model, symbol='CR', atomicnumber=24, mass=51.996, resiude='ZNB')
-            metal_class = Chromium
-        elif self.model.gui.var_metal_symbol.get().lower() == 'mn':
-            Manganese = Atom(model=self.model, symbol='MN', atomicnumber=25, mass=54.938, resiude='ZNB')
-            metal_class = Manganese
-
-       
-
         print('Creating tmp directory...')
         self.model.temp_directory()
-        #if self.model.gui.var_metal_geometry.get() == 'tetrahedral':
-        print('Building dummies...')
-        self.model.Include_dummies(self.model.gui.var_inputpath.get(), metal_class)
-        print('Building Geometry...')
-        self.model.specify_geometry(metal_class.symbol, metal_class.center,
-            metal_class.dummiespositions, self.model.tempdir)
-        #elif self.model.gui.var_metal_geometry.get() == 'octahedral':
-            #self.model.specify_geometry(Zinc.symbol, Zinc.AtomCoord[0], Zinc.AtomCoord[1], Zinc.AtomCoord[2], '/home/daniel/Baixades/amber14')
-        print('Creating library')
-        self.model.creatlib(self.model.tempdir, metal_class.residue,
-            i, self.model.gui.var_outputpath.get(), self.model.gui.var_outputname.get())
-        
-        print('Adding charges...')
-        self.model.charge(self.model.tempdir, metal_class.charge, metal_class.symbol,
-            metal_class.atomicnumber, metal_class.residue, i)
-        
-        print('Creating frcmod...')
-        self.model.frcmod(direcxl=self.model.tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
-            i=i, met_vwradius=metal_class.met_vwradius, dz_met_bondlenght=metal_class.dz_met_bondlenght,
-            dzmass= metal_class.dzmass)
+   
+        metals = metal_menu.itemMap.values()
+        i=1
+        for metal in metals:
+            print(metal)
+            # Create Metal Center Atom
+            if str(metal.element.name).lower() == 'zn':
+                Zinc = Atom(model=self.model, metal = metal, symbol='Zn', atomicnumber=30, mass=65.38, residue='ZNB')
+                metal_class = Zinc
+            elif str(metal.element.name).lower() == 'fe':
+                Iron = Atom(model=self.model, symbol='Fe', atomicnumber=26, mass=55.845 , residue='ZNB')
+                metal_class = Iron
+            elif str(metal.element.name).lower() == 'cd':
+                Cadmium = Atom(model=self.model, metal = metal, symbol='CD', atomicnumber=48, mass=112.411, residue='ZNB')
+                metal_class = Cadmium
+            elif str(metal.element.name).lower() == 'cu':
+                Copper = Atom(model=self.model,  metal = metal, symbol='CU', atomicnumber=29, mass=63.546, residue='ZNB')
+                metal_class = Copper
+            elif str(metal.element.name).lower() == 'co':
+                Cobalt = Atom(model=self.model, metal = metal, symbol='CO', atomicnumber=27, mass=58.933, residue='ZNB')
+                metal_class = Cobalt
+            elif str(metal.element.name).lower() == 'pt':
+                Platinum = Atom(model=self.model, metal = metal, symbol='PT', atomicnumber=78, mass=195.084, residue='ZNB')
+                metal_class = Platinum
+            elif str(metal.element.name).lower() == 'pd':
+                Palladium = Atom(model=self.model, metal = metal, symbol='PD', atomicnumber=46, mass=106.42, residue='ZNB')
+                metal_class = Palladium
+            elif str(metal.element.name).lower() == 'mg':
+                Magnesium = Atom(model=self.model,metal = metal, symbol='MG', atomicnumber=12, mass=24.305, residue='ZNB')
+                metal_class = Magnesium
+            elif str(metal.element.name).lower() == 'v':
+                Vanadium = Atom(model=self.model, metal = metal, symbol='V', atomicnumber=23, mass=50.9415, residue='ZNB')
+                metal_class = Vanadium
+            elif str(metal.element.name).lower() == 'cr':
+                Chromium = Atom(model=self.model, metal = metal, symbol='CR', atomicnumber=24, mass=51.996, residue='ZNB')
+                metal_class = Chromium
+            elif str(metal.element.name).lower() == 'mn':
+                Manganese = Atom(model=self.model, metal = metal, symbol='MN', atomicnumber=25, mass=54.938, residue='ZNB')
+                metal_class = Manganese
+            else:
+                continue
+
+            print('Building dummies...')
+            self.model.include_dummies(metal_class)
+            print('Building Geometry...')
+            self.model.specify_geometry(metal_class.symbol, metal_class.center,
+                metal_class.dummiespositions, self.model.tempdir)
+            #elif self.model.gui.var_metal_geometry.get() == 'octahedral':
+                #self.model.specify_geometry(Zinc.symbol, Zinc.AtomCoord[0], Zinc.AtomCoord[1], Zinc.AtomCoord[2], '/home/daniel/Baixades/amber14')
+            print('Creating library')
+            self.model.creatlib(self.model.tempdir, metal_class.residue,
+                i, self.model.gui.var_outputpath.get(), self.model.gui.var_outputname.get())
+            
+            print('Adding charges...')
+            self.model.charge(self.model.tempdir, metal_class.charge, metal_class.symbol,
+                metal_class.atomicnumber, metal_class.residue, i)
+            
+            print('Creating frcmod...')
+            self.model.create_frcmod(direcxl=self.model.tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
+                i=i, met_vwradius=metal_class.met_vwradius, dz_met_bondlenght=metal_class.dz_met_bondlenght,
+                dzmass= metal_class.dzmass)
+
+            print('Metal Center Finished Deleting temp Files')
+            i+=1
 
         print('Saving system...')
-        self.model.createSystem(direcxl=self.model.tempdir, pdb=self.model.output,
-            met=metal_class.symbol, i=i, output='/home/daniel/md/dummy',
+        self.model.create_system(direcxl=self.model.tempdir,
+            met=metal_class.symbol, i=i, output=self.gui.var_outputpath.get(),
             output_name = self.model.gui.var_outputname.get())
-
-        print('Process Finished Deleting temp Files')
-
-        i+=1
 
 class Model(object):
 
@@ -128,30 +133,27 @@ class Model(object):
 
     def __init__(self, gui, *args, **kwargs):
         self.gui = gui
-
+        self.lib = []
+        self.frcmod = []
+        self.tempfiles = []
     def temp_directory(self):
-        if os.path.isdir("dev/shm"):
-            os.makedirs("dev/shm/temp")
-            self.tempdir = "dev/shm/temp"
+        if os.path.isdir("/dev/shm/"):
+            ram_dir = "/dev/shm/temp/"
+            os.makedirs(ram_dir)
+            self.tempdir = ram_dir
         else:
-            self.tempdir = tempfile.mkdtemp(prefix="modeller")
-        print('Modeller temporary directory: '+ self.tempdir)
+            self.tempdir = tempfile.mkdtemp(prefix="Dummy")
+        print('Dummy temporary directory: '+ self.tempdir)
+        return self.tempdir
 
-    def Include_dummies(self, inputpath, metal_class):
+    def include_dummies(self, metal_class):
 
         
         #Find metal coord
-        model = chimera.openModels.open(inputpath)[0]
-        dummies=[]
-        for atom in model.atoms:
-            if str(atom.name.lower()) == self.gui.var_metal_symbol.get().lower() and atom.element.isMetal:
-                try:
-                    metal = atom
-                    coord = metal.coord()
-                except UnboundLocalError:
-                    raise('Atom name should be equal to %s. Be careful with your db or your Metal Symbol choice.)' % (self.gui.var_metal_symbol.get().lower()))
-
+        dummy_names=[]
         dummiespositions = []
+        metal = metal_class.metal    
+        coord = metal.coord()
         for vec in metal_class.vecs:
             vec.length = self.gui.var_dz_met_bondlenght.get()
             metal_center=chimera.Vector(coord[0],coord[1],coord[2])
@@ -179,7 +181,7 @@ class Model(object):
                                            dummiespositions[i][2])
 
                 dummy = addAtom(dummy_name, dummy_element, res, dummy_coord)
-                model.newBond(metal, dummy)
+                #newBond(metal, dummy)
 
             #ligands=[] # initialize ligands variable to avoid problems inside addLigands()
             #sesion.addLigands(dummies)
@@ -194,18 +196,10 @@ class Model(object):
                                            dummiespositions[i][1],
                                            dummiespositions[i][2])
 
-                metal.molecule.addAtom(dummy_name, dummy_element, res, dummy_coord)
+                addAtom(dummy_name, dummy_element, res, dummy_coord)
 
-            #ligands=[] # initialize ligands variable to avoid problems inside addLigands()
-            #sesion.addLigands(dummies)
-            
-        #metal_class.sesion.Close()
 
-        # Saving model
-        OutputPath = self.gui.var_outputpath.get()
-        Filename = self.gui.var_outputname.get() + '.pdb'
-        self.output = os.path.join(self.tempdir, Filename)
-        rc('write 0 ' + self.output)
+
         
 
 
@@ -226,7 +220,9 @@ class Model(object):
         x, y, z: int
             Position of the metal center in your original pdb (GAUDI OUTPUT)
         """
-        filename = ("%s/dummymetal.pdb" % direcxl)
+        filename = os.path.join(direcxl,"dummymetal.pdb")
+        print(filename)
+        self.tempfiles.append(filename)
         with open(filename, 'w') as f:
             if self.gui.var_metal_geometry.get() == 'tetrahedral':
         
@@ -263,26 +259,31 @@ class Model(object):
         """
 
         
-        try: 
-            filename = "%s/leaprc.metal"%direcxl
+        try:
+            pdbfile = os.path.join(direcxl,"dummymetal.pdb")
+            filename = os.path.join(direcxl,"leaprc.metal")
+            output_lib = os.path.join(direcxl,"met%d.lib"%i)
+            self.tempfiles.append(filename)
+            lib_filename = os.path.join(direcxl,"met%d.lib"%i)
             with open(filename, 'w') as f:
                 f.write("logFile leap.log\n")
                 f.write("source %s/dat/leap/cmd/oldff/leaprc.ff99SB\n"%direcxl)
-                f.write("%s= loadpdb %s/%s\n"%(RES,direcxl,"dummymetal.pdb"))
-                f.write("saveoff %s %s/met%d.lib\n"%(RES,direcxl,i))
+                f.write("%s= loadpdb %s\n"%(RES,pdbfile))
+                f.write("saveoff %s %s\n"%(RES,output_lib))
                 f.write("quit")
         except IOError:
-            print("Impossible to open leaprc file")
+            raise UserError("Impossible to open leaprc file")
 
  
            
         self.amber_path = os.environ['AMBERHOME'] =  "/home/daniel/Baixades/amber14"
-        command = "$AMBERHOME/bin/tleap -s -f %s/leaprc.metal"%direcxl
+        command = "$AMBERHOME/bin/tleap -s -f %s"%filename
                
         log_file = os.path.join(output, output_name + ".txt")
         with open(log_file, 'w') as log:
             process = subprocess.Popen(command, stdout=log, stderr=log, shell=True)
             process.wait()
+        self.lib.append(lib_filename)
 
     def charge(self, direcxl,q,met,atm,RES,i):
 
@@ -375,7 +376,7 @@ class Model(object):
 
                 file.close()
 
-                filename = "%s/met%d.lib"%(direcxl,i)
+                filename = os.path.join(direcxl,"/met%d.lib"%i)
                 with open(filename,"w") as f:
                     for linea in lineas:
                         #if linea==lineas[25]:
@@ -383,13 +384,13 @@ class Model(object):
                         f.write(linea)
 
             except IOError:
-                print("Impossible to open .lib file")
+                raise UserError("Impossible to open .lib file")
 
 
 
               
 
-    def frcmod(self, direcxl,metalmass,dzmass, dz_met_bondlenght, met_vwradius, met,i):
+    def create_frcmod(self, direcxl,metalmass,dzmass, dz_met_bondlenght, met_vwradius, met,i):
         
         """
         Creates a frcmod containig all the parameters about the connectivity of our metal center. (Bonds and angles for met-met and met-Du%sy)
@@ -406,8 +407,8 @@ class Model(object):
         """
 
         try:
-            filename = "%s/zinc%d.frcmod"%(direcxl,i)
-            with open(filename,"w") as f:
+            frcmod_filename = os.path.join(direcxl,"zinc%d.frcmod"%i)
+            with open(frcmod_filename,"w") as f:
 
                 if self.gui.var_metal_geometry.get() == 'tetrahedral':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
@@ -469,8 +470,16 @@ class Model(object):
         except IOError:
             print("Impossible to open .frcmod file")
 
+        self.frcmod.append(frcmod_filename)
 
-    def createSystem (self, direcxl, pdb, met, i, output, output_name):
+        """if os.path.exists(self.tempdir):
+            print('Delating temporary files')
+            for file in self.tempfiles:
+                os.remove(file)
+        """
+        
+
+    def create_system (self, direcxl, met, i, output, output_name):
         """
         
         Creates a leaprc file which is gonna create the prmtop and incrd files to run a MD simulation. Before that we give the option of adding a water box and some extra libraries.
@@ -485,8 +494,13 @@ class Model(object):
             Metal symbol
 
         """
+        # Saving model
+        Filename = self.gui.var_outputname.get() + '.pdb'
+        pdb = os.path.join(self.tempdir, Filename)
+        rc('write 0 ' + pdb)
+
         output_name = self.gui.var_outputname.get()
-        filename = "%s/leaprc.final"%direcxl
+        filename = os.path.join(direcxl,"leaprc.final")
         with open(filename,"w") as f:
             f.write("logFile leap.log\n")
             f.write("source /home/daniel/leaprc\n")
@@ -528,9 +542,12 @@ class Model(object):
             process.wait()
 
         print('Program Finished')
-        print('Delating temporary directory')
+        
         if os.path.exists(self.tempdir):
+            print('Cleaning Memory')
             shutil.rmtree(self.tempdir)
+        
+
 
 
 
@@ -539,7 +556,7 @@ class Model(object):
 
 class Atom(Model):
 
-    def __init__(self, model, symbol, atomicnumber, mass, residue):
+    def __init__(self, model, metal, symbol, atomicnumber, mass, residue):
         self.model = model
         self.symbol = symbol
         self.atomicnumber = atomicnumber
@@ -549,43 +566,32 @@ class Atom(Model):
         self.met_vwradius = self.model.gui.var_vw_radius.get()
         self.dzmass = self.model.gui.var_dz_mass.get()
         self.dz_met_bondlenght = self.model.gui.var_dz_met_bondlenght.get()
-        self.search_for_orientation(self.model.gui.var_inputpath.get())
+        self.metal = metal
+        self.search_for_orientation(self.metal)
 
 
 
-    def search_for_orientation(self, inputpath):
-        for model in chimera.openModels.list():
-            chimera.openModels.close(model)
-        model = chimera.openModels.open(inputpath)[0]
+    def search_for_orientation(self, metal):
         if self.model.gui.var_metal_geometry.get() == 'tetrahedral':
             geom = Geometry.Geometry('tetrahedral')
         elif self.model.gui.var_metal_geometry.get() == 'octahedral':
             geom = Geometry.Geometry('octahedron')
-        metal = self.search_for_metal()
         ligands=self.search_for_ligands(metal)
+        print(len(ligands))
         rmsd, self.center, self.vecs = gui.geomDistEval(geom, metal, ligands)
         self.dummiespositions = []
         for vec in self.vecs:
             vec.length = self.dz_met_bondlenght
             dummyposition =  self.center + vec
             self.dummiespositions.append(dummyposition)
-        model.destroy()
         return self.dummiespositions
 
-    def search_for_metal(self):
-        chimera.openModels.closeAllModels()
-        sys=chimera.openModels.open(self.model.gui.var_inputpath.get())[0] 
-        for atom in sys.atoms:
-            if str(atom.name.lower()) == self.symbol.lower():
-                if atom.element.isMetal:
-                    return atom
 
     def search_for_ligands(self, metal):
         data = []
         coordLim=4.0
         from numpy import array
         atoms = array(metal.molecule.atoms)
-        print(atoms)
         from _multiscale import get_atom_coordinates as gac
         from _closepoints import find_close_points, BOXES_METHOD
         ignore, close = find_close_points(BOXES_METHOD,
