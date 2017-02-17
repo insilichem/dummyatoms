@@ -175,12 +175,7 @@ class Model(object):
             self.charge = 2
             self.vw_radius = 3.1
             self.dz_mass = 3 
-            self.dz_met = 0.9            
-        print(self.geometry)
-        print(self.charge)
-        print(self.vw_radius)
-        print(self.dz_mass)
-        print(self.dz_met)
+            self.dz_met = 0.9
 
 
 
@@ -269,7 +264,6 @@ class Model(object):
             Position of the metal center in your original pdb (GAUDI OUTPUT)
         """
         filename = os.path.join(direcxl,"dummymetal.pdb")
-        print(filename)
         self.tempfiles.append(filename)
         with open(filename, 'w') as f:
             if self.geometry == 'tetrahedral':
