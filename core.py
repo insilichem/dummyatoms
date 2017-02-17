@@ -213,34 +213,29 @@ class Model(object):
         dummy_element = chimera.Element('DZ')
 
         if self.geometry == 'tetrahedral':
-
-            
-            dummy_names = ["D1", "D2", "D3", "D4"]
-            
+            dummy_names = ["D1", "D2", "D3", "D4"]  
             for i, dummy_name in enumerate(dummy_names): 
-
                 dummy_coord=chimera.Coord(dummiespositions[i][0],
                                            dummiespositions[i][1],
                                            dummiespositions[i][2])
-
                 dummy = addAtom(dummy_name, dummy_element, res, dummy_coord)
-                #newBond(metal, dummy)
 
-            #ligands=[] # initialize ligands variable to avoid problems inside addLigands()
-            #sesion.addLigands(dummies)
 
         elif self.geometry == 'octahedral':
-
             dummy_names = ["D1", "D5", "D2", "D3", "D6", "D4"]
-            
             for i, dummy_name in enumerate(dummy_names): 
-
                 dummy_coord=chimera.Coord(dummiespositions[i][0],
                                            dummiespositions[i][1],
                                            dummiespositions[i][2])
-
                 addAtom(dummy_name, dummy_element, res, dummy_coord)
 
+        elif self.geometry == 'square planar':
+            dummy_names = ["D1", "D2", "D3", "D4"]
+            for i, dummy_name in enumerate(dummy_names): 
+                dummy_coord=chimera.Coord(dummiespositions[i][0],
+                                           dummiespositions[i][1],
+                                           dummiespositions[i][2])
+                addAtom(dummy_name, dummy_element, res, dummy_coord)
 
 
         
@@ -283,6 +278,15 @@ class Model(object):
                 f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[5][0], dum[5][1], dum[5][2]))
                 f.write("HETATM    6  D5  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[1][0], dum[1][1], dum[1][2]))
                 f.write("HETATM    7  D6  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[4][0], dum[4][1], dum[4][2]))
+                f.write("END")
+
+            if self.geometry == 'square planar':
+        
+                f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met,metal[0], metal[1], metal[2] ,met))
+                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[0][0], dum[0][1], dum[0][2]))
+                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[1][0], dum[1][1], dum[1][2]))
+                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[2][0], dum[2][1], dum[2][2]))
+                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[3][0], dum[3][1], dum[3][2]))
                 f.write("END")
 
     def creatlib(self, direcxl, RES, i, output, output_name): # ambermini
@@ -428,6 +432,43 @@ class Model(object):
             except IOError:
                 raise UserError("Impossible to open .lib file")
 
+        if self.geometry == 'square planar':
+            lineas=[]
+            try:
+                file = open("%s/met%d.lib"%(direcxl,i),"r")
+                lineas=list(file)
+                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(met,met,atm)
+                lineas[4]=' "D1" "DX" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
+                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
+                lineas[6]=' "D3" "DY" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
+                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/4.0)
+                lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
+                lineas[10]=' "D1" "DX" 0 -1 0.0\n'
+                lineas[11]=' "D2" "DY" 0 -1 0.0\n'
+                lineas[12]=' "D3" "DY" 0 -1 0.0\n'
+                lineas[13]=' "D4" "DX" 0 -1 0.0\n'
+                lineas.insert(25,'!entry.ZNB.unit.connectivity table  int atom1x  int atom2x  int flags\n')
+                lineas.insert(26,' 1 3 1\n')
+                lineas.insert(27,' 1 2 1\n')
+                lineas.insert(28,' 1 4 1\n')
+                lineas.insert(29,' 1 5 1\n')
+                lineas.insert(30,' 1 2 1\n')
+                lineas.insert(31,' 2 3 1\n')
+                lineas.insert(32,' 3 4 1\n')
+                lineas.insert(33,' 4 5 1\n')
+                file.close()
+
+                filename = "%s/met%d.lib"%(direcxl,i)
+                with open(filename,"w") as f:
+                    for linea in lineas:
+                        
+                        #if linea==lineas[25]:
+                        #    f.write("!entry.mm.unit.connectivity table  int atom1x  int atom2x  int flags\n 1 3 1\n 1 2 1\n 1 4 1\n 1 5 1\n 2 3 1\n 2 4 1\n 2 5 1\n 3 5 1\n 3 4 1\n 4 5 1\n"%(RES))    
+                        f.write(linea)
+
+            except IOError:
+                print('Impossible to open .lib file')
+
 
 
               
@@ -461,7 +502,7 @@ class Model(object):
                     f.write("IMPROPER\n\n")
                     f.write("NONB\nDZ          0.000   0.00\n%s          %.3f   1.0E-6"%(met, met_vwradius ))
 
-                if self.geometry == 'octahedral':
+                elif self.geometry == 'octahedral':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
                     f.write("MASS\nDX  %.3f\n"%(dzmass))
                     f.write("DY  %.3f\n"%(dzmass))
@@ -505,9 +546,42 @@ class Model(object):
                     f.write("IMPR\n\n")
                     f.write("NONB\n")
                     f.write("  %s          %.3f   1.0E-6\n"%(met, met_vwradius ))
-                    f.write("  DX          0.7671  0.0125\n")
-                    f.write("  DY          0.7671  0.0125\n")
-                    f.write("  DZ          0.7671  0.0125\n\n")
+                    f.write("  DX          0.0000  0.0000\n")
+                    f.write("  DY          0.0000  0.0000\n")
+                    f.write("  DZ          0.0000  0.0000\n\n")
+                    #f.write("  DX          0.7671  0.0125\n")
+                    #f.write("  DY          0.7671  0.0125\n")
+                    #f.write("  DZ          0.7671  0.0125\n\n")
+
+                elif self.geometry == 'square planar':
+                    f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
+                    f.write("MASS\nDX  %.3f\n"%(dzmass))
+                    f.write("DY  %.3f\n"%(dzmass))
+                    f.write("%s %.2f\n\n"%(met, metalmass-dzmass*4))
+                    f.write("BOND\n")
+                    f.write("%s-DX  640      %.3f\n"%(met, dz_met_bondlenght))
+                    f.write("%s-DY  640      %.3f\n"%(met, dz_met_bondlenght))
+                    f.write("DX-DY  640      1.273\n")
+                    f.write("ANGL\n")
+                    f.write("DX-%s-DX    55.0      180.00\n"%(met))
+                    f.write("DY-%s-DY    55.0      180.00\n"%(met))
+                    f.write("DX-%s-DY    55.0      90.00\n"%(met))
+                    f.write("%s-DX-DY    55.0      45.00\n"%(met))
+                    f.write("%s-DY-DX    55.0      45.00\n"%(met))
+                    f.write("DX-DY-DX    55.0      90.00\n")
+                    f.write("DX-DZ-DX    55.0      90.00\n")
+                    f.write("DY-DX-DY    55.0      90.00\n")
+                    f.write("DIHE\n")
+                    f.write("DY-DX-%s-DX  4   0.0    0.0    1.\n"%(met)) 
+                    f.write("DX-%s-DX-DY  4   0.0    0.0    1.\n"%(met)) 
+                    f.write("DY-DX-DY-DX  4   0.0    0.0    1.\n")
+                    f.write("%s-DX-DY-DX  4   0.0    0.0    1.\n"%(met))
+                    f.write("DX-DY-DX-DY  4   0.0    0.0    1.\n\n")
+                    f.write("IMPR\n\n")
+                    f.write("NONB\n")
+                    f.write("  %s          %.3f   1.0E-6\n"%(met, met_vwradius ))
+                    f.write("  DX          0.0000  0.000\n")
+                    f.write("  DY          0.0000  0.000\n")
 
         except IOError:
             print("Impossible to open .frcmod file")
@@ -550,9 +624,13 @@ class Model(object):
             f.write("""addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met))
             f.write("""addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
 
-            for index in range (1,i+1):
-                f.write("loadamberparams %s/zinc%d.frcmod\nloadOff %s/met%d.lib\n"%(direcxl,index,direcxl,index))
-                index += 1
+            if self.frcmod:
+                for frcmod in self.frcmod:
+                    f.write("loadamberparams %s\n"%(frcmod))
+
+            if self.lib:
+                for lib in self.lib:
+                    f.write("loadamberparams %s\n"%(lib))
 
             FilesToLoad = self.gui.ui_files_to_load.get(0,'end')
             if FilesToLoad:
@@ -570,9 +648,13 @@ class Model(object):
             f.write("addIons sys Na+ 0\n")
             if self.gui.var_waterbox.get()==1:
                 f.write("solvatebox sys TIP3PBOX 10\n")
-            f.write("saveamberparm sys %s/%s.prmtop %s/%s.inpcrd\n" % (output, output_name, output, output_name))
-            f.write("savemol2 sys %s/%s.mol2 0\n" % (output, output_name))
-            f.write("savepdb sys %s/%s.pdb\n" % (output, output_name))
+            prmtop = os.path.join(output, output_name+".prmtop")
+            inpcrd = os.path.join(output, output_name+".inpcrd")
+            f.write("saveamberparm sys " + prmtop + " " + inpcrd + "\n")
+            mol2 = os.path.join(output, output_name+".mol2")
+            f.write("savemol2 sys " + mol2 + "\n")
+            pdb = os.path.join(output, output_name+".pdb")
+            f.write("savepdb sys " + "\n")
             f.write("")
 
         command = "$AMBERHOME/bin/tleap -s -f %s/leaprc.final" % direcxl
@@ -585,9 +667,10 @@ class Model(object):
 
         print('Program Finished')
         
-        if os.path.exists(self.tempdir):
+        """if os.path.exists(self.tempdir):
             print('Cleaning Memory')
             shutil.rmtree(self.tempdir)
+            """
         
 
 
@@ -618,6 +701,8 @@ class Atom(Model):
             geom = Geometry.Geometry('tetrahedral')
         elif self.model.geometry == 'octahedral':
             geom = Geometry.Geometry('octahedron')
+        elif self.model.geometry == 'square planar':
+            geom = Geometry.Geometry('square planar')
         ligands=self.search_for_ligands(metal)
         print(len(ligands))
         rmsd, self.center, self.vecs = gui.geomDistEval(geom, metal, ligands)
