@@ -652,9 +652,9 @@ class Model(object):
             inpcrd = os.path.join(output, output_name+".inpcrd")
             f.write("saveamberparm sys " + prmtop + " " + inpcrd + "\n")
             mol2 = os.path.join(output, output_name+".mol2")
-            f.write("savemol2 sys " + mol2 + "\n")
+            f.write("savemol2 sys " + mol2 + " 0\n")
             pdb = os.path.join(output, output_name+".pdb")
-            f.write("savepdb sys " + "\n")
+            f.write("savepdb sys " + pdb + "\n")
             f.write("")
 
         command = "$AMBERHOME/bin/tleap -s -f %s/leaprc.final" % direcxl
