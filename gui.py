@@ -352,8 +352,6 @@ class DummyDialog(ModelessDialog):
 
 
 
-
-
     def _add_files(self):
         filepath = filedialog.askopenfilename(initialdir='~/', filetypes=(
             ('Lib File', '*.lib'), ('Frcmod File', '*.frcmod'),('Xml File', '*.xml')))
