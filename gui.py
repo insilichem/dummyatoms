@@ -265,12 +265,12 @@ class DummyDialog(ModelessDialog):
                                  ['Output Name', self.ui_outputname]]
                                  
         self.auto_grid(self.ui_systemparam_frame, grid_systemparam_frame)
-
+        """
         # Table
         gt = self.ui_geometrytable = SortableTable(self.canvas)
         gt.addColumn("Ligands", str, headerPadX=60)
         
-        """
+        
         #Filling table at the end
         from geomData import geometries
 
@@ -280,10 +280,10 @@ class DummyDialog(ModelessDialog):
             sel = 6
         geoms = [g for g in geoms if sel == g.coordinationNumber]
         
-        """
+        
         self.ui_geometrytable.setData([])
         gt.launch(title="Geometry Table")
-
+        """
         #gt.sortBy(rmsd)
 
         # Grid Frames
@@ -295,7 +295,7 @@ class DummyDialog(ModelessDialog):
         #self.ui_metals_menu.setvalue(self.metals)
         self.ui_metals_menu.grid(row=0, column=0, columnspan=2)
         self.ui_metalcenter_frame.grid(row=1, column=0)
-        self.ui_table_frame.grid(row=1,column=1)
+        #self.ui_table_frame.grid(row=1,column=1)
         self.ui_systemparam_frame.grid(row=2, column=0, columnspan=2)
     
     def _populateframe(self, metal):
@@ -348,8 +348,6 @@ class DummyDialog(ModelessDialog):
                 self.var_dz_mass.set(3)
                 self.var_dz_met_bondlenght.set(0.9)  
         self.previous_metal = next_metal
-
-
 
 
 

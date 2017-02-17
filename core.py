@@ -55,8 +55,9 @@ class Controller(object):
    
         metals = metal_menu.itemMap.values()
         i=1
+        self.model.save_variables(metal_menu.getvalue())
         for metal in metals:
-            print(metal)
+            self.model.retrieve_variables(metal)            
             # Create Metal Center Atom
             if str(metal.element.name).lower() == 'zn':
                 Zinc = Atom(model=self.model, metal = metal, symbol='Zn', atomicnumber=30, mass=65.38, residue='ZNB')
@@ -106,7 +107,7 @@ class Controller(object):
                 i, self.model.gui.var_outputpath.get(), self.model.gui.var_outputname.get())
             
             print('Adding charges...')
-            self.model.charge(self.model.tempdir, metal_class.charge, metal_class.symbol,
+            self.model.add_charge(self.model.tempdir, metal_class.charge, metal_class.symbol,
                 metal_class.atomicnumber, metal_class.residue, i)
             
             print('Creating frcmod...')
@@ -136,6 +137,48 @@ class Model(object):
         self.lib = []
         self.frcmod = []
         self.tempfiles = []
+
+    def save_variables(self, metal):
+        #Saving last metal params
+        metal_dicts = self.gui.metals
+        if any(dic["title"] == metal.name for dic in metal_dicts):
+            for dic in metal_dicts:
+                if dic["title"] == metal.name:
+                    dic["geom"] = self.gui.var_metal_geometry.get()
+                    dic["charge"] =  self.gui.var_metal_charge.get()
+                    dic["vw_radius"] = self.gui.var_vw_radius.get()
+                    dic["dz_mass"] = self.gui.var_dz_mass.get()
+                    dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
+        elif not any(dic["title"] == metal.name for dic in metal_dicts):
+            dic = {}
+            dic["title"] = metal.name
+            dic["geom"] = self.gui.var_metal_geometry.get()
+            dic["charge"] =  self.gui.var_metal_charge.get()
+            dic["vw_radius"] = self.gui.var_vw_radius.get()
+            dic["dz_mass"] = self.gui.var_dz_mass.get()
+            dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
+            metal_dicts.append(dic)
+
+    def retrieve_variables(self, metal):
+        #Updating variables for each metal
+        metal_dicts = self.gui.metals
+        if any(dic["title"] == metal.name for dic in metal_dicts):
+            for dic in metal_dicts:
+                if dic["title"] == metal.name:
+                    self.geometry = dic["geom"]
+                    self.charge = dic["charge"]
+                    self.vw_radius = dic["vw_radius"]
+                    self.dz_mass = dic["dz_mass"] 
+                    self.dz_met = dic["dz_met_bond"]
+        elif not any(dic["title"] == metal.name for dic in metal_dicts): 
+            self.geometry = "tetrahedral"
+            self.charge = 2
+            self.vw_radius = 3.1
+            self.dz_mass = 3 
+            self.dz_met = 0.9
+
+
+
     def temp_directory(self):
         if os.path.isdir("/dev/shm/"):
             ram_dir = "/dev/shm/temp/"
@@ -155,7 +198,7 @@ class Model(object):
         metal = metal_class.metal    
         coord = metal.coord()
         for vec in metal_class.vecs:
-            vec.length = self.gui.var_dz_met_bondlenght.get()
+            vec.length = self.dz_met
             metal_center=chimera.Vector(coord[0],coord[1],coord[2])
             dummyposition =  metal_center + vec
             dummiespositions.append(dummyposition)
@@ -169,7 +212,7 @@ class Model(object):
             pos += 1
         dummy_element = chimera.Element('DZ')
 
-        if self.gui.var_metal_geometry.get() == 'tetrahedral':
+        if self.geometry == 'tetrahedral':
 
             
             dummy_names = ["D1", "D2", "D3", "D4"]
@@ -186,7 +229,7 @@ class Model(object):
             #ligands=[] # initialize ligands variable to avoid problems inside addLigands()
             #sesion.addLigands(dummies)
 
-        elif self.gui.var_metal_geometry.get() == 'octahedral':
+        elif self.geometry == 'octahedral':
 
             dummy_names = ["D1", "D5", "D2", "D3", "D6", "D4"]
             
@@ -221,10 +264,9 @@ class Model(object):
             Position of the metal center in your original pdb (GAUDI OUTPUT)
         """
         filename = os.path.join(direcxl,"dummymetal.pdb")
-        print(filename)
         self.tempfiles.append(filename)
         with open(filename, 'w') as f:
-            if self.gui.var_metal_geometry.get() == 'tetrahedral':
+            if self.geometry == 'tetrahedral':
         
                 f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met,metal[0], metal[1], metal[2] ,met))
                 f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[0][0], dum[0][1], dum[0][2]))
@@ -233,7 +275,7 @@ class Model(object):
                 f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[3][0], dum[3][1], dum[3][2]))
                 f.write("END")
 
-            elif self.gui.var_metal_geometry.get() == 'octahedral':
+            elif self.geometry == 'octahedral':
                 f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, metal[0], metal[1], metal[2], met))
                 f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[0][0], dum[0][1], dum[0][2]))
                 f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[2][0], dum[2][1], dum[2][2]))
@@ -285,7 +327,7 @@ class Model(object):
             process.wait()
         self.lib.append(lib_filename)
 
-    def charge(self, direcxl,q,met,atm,RES,i):
+    def add_charge(self, direcxl,q,met,atm,RES,i):
 
 
         """
@@ -304,7 +346,7 @@ class Model(object):
         """
         
 
-        if self.gui.var_metal_geometry.get() == 'tetrahedral':
+        if self.geometry == 'tetrahedral':
             lineas=[]
             try:
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
@@ -343,7 +385,7 @@ class Model(object):
             except IOError:
                 print('Impossible to open .lib file')
 
-        elif self.gui.var_metal_geometry.get() == 'octahedral':
+        elif self.geometry == 'octahedral':
             lineas=[]
             try:
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
@@ -410,7 +452,7 @@ class Model(object):
             frcmod_filename = os.path.join(direcxl,"zinc%d.frcmod"%i)
             with open(frcmod_filename,"w") as f:
 
-                if self.gui.var_metal_geometry.get() == 'tetrahedral':
+                if self.geometry == 'tetrahedral':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
                     f.write("MASS\nDZ  %.3f\n%s %.2f\n\n"%(dzmass, met, metalmass-dzmass*4))
                     f.write("BOND\nDZ-%s  640.0    %.3f\nDZ-DZ  640.0    1.47\n\n"%(met, dz_met_bondlenght))
@@ -419,7 +461,7 @@ class Model(object):
                     f.write("IMPROPER\n\n")
                     f.write("NONB\nDZ          0.000   0.00\n%s          %.3f   1.0E-6"%(met, met_vwradius ))
 
-                if self.gui.var_metal_geometry.get() == 'octahedral':
+                if self.geometry == 'octahedral':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
                     f.write("MASS\nDX  %.3f\n"%(dzmass))
                     f.write("DY  %.3f\n"%(dzmass))
@@ -562,19 +604,19 @@ class Atom(Model):
         self.atomicnumber = atomicnumber
         self.mass = mass
         self.residue = residue
-        self.charge = self.model.gui.var_metal_charge.get()
-        self.met_vwradius = self.model.gui.var_vw_radius.get()
-        self.dzmass = self.model.gui.var_dz_mass.get()
-        self.dz_met_bondlenght = self.model.gui.var_dz_met_bondlenght.get()
+        self.charge = self.model.charge
+        self.met_vwradius = self.model.vw_radius
+        self.dzmass = self.model.dz_mass
+        self.dz_met_bondlenght = self.model.dz_met
         self.metal = metal
         self.search_for_orientation(self.metal)
 
 
 
     def search_for_orientation(self, metal):
-        if self.model.gui.var_metal_geometry.get() == 'tetrahedral':
+        if self.model.geometry == 'tetrahedral':
             geom = Geometry.Geometry('tetrahedral')
-        elif self.model.gui.var_metal_geometry.get() == 'octahedral':
+        elif self.model.geometry == 'octahedral':
             geom = Geometry.Geometry('octahedron')
         ligands=self.search_for_ligands(metal)
         print(len(ligands))
