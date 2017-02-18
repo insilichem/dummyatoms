@@ -283,9 +283,9 @@ class Model(object):
             if self.geometry == 'square planar':
         
                 f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met,metal[0], metal[1], metal[2] ,met))
-                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[0][0], dum[0][1], dum[0][2]))
+                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[0][0], dum[0][1], dum[0][2]))
                 f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[2][0], dum[2][1], dum[2][2]))
+                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[2][0], dum[2][1], dum[2][2]))
                 f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[3][0], dum[3][1], dum[3][2]))
                 f.write("END")
 
@@ -438,24 +438,24 @@ class Model(object):
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
                 lineas=list(file)
                 lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(met,met,atm)
-                lineas[4]=' "D1" "DX" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
+                lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
                 lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
-                lineas[6]=' "D3" "DY" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
+                lineas[6]=' "D3" "DX" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
                 lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/4.0)
                 lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
-                lineas[10]=' "D1" "DX" 0 -1 0.0\n'
+                lineas[10]=' "D1" "DY" 0 -1 0.0\n'
                 lineas[11]=' "D2" "DY" 0 -1 0.0\n'
-                lineas[12]=' "D3" "DY" 0 -1 0.0\n'
+                lineas[12]=' "D3" "DX" 0 -1 0.0\n'
                 lineas[13]=' "D4" "DX" 0 -1 0.0\n'
                 lineas.insert(25,'!entry.ZNB.unit.connectivity table  int atom1x  int atom2x  int flags\n')
                 lineas.insert(26,' 1 3 1\n')
                 lineas.insert(27,' 1 2 1\n')
                 lineas.insert(28,' 1 4 1\n')
                 lineas.insert(29,' 1 5 1\n')
-                lineas.insert(30,' 1 2 1\n')
-                lineas.insert(31,' 2 3 1\n')
+                lineas.insert(30,' 2 5 1\n')
+                lineas.insert(31,' 5 3 1\n')
                 lineas.insert(32,' 3 4 1\n')
-                lineas.insert(33,' 4 5 1\n')
+                lineas.insert(33,' 4 2 1\n')
                 file.close()
 
                 filename = "%s/met%d.lib"%(direcxl,i)
@@ -501,6 +501,7 @@ class Model(object):
                     f.write("DIHE\n%s-DZ-DZ-DZ   1    0.0          35.3             2.00\nDZ-%s-DZ-DZ   1    0.0         120.0             2.00\nDZ-DZ-DZ-DZ   1    0.0          70.5             2.00\n\n"%(met,met))
                     f.write("IMPROPER\n\n")
                     f.write("NONB\nDZ          0.000   0.00\n%s          %.3f   1.0E-6"%(met, met_vwradius ))
+                    f.write("")
 
                 elif self.geometry == 'octahedral':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
@@ -549,6 +550,7 @@ class Model(object):
                     f.write("  DX          0.0000  0.0000\n")
                     f.write("  DY          0.0000  0.0000\n")
                     f.write("  DZ          0.0000  0.0000\n\n")
+                    f.write("")
                     #f.write("  DX          0.7671  0.0125\n")
                     #f.write("  DY          0.7671  0.0125\n")
                     #f.write("  DZ          0.7671  0.0125\n\n")
@@ -558,11 +560,11 @@ class Model(object):
                     f.write("MASS\nDX  %.3f\n"%(dzmass))
                     f.write("DY  %.3f\n"%(dzmass))
                     f.write("%s %.2f\n\n"%(met, metalmass-dzmass*4))
-                    f.write("BOND\n")
+                    f.write("\nBOND\n")
                     f.write("%s-DX  640      %.3f\n"%(met, dz_met_bondlenght))
                     f.write("%s-DY  640      %.3f\n"%(met, dz_met_bondlenght))
                     f.write("DX-DY  640      1.273\n")
-                    f.write("ANGL\n")
+                    f.write("\nANGL\n")
                     f.write("DX-%s-DX    55.0      180.00\n"%(met))
                     f.write("DY-%s-DY    55.0      180.00\n"%(met))
                     f.write("DX-%s-DY    55.0      90.00\n"%(met))
@@ -571,9 +573,14 @@ class Model(object):
                     f.write("DX-DY-DX    55.0      90.00\n")
                     f.write("DX-DZ-DX    55.0      90.00\n")
                     f.write("DY-DX-DY    55.0      90.00\n")
-                    f.write("DIHE\n")
-                    f.write("DY-DX-%s-DX  4   0.0    0.0    1.\n"%(met)) 
-                    f.write("DX-%s-DX-DY  4   0.0    0.0    1.\n"%(met)) 
+                    f.write("\nDIHE\n")
+                    f.write("%s-DY-DX-DY  4   0.0    0.0    1.\n"%(met))
+                    f.write("DX-DY-%s-DX  4   0.0    0.0    1.\n"%(met))
+                    f.write("DY-DX-%s-DY  4   0.0    0.0    1.\n"%(met))
+                    f.write("DY-DX-%s-DX  4   0.0    0.0    1.\n"%(met))
+                    f.write("DX-%s-DY-DX  4   0.0    0.0    1.\n"%(met))
+                    f.write("DY-%s-DY-DX  4   0.0    0.0    1.\n"%(met))
+                    f.write("DY-%s-DX-DY  4   0.0    0.0    1.\n"%(met))    
                     f.write("DY-DX-DY-DX  4   0.0    0.0    1.\n")
                     f.write("%s-DX-DY-DX  4   0.0    0.0    1.\n"%(met))
                     f.write("DX-DY-DX-DY  4   0.0    0.0    1.\n\n")
@@ -582,6 +589,7 @@ class Model(object):
                     f.write("  %s          %.3f   1.0E-6\n"%(met, met_vwradius ))
                     f.write("  DX          0.0000  0.000\n")
                     f.write("  DY          0.0000  0.000\n")
+                    f.write("")
 
         except IOError:
             print("Impossible to open .frcmod file")
@@ -623,14 +631,13 @@ class Model(object):
             f.write("source %s/dat/leap/cmd/oldff/leaprc.ff99SB\n" % self.amber_path)
             f.write("""addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met))
             f.write("""addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
-
             if self.frcmod:
                 for frcmod in self.frcmod:
                     f.write("loadamberparams %s\n"%(frcmod))
 
             if self.lib:
                 for lib in self.lib:
-                    f.write("loadamberparams %s\n"%(lib))
+                    f.write("loadOff %s\n"%(lib))
 
             FilesToLoad = self.gui.ui_files_to_load.get(0,'end')
             if FilesToLoad:
@@ -640,10 +647,10 @@ class Model(object):
                     elif file.endswith('.frcmod'):
                         f.write("loadamberparams %s\n"%(file))
 
+            
+
+
             f.write("sys=loadpdb %s\n"%(pdb))
-
-
-
             f.write("addIons sys Cl- 0\n")
             f.write("addIons sys Na+ 0\n")
             if self.gui.var_waterbox.get()==1:
