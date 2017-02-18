@@ -219,7 +219,7 @@ class DummyDialog(ModelessDialog):
         # Fill MetalCenterFrame
         self.ui_metalgeometry = ttk.Combobox(
             self.canvas, textvariable=self.var_metal_geometry)
-        self.ui_metalgeometry.config(values=('tetrahedral', 'octahedral', 'square planar'))
+        self.ui_metalgeometry.config(values=('tetrahedral', 'octahedral', 'square planar', 'square pyramid'))
         self.ui_metalcharge = tk.Entry(
             self.canvas, textvariable=self.var_metal_charge)
         self.ui_vw_radius = tk.Entry(

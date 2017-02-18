@@ -212,30 +212,21 @@ class Model(object):
             pos += 1
         dummy_element = chimera.Element('DZ')
 
-        if self.geometry == 'tetrahedral':
+        if self.geometry == 'tetrahedral' or self.geometry == 'square plannar':
             dummy_names = ["D1", "D2", "D3", "D4"]  
-            for i, dummy_name in enumerate(dummy_names): 
-                dummy_coord=chimera.Coord(dummiespositions[i][0],
-                                           dummiespositions[i][1],
-                                           dummiespositions[i][2])
-                dummy = addAtom(dummy_name, dummy_element, res, dummy_coord)
-
-
+            
         elif self.geometry == 'octahedral':
             dummy_names = ["D1", "D5", "D2", "D3", "D6", "D4"]
-            for i, dummy_name in enumerate(dummy_names): 
-                dummy_coord=chimera.Coord(dummiespositions[i][0],
-                                           dummiespositions[i][1],
-                                           dummiespositions[i][2])
-                addAtom(dummy_name, dummy_element, res, dummy_coord)
 
-        elif self.geometry == 'square planar':
-            dummy_names = ["D1", "D2", "D3", "D4"]
-            for i, dummy_name in enumerate(dummy_names): 
+        elif self.geometry == 'square pyramid':
+            dummy_names = ["D1", "D5", "D2", "D3", "D4"] 
+
+
+        for i, dummy_name in enumerate(dummy_names): 
                 dummy_coord=chimera.Coord(dummiespositions[i][0],
                                            dummiespositions[i][1],
                                            dummiespositions[i][2])
-                addAtom(dummy_name, dummy_element, res, dummy_coord)
+                addAtom(dummy_name, dummy_element, res, dummy_coord) 
 
 
         
@@ -280,13 +271,21 @@ class Model(object):
                 f.write("HETATM    7  D6  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[4][0], dum[4][1], dum[4][2]))
                 f.write("END")
 
-            if self.geometry == 'square planar':
-        
+            elif self.geometry == 'square planar':      
                 f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met,metal[0], metal[1], metal[2] ,met))
                 f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[0][0], dum[0][1], dum[0][2]))
                 f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[1][0], dum[1][1], dum[1][2]))
                 f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[2][0], dum[2][1], dum[2][2]))
                 f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[3][0], dum[3][1], dum[3][2]))
+                f.write("END")
+
+            elif self.geometry == 'square pyramid':      
+                f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met,metal[0], metal[1], metal[2] ,met))
+                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[0][0], dum[0][1], dum[0][2]))
+                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[1][0], dum[1][1], dum[1][2]))
+                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[2][0], dum[2][1], dum[2][2]))
+                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[3][0], dum[3][1], dum[3][2]))
+                f.write("HETATM    6  D5  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[4][0], dum[4][1], dum[4][2]))
                 f.write("END")
 
     def creatlib(self, direcxl, RES, i, output, output_name): # ambermini
@@ -313,7 +312,8 @@ class Model(object):
             lib_filename = os.path.join(direcxl,"met%d.lib"%i)
             with open(filename, 'w') as f:
                 f.write("logFile leap.log\n")
-                f.write("source %s/dat/leap/cmd/oldff/leaprc.ff99SB\n"%direcxl)
+                source = os.path.join(direcxl, "/dat/leap/cmd/oldff/leaprc.ff99SB\n")
+                f.write("source " + source)
                 f.write("%s= loadpdb %s\n"%(RES,pdbfile))
                 f.write("saveoff %s %s\n"%(RES,output_lib))
                 f.write("quit")
@@ -432,7 +432,7 @@ class Model(object):
             except IOError:
                 raise UserError("Impossible to open .lib file")
 
-        if self.geometry == 'square planar':
+        elif self.geometry == 'square planar':
             lineas=[]
             try:
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
@@ -460,10 +460,43 @@ class Model(object):
 
                 filename = "%s/met%d.lib"%(direcxl,i)
                 with open(filename,"w") as f:
-                    for linea in lineas:
-                        
-                        #if linea==lineas[25]:
-                        #    f.write("!entry.mm.unit.connectivity table  int atom1x  int atom2x  int flags\n 1 3 1\n 1 2 1\n 1 4 1\n 1 5 1\n 2 3 1\n 2 4 1\n 2 5 1\n 3 5 1\n 3 4 1\n 4 5 1\n"%(RES))    
+                    for linea in lineas:    
+                        f.write(linea)
+
+            except IOError:
+                print('Impossible to open .lib file')
+
+        elif self.geometry == 'square pyramid':
+            lineas=[]
+            try:
+                file = open("%s/met%d.lib"%(direcxl,i),"r")
+                lineas=list(file)
+                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(met,met,atm)
+                lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/5.0)
+                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/5.0)
+                lineas[6]=' "D3" "DX" 0 1 196609 4 -1 %.5f\n'%(q/5.0)
+                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/5.0)
+                lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.5f\n'%(q/5.0)
+                lineas[10]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
+                lineas[11]=' "D1" "DY" 0 -1 0.0\n'
+                lineas[12]=' "D2" "DY" 0 -1 0.0\n'
+                lineas[13]=' "D3" "DX" 0 -1 0.0\n'
+                lineas[14]=' "D4" "DX" 0 -1 0.0\n'
+                lineas[15]=' "D5" "DZ" 0 -1 0.0\n'
+                lineas.insert(27,'!entry.ZNB.unit.connectivity table  int atom1x  int atom2x  int flags\n')
+                lineas.insert(28,' 1 3 1\n')
+                lineas.insert(29,' 1 2 1\n')
+                lineas.insert(30,' 1 4 1\n')
+                lineas.insert(31,' 1 5 1\n')
+                lineas.insert(32,' 2 5 1\n')
+                lineas.insert(33,' 5 3 1\n')
+                lineas.insert(34,' 3 4 1\n')
+                lineas.insert(35,' 4 2 1\n')
+                file.close()
+
+                filename = "%s/met%d.lib"%(direcxl,i)
+                with open(filename,"w") as f:
+                    for linea in lineas:    
                         f.write(linea)
 
             except IOError:
@@ -591,6 +624,51 @@ class Model(object):
                     f.write("  DY          0.0000  0.000\n")
                     f.write("")
 
+                elif self.geometry == 'square pyramid':
+                    f.write("BOND\n")
+                    f.write("%s-DX  640      %.3f\n"%(met, dz_met_bondlenght))
+                    f.write("%s-DY  640      %.3f\n"%(met, dz_met_bondlenght))
+                    f.write("%s-DZ  640      %.3f\n"%(met, dz_met_bondlenght))
+                    f.write("DX-DY  640      1.273\n")
+                    f.write("DX-DZ  640      1.273\n")
+                    f.write("DY-DZ  640      1.273\n\n")
+                    f.write("ANGL\n")
+                    f.write("DX-%s-DX    55.0      180.00\n"%(met))
+                    f.write("DY-%s-DY    55.0      180.00\n"%(met))
+                    f.write("DZ-%s-DZ    55.0      180.00\n"%(met))
+                    f.write("DX-%s-DY    55.0      90.00\n"%(met))
+                    f.write("DX-%s-DZ    55.0      90.00\n"%(met))
+                    f.write("DY-%s-DZ    55.0      90.00\n"%(met))
+                    f.write("%s-DX-DY    55.0      45.00\n"%(met))
+                    f.write("%s-DX-DZ    55.0      45.00\n"%(met))
+                    f.write("%s-DY-DZ    55.0      45.00\n"%(met))
+                    f.write("DX-DY-DX    55.0      90.00\n")
+                    f.write("DX-DZ-DX    55.0      90.00\n")
+                    f.write("DY-DX-DY    55.0      90.00\n")
+                    f.write("DZ-DX-DZ    55.0      90.00\n")
+                    f.write("DY-DZ-DY    55.0      90.00\n")
+                    f.write("DY-DX-DZ    55.0      60\n")
+                    f.write("DX-DY-DZ    55.0      60\n")
+                    f.write("DX-DZ-DY    55.0      60\n\n")
+                    f.write("DIHE\n")
+                    f.write("DX-%s-DX-DZ  4   0.0    0.0    1.\n"%(met))
+                    f.write("DX-DY-DX-DZ  4   0.0    0.0    1.\n")
+                    f.write("DX-DZ-DX-DZ  4   0.0    0.0    1.\n")
+                    f.write("DY-DX-DZ-DX  4   0.0    0.0    1.\n")
+                    f.write("DY-DX-%s-DX  4   0.0    0.0    1.\n"%(met)) 
+                    f.write("DX-%s-DX-DY  4   0.0    0.0    1.\n"%(met)) 
+                    f.write("DY-DX-DY-DX  4   0.0    0.0    1.\n")
+                    f.write("%s-DX-DY-DX  4   0.0    0.0    1.\n"%(met))
+                    f.write("%s-DX-DZ-DX  4   0.0    0.0    1.\n"%(met)) 
+                    f.write("DX-DY-DX-DY  4   0.0    0.0    1.\n\n")
+                    f.write("IMPR\n\n")
+                    f.write("NONB\n")
+                    f.write("  %s          %.3f   1.0E-6\n"%(met, met_vwradius ))
+                    f.write("  DX          0.0000  0.0000\n")
+                    f.write("  DY          0.0000  0.0000\n")
+                    f.write("  DZ          0.0000  0.0000\n\n")
+                    f.write("")
+
         except IOError:
             print("Impossible to open .frcmod file")
 
@@ -628,7 +706,8 @@ class Model(object):
         with open(filename,"w") as f:
             f.write("logFile leap.log\n")
             f.write("source /home/daniel/leaprc\n")
-            f.write("source %s/dat/leap/cmd/oldff/leaprc.ff99SB\n" % self.amber_path)
+            source = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB\n")
+            f.write("source " + source)
             f.write("""addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met))
             f.write("""addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
             if self.frcmod:
@@ -710,6 +789,8 @@ class Atom(Model):
             geom = Geometry.Geometry('octahedron')
         elif self.model.geometry == 'square planar':
             geom = Geometry.Geometry('square planar')
+        elif self.model.geometry == 'square pyramid':
+            geom = Geometry.Geometry('square pyramid')
         ligands=self.search_for_ligands(metal)
         print(len(ligands))
         rmsd, self.center, self.vecs = gui.geomDistEval(geom, metal, ligands)
