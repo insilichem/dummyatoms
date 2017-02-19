@@ -14,14 +14,12 @@ import tempfile
 import shutil
 # Chimera stuff
 import chimera
-from chimera import replyobj, UserError
-from chimera.selection import currentAtoms
+from chimera import UserError
 from MetalGeom import gui
 from MetalGeom import geomData
 from MetalGeom import Geometry
 from chimera.molEdit import addAtom
 from chimera import runCommand as rc
-from chimera.widgets import MetalOptionMenu
 
 
 
@@ -55,42 +53,49 @@ class Controller(object):
    
         metals = metal_menu.itemMap.values()
         i=1
+        #Sava metal gui parameters
         self.model.save_variables(metal_menu.getvalue())
         for metal in metals:
-            self.model.retrieve_variables(metal)            
+            #Retrieve metal parameters from gui
+            self.model.retrieve_variables(metal)
+            #Get variables
+            res = str(metal.residue.type)
+            name = str(metal.name)            
+            if self.inputpath.endswith(".mol2"):
+                Type = metal.mol2type
             # Create Metal Center Atom
             if str(metal.element.name).lower() == 'zn':
-                Zinc = Atom(model=self.model, metal = metal, symbol='Zn', atomicnumber=30, mass=65.38, residue='ZNB')
+                Zinc = Atom(model=self.model, metal = metal, symbol='Zn', atomicnumber=30, mass=65.38, residue=res)
                 metal_class = Zinc
             elif str(metal.element.name).lower() == 'fe':
-                Iron = Atom(model=self.model, symbol='Fe', atomicnumber=26, mass=55.845 , residue='ZNB')
+                Iron = Atom(model=self.model, symbol='Fe', atomicnumber=26, mass=55.845 , residue=res)
                 metal_class = Iron
             elif str(metal.element.name).lower() == 'cd':
-                Cadmium = Atom(model=self.model, metal = metal, symbol='CD', atomicnumber=48, mass=112.411, residue='ZNB')
+                Cadmium = Atom(model=self.model, metal = metal, symbol='CD', atomicnumber=48, mass=112.411, residue=res)
                 metal_class = Cadmium
             elif str(metal.element.name).lower() == 'cu':
-                Copper = Atom(model=self.model,  metal = metal, symbol='CU', atomicnumber=29, mass=63.546, residue='ZNB')
+                Copper = Atom(model=self.model,  metal = metal, symbol='CU', atomicnumber=29, mass=63.546, residue=res)
                 metal_class = Copper
             elif str(metal.element.name).lower() == 'co':
-                Cobalt = Atom(model=self.model, metal = metal, symbol='CO', atomicnumber=27, mass=58.933, residue='ZNB')
+                Cobalt = Atom(model=self.model, metal = metal, symbol='CO', atomicnumber=27, mass=58.933, residue=res)
                 metal_class = Cobalt
             elif str(metal.element.name).lower() == 'pt':
-                Platinum = Atom(model=self.model, metal = metal, symbol='PT', atomicnumber=78, mass=195.084, residue='ZNB')
+                Platinum = Atom(model=self.model, metal = metal, symbol='PT', atomicnumber=78, mass=195.084, residue=res)
                 metal_class = Platinum
             elif str(metal.element.name).lower() == 'pd':
-                Palladium = Atom(model=self.model, metal = metal, symbol='PD', atomicnumber=46, mass=106.42, residue='ZNB')
+                Palladium = Atom(model=self.model, metal = metal, symbol='PD', atomicnumber=46, mass=106.42, residue=res)
                 metal_class = Palladium
             elif str(metal.element.name).lower() == 'mg':
-                Magnesium = Atom(model=self.model,metal = metal, symbol='MG', atomicnumber=12, mass=24.305, residue='ZNB')
+                Magnesium = Atom(model=self.model,metal = metal, symbol='MG', atomicnumber=12, mass=24.305, residue=res)
                 metal_class = Magnesium
             elif str(metal.element.name).lower() == 'v':
-                Vanadium = Atom(model=self.model, metal = metal, symbol='V', atomicnumber=23, mass=50.9415, residue='ZNB')
+                Vanadium = Atom(model=self.model, metal = metal, symbol='V', atomicnumber=23, mass=50.9415, residue=res)
                 metal_class = Vanadium
             elif str(metal.element.name).lower() == 'cr':
-                Chromium = Atom(model=self.model, metal = metal, symbol='CR', atomicnumber=24, mass=51.996, residue='ZNB')
+                Chromium = Atom(model=self.model, metal = metal, symbol='CR', atomicnumber=24, mass=51.996, residue=res)
                 metal_class = Chromium
             elif str(metal.element.name).lower() == 'mn':
-                Manganese = Atom(model=self.model, metal = metal, symbol='MN', atomicnumber=25, mass=54.938, residue='ZNB')
+                Manganese = Atom(model=self.model, metal = metal, symbol='MN', atomicnumber=25, mass=54.938, residue=res)
                 metal_class = Manganese
             else:
                 continue
@@ -98,7 +103,7 @@ class Controller(object):
             print('Building dummies...')
             self.model.include_dummies(metal_class)
             print('Building Geometry...')
-            self.model.specify_geometry(metal_class.symbol, metal_class.center,
+            self.model.specify_geometry(metal_class.residue, metal_class.symbol, metal_class.center,
                 metal_class.dummiespositions, self.model.tempdir)
             #elif self.model.gui.var_metal_geometry.get() == 'octahedral':
                 #self.model.specify_geometry(Zinc.symbol, Zinc.AtomCoord[0], Zinc.AtomCoord[1], Zinc.AtomCoord[2], '/home/daniel/Baixades/amber14')
@@ -119,7 +124,7 @@ class Controller(object):
             i+=1
 
         print('Saving system...')
-        self.model.create_system(direcxl=self.model.tempdir,
+        self.model.create_system(inputpath=self.inputpath, direcxl=self.model.tempdir,
             met=metal_class.symbol, i=i, output=self.gui.var_outputpath.get(),
             output_name = self.model.gui.var_outputname.get())
 
@@ -235,7 +240,7 @@ class Model(object):
 
 
 
-    def specify_geometry(self, met, metal, dum, direcxl):
+    def specify_geometry(self, res, met, metal, dum, direcxl):
         
         """
         Create a pdb file including a metal center and 4 dummy atoms in tetrahedral geometry.
@@ -254,41 +259,41 @@ class Model(object):
         with open(filename, 'w') as f:
             if self.geometry == 'tetrahedral':
         
-                f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met,metal[0], metal[1], metal[2] ,met))
-                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[0][0], dum[0][1], dum[0][2]))
-                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[2][0], dum[2][1], dum[2][2]))
-                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[3][0], dum[3][1], dum[3][2]))
+                f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2] ,met))
+                f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
+                f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[1][0], dum[1][1], dum[1][2]))
+                f.write("HETATM    4  D3  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[2][0], dum[2][1], dum[2][2]))
+                f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
                 f.write("END")
 
             elif self.geometry == 'octahedral':
-                f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, metal[0], metal[1], metal[2], met))
-                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[0][0], dum[0][1], dum[0][2]))
-                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[2][0], dum[2][1], dum[2][2]))
-                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[3][0], dum[3][1], dum[3][2]))
-                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[5][0], dum[5][1], dum[5][2]))
-                f.write("HETATM    6  D5  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    7  D6  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[4][0], dum[4][1], dum[4][2]))
+                f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2], met))
+                f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
+                f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[2][0], dum[2][1], dum[2][2]))
+                f.write("HETATM    4  D3  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
+                f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[5][0], dum[5][1], dum[5][2]))
+                f.write("HETATM    6  D5  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[1][0], dum[1][1], dum[1][2]))
+                f.write("HETATM    7  D6  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[4][0], dum[4][1], dum[4][2]))
                 f.write("END")
 
             elif self.geometry == 'square planar':      
-                f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met,metal[0], metal[1], metal[2] ,met))
-                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[0][0], dum[0][1], dum[0][2]))
-                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[2][0], dum[2][1], dum[2][2]))
-                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[3][0], dum[3][1], dum[3][2]))
+                f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2] ,met))
+                f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
+                f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[1][0], dum[1][1], dum[1][2]))
+                f.write("HETATM    4  D3  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[2][0], dum[2][1], dum[2][2]))
+                f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
                 f.write("END")
 
             elif self.geometry == 'square pyramid':      
-                f.write("HETATM    1  %s  ZNB    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met,metal[0], metal[1], metal[2] ,met))
-                f.write("HETATM    2  D1  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[0][0], dum[0][1], dum[0][2]))
-                f.write("HETATM    3  D2  ZNB    1      %.3f  %.3f  %.3f  1.00           DY\n" %(dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    4  D3  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[2][0], dum[2][1], dum[2][2]))
-                f.write("HETATM    5  D4  ZNB    1      %.3f  %.3f  %.3f  1.00           DX\n" %(dum[3][0], dum[3][1], dum[3][2]))
-                f.write("HETATM    6  D5  ZNB    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(dum[4][0], dum[4][1], dum[4][2]))
+                f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2] ,met))
+                f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
+                f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[1][0], dum[1][1], dum[1][2]))
+                f.write("HETATM    4  D3  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[2][0], dum[2][1], dum[2][2]))
+                f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
+                f.write("HETATM    6  D5  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[4][0], dum[4][1], dum[4][2]))
                 f.write("END")
 
-    def creatlib(self, direcxl, RES, i, output, output_name): # ambermini
+    def creatlib(self, direcxl, res, i, output, output_name): # ambermini
 
         """
         Creates a leaprc file. When we run that one in xleap,
@@ -314,8 +319,8 @@ class Model(object):
                 f.write("logFile leap.log\n")
                 source = os.path.join(direcxl, "/dat/leap/cmd/oldff/leaprc.ff99SB\n")
                 f.write("source " + source)
-                f.write("%s= loadpdb %s\n"%(RES,pdbfile))
-                f.write("saveoff %s %s\n"%(RES,output_lib))
+                f.write("%s= loadpdb %s\n"%(res,pdbfile))
+                f.write("saveoff %s %s\n"%(res,output_lib))
                 f.write("quit")
         except IOError:
             raise UserError("Impossible to open leaprc file")
@@ -331,7 +336,7 @@ class Model(object):
             process.wait()
         self.lib.append(lib_filename)
 
-    def add_charge(self, direcxl,q,met,atm,RES,i):
+    def add_charge(self, direcxl,q,met,atm,res,i):
 
 
         """
@@ -365,7 +370,7 @@ class Model(object):
                 lineas[11]=' "D2" "DZ" 0 -1 0.0\n'
                 lineas[12]=' "D3" "DZ" 0 -1 0.0\n'
                 lineas[13]=' "D4" "DZ" 0 -1 0.0\n'
-                lineas.insert(25,'!entry.ZNB.unit.connectivity table  int atom1x  int atom2x  int flags\n')
+                lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
                 lineas.insert(26,' 1 3 1\n')
                 lineas.insert(27,' 1 2 1\n')
                 lineas.insert(28,' 1 4 1\n')
@@ -408,7 +413,7 @@ class Model(object):
                 lineas[15]=' "D4" "DX" 0 -1 0.0\n'
                 lineas[16]=' "D5" "DZ" 0 -1 0.0\n'
                 lineas[17]=' "D6" "DZ" 0 -1 0.0\n'
-                lineas.insert(29,'!entry.ZNB.unit.connectivity table  int atom1x  int atom2x  int flags\n')
+                lineas.insert(29,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
                 lineas.insert(30, ' 1 5 1\n')
                 lineas.insert(31, ' 1 2 1\n')
                 lineas.insert(32, ' 2 6 1\n')
@@ -447,7 +452,7 @@ class Model(object):
                 lineas[11]=' "D2" "DY" 0 -1 0.0\n'
                 lineas[12]=' "D3" "DX" 0 -1 0.0\n'
                 lineas[13]=' "D4" "DX" 0 -1 0.0\n'
-                lineas.insert(25,'!entry.ZNB.unit.connectivity table  int atom1x  int atom2x  int flags\n')
+                lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
                 lineas.insert(26,' 1 3 1\n')
                 lineas.insert(27,' 1 2 1\n')
                 lineas.insert(28,' 1 4 1\n')
@@ -483,7 +488,7 @@ class Model(object):
                 lineas[13]=' "D3" "DX" 0 -1 0.0\n'
                 lineas[14]=' "D4" "DX" 0 -1 0.0\n'
                 lineas[15]=' "D5" "DZ" 0 -1 0.0\n'
-                lineas.insert(27,'!entry.ZNB.unit.connectivity table  int atom1x  int atom2x  int flags\n')
+                lineas.insert(27,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
                 lineas.insert(28,' 1 3 1\n')
                 lineas.insert(29,' 1 2 1\n')
                 lineas.insert(30,' 1 4 1\n')
@@ -681,7 +686,7 @@ class Model(object):
         """
         
 
-    def create_system (self, direcxl, met, i, output, output_name):
+    def create_system (self, inputpath, direcxl, met, i, output, output_name):
         """
         
         Creates a leaprc file which is gonna create the prmtop and incrd files to run a MD simulation. Before that we give the option of adding a water box and some extra libraries.
@@ -697,9 +702,16 @@ class Model(object):
 
         """
         # Saving model
-        Filename = self.gui.var_outputname.get() + '.pdb'
-        pdb = os.path.join(self.tempdir, Filename)
-        rc('write 0 ' + pdb)
+        if inputpath.endswith(".pdb"):
+            Filename = self.gui.var_outputname.get() + '.pdb'
+            pdb = os.path.join(self.tempdir, Filename)
+            rc('write 0 ' + pdb)
+
+        elif inputpath.endswith(".mol2"):
+            Filename = self.gui.var_outputname.get() + '.mol2'
+            mol2 = os.path.join(self.tempdir, Filename)
+            rc("write format mol2 0 " + mol2)
+
 
         output_name = self.gui.var_outputname.get()
         filename = os.path.join(direcxl,"leaprc.final")
@@ -728,8 +740,10 @@ class Model(object):
 
             
 
-
-            f.write("sys=loadpdb %s\n"%(pdb))
+            if inputpath.endswith(".pdb"):
+                f.write("sys=loadpdb %s\n"%(pdb))
+            elif inputpath.endswith(".mol2"):
+                f.write("sys=loadmol2 %s\n"%(mol2))
             f.write("addIons sys Cl- 0\n")
             f.write("addIons sys Na+ 0\n")
             if self.gui.var_waterbox.get()==1:
@@ -742,8 +756,8 @@ class Model(object):
             pdb = os.path.join(output, output_name+".pdb")
             f.write("savepdb sys " + pdb + "\n")
             f.write("")
-
-        command = "$AMBERHOME/bin/tleap -s -f %s/leaprc.final" % direcxl
+        leaprc = os.path.join(direcxl, "leaprc.final")
+        command = "$AMBERHOME/bin/tleap -s -f "+leaprc
 
         
         log_file = os.path.join(output, output_name + ".txt")
