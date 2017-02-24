@@ -280,12 +280,15 @@ class DummyDialog(ModelessDialog):
     def _populateframe(self, metal):
 
         """
-        Method Class, which stores dictionaries
-        for each metal center in menu.
-        Uploading frame variables in case the user
-        comes back to the same metal. 
+        Save metal parameters and output the
+        metal center choosen for the user.
+        We perform this by creating dict for
+        each metal and updating them regurlary
+        when needed
         """
-        next_metal = setattr(self, metal.name, {})
+        
+        setattr(self, metal.name, {})
+        next_metal = getattr(self, metal.name)
         next_metal["title"] = metal.name
         if self.previous_metal:
             #save previous
