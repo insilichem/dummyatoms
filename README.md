@@ -36,9 +36,9 @@ Usage
 
 	All input configuration is done through Chimera which mainly accepts .pdb and .mol2 files. A couple of sample inputs are included in `examples` folder; parameters should be self-explaining.
 
-There's just on catch on these files: 
+	There's just on catch on these files: 
 
-	* Metals residues: Each metal must be a single residue with a unique name.
+	*Metals residues: Each metal must be a single residue with a unique name.
 
 2. Choose your desired parameters
 
