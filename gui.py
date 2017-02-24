@@ -424,11 +424,3 @@ class DummyDialog(ModelessDialog):
     # Below this line, implement all your custom methods for the GUI.
     def load_controller(self):
         pass
-
-    
-
-
-
-
-
-
