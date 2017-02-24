@@ -14,6 +14,7 @@ import sys
 import hashlib
 # Chimera stuff
 import chimera
+from chimera import UserError
 from chimera.baseDialog import ModelessDialog
 from chimera.widgets import MetalOptionMenu
 # Additional 3rd parties
@@ -28,87 +29,6 @@ It should only 'draw' the window, and should NOT contain any
 business logic like parsing files or applying modifications
 to the opened molecules. That belongs to core.py.
 """
-
-# This is a Chimera thing. Do it, and deal with it.
-ui = None
-def showUI(callback=None, *args, **kwargs):
-    """
-    Requested by Chimera way-of-doing-things
-    """
-    if chimera.nogui:
-        tk.Tk().withdraw()
-    global ui
-    if not ui:
-        global var_password
-        fill_ui_password()
-
-
-def fill_ui_password():
-        """
-        Opening  report options
-        """
-        # Create window
-        ui_password = tk.Toplevel()
-        Center(ui_password)
-        _top_level_frame = tk.Frame(ui_password)
-        _top_level_frame.pack(expand=True, fill='both')
-        var_password = tk.StringVar()
-        var_username = tk.StringVar()
-        
-        ui_title = tk.Label(_top_level_frame, text='Cathionic Dummy Atom Method', font=("Helvetica", 16))
-        ui_username_lab = tk.Label(_top_level_frame, text= 'Username')
-        ui_username_entry = tk.Entry(_top_level_frame, textvariable = var_username, background='white')
-        ui_password_lab = tk.Label(_top_level_frame, text= 'Password')
-        ui_password_entry = tk.Entry(_top_level_frame, textvariable = var_password, background='white', show="*")
-        ui_ok = tk.Button(_top_level_frame, text= 'Ok', command= lambda: Apply2(
-            var_password = var_password.get(), ui_password = ui_password))
-        ui_close = tk.Button(_top_level_frame, text='Close', command=ui_password.destroy)
-
-        ui_title.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
-        ui_username_lab.grid(row=1, column=1, padx=10, pady=10)
-        ui_username_entry.grid(row=1, column=2, padx=10, pady=10)
-        ui_password_lab.grid(row=2, column=1, padx=10, pady=10)
-        ui_password_entry.grid(row=2, column=2, padx=10, pady=10)
-        ui_ok.grid(row=3, column=2, padx=10, pady=10)
-        ui_close.grid(row=3, column=3, padx=10, pady=10)
-
-        file =  os.path.join(os.path.dirname(__file__), 'img/logo.png')
-        im = Image.open(file)
-        resized = im.resize((100, 100), Image.ANTIALIAS)
-        tkimage = ImageTk.PhotoImage(resized)
-        myvar = tk.Label(_top_level_frame, image=tkimage)
-        myvar.image = tkimage
-        myvar.grid(row=1, column=0, rowspan=2, padx=10, pady=10)
-
-def Apply2(var_password, ui_password):
-    """
-    Default! Triggered action if you click on an Apply button
-    """
-    try:
-        filename = os.path.join(os.path.dirname(__file__), 'pass.txt')
-        with open(filename, 'r') as f:
-            password = f.readline()[:-1]
-    except Exception:
-        sys.exit('There was a problem reading the file!')
-    password_user_encr = hashlib.sha224(var_password.encode()).hexdigest()
-    if  (password_user_encr) == (password):
-       _show_dummy_UI()
-       ui_password.destroy()
-    else:
-        print('Wrong Username or Password. Try again.')
-
-def _show_dummy_UI(callback=None, *args, **kwargs):
-    if chimera.nogui:
-        tk.Tk().withdraw()
-    global ui
-    if not ui:
-        ui = DummyDialog(*args, **kwargs)
-    model = Model(gui=ui)
-    controller = Controller(gui=ui, model=model)
-    ui.enter()
-    if callback:
-        ui.addCallback(callback)
-
 
 STYLES = {
     tk.Entry: {
@@ -134,6 +54,99 @@ STYLES = {
     }
 }
 
+# This is a Chimera thing. Do it, and deal with it.
+ui = None
+def showUI(callback=None, *args, **kwargs):
+    """
+    Requested by Chimera way-of-doing-things
+    """
+    if chimera.nogui:
+        tk.Tk().withdraw()
+    global ui
+    if not ui:
+        global var_password
+        fill_ui_password()
+
+
+def fill_ui_password():
+        """
+        Opening  password GUI
+        """
+        # Create window
+        ui_password = tk.Toplevel()
+        center(ui_password)
+        _top_level_frame = tk.Frame(ui_password)
+        _top_level_frame.pack(expand=True, fill='both')
+        var_password = tk.StringVar()
+        var_username = tk.StringVar()
+        
+        ui_title = tk.Label(_top_level_frame, text='Cathionic Dummy Atom Method', font=("Helvetica", 16))
+        ui_username_lab = tk.Label(_top_level_frame, text= 'Username')
+        ui_username_entry = tk.Entry(_top_level_frame, textvariable = var_username, background='white')
+        ui_password_lab = tk.Label(_top_level_frame, text= 'Password')
+        ui_password_entry = tk.Entry(_top_level_frame, textvariable = var_password, background='white', show="*")
+        ui_ok = tk.Button(_top_level_frame, text= 'Ok', command= lambda: _apply(
+            var_password = var_password.get(), ui_password = ui_password))
+        ui_close = tk.Button(_top_level_frame, text='Close', command=ui_password.destroy)
+
+        ui_title.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
+        ui_username_lab.grid(row=1, column=1, padx=10, pady=10)
+        ui_username_entry.grid(row=1, column=2, padx=10, pady=10)
+        ui_password_lab.grid(row=2, column=1, padx=10, pady=10)
+        ui_password_entry.grid(row=2, column=2, padx=10, pady=10)
+        ui_ok.grid(row=3, column=2, padx=10, pady=10)
+        ui_close.grid(row=3, column=3, padx=10, pady=10)
+
+        file =  os.path.join(os.path.dirname(__file__), 'img/logo.png')
+        im = Image.open(file)
+        resized = im.resize((100, 100), Image.ANTIALIAS)
+        tkimage = ImageTk.PhotoImage(resized)
+        myvar = tk.Label(_top_level_frame, image=tkimage)
+        myvar.image = tkimage
+        myvar.grid(row=1, column=0, rowspan=2, padx=10, pady=10)
+
+
+def _show_dummy_UI(callback=None, *args, **kwargs):
+    if chimera.nogui:
+        tk.Tk().withdraw()
+    global ui
+    if not ui:
+        ui = DummyDialog(*args, **kwargs)
+    model = Model(gui=ui)
+    controller = Controller(gui=ui, model=model)
+    ui.enter()
+    if callback:
+        ui.addCallback(callback)
+def _apply(var_password, ui_password):
+    """
+    Default! Triggered action if you click on an Apply button
+    """
+    try:
+        filename = os.path.join(os.path.dirname(__file__), 'pass.txt')
+        with open(filename, 'r') as f:
+            password = f.readline()[:-1]
+    except Exception:
+        sys.exit('There was a problem reading the file!')
+    password_user_encr = hashlib.sha224(var_password.encode()).hexdigest()
+    if  (password_user_encr) == (password):
+       _show_dummy_UI()
+       ui_password.destroy()
+    else:
+        raise UserError('Wrong Username or Password. Try again.')
+
+def center(window):
+            """
+            Update "requested size" from geometry manager
+            """
+            window.update_idletasks()
+            x = (window.winfo_screenwidth() -
+                 window.winfo_reqwidth()) / 2
+            y = (window.winfo_screenheight() -
+                 window.winfo_reqheight()) / 2
+            window.geometry("+%d+%d" % (x, y))
+            window.deiconify()
+
+
 class DummyDialog(ModelessDialog):
 
     """
@@ -143,17 +156,16 @@ class DummyDialog(ModelessDialog):
     If you don't want this behaviour and instead you want your extension to 
     claim exclusive usage, use ModalDialog.
     """
-
+    # Defaults
+    defaults = None
     buttons = ('Run', 'Close')
-    default = None
     help = 'https://www.insilichem.com'
 
     def __init__(self, *args, **kwarg):
         # GUI init
         self.title = 'Plume Blank Dialog'
-        self.controller = None
 
-        #Initialize Variables
+        #Dummy Variables
         self.var_files_to_load = tk.StringVar()
         self.var_metal_geometry = tk.StringVar()
         self.var_metal_charge = tk.IntVar()
@@ -203,20 +215,20 @@ class DummyDialog(ModelessDialog):
         This is the main part of the interface. With this method you code
         the whole dialog, buttons, textareas and everything.
         """
+        # Frames
+        frames = [('ui_metalcenter_frame', 'Metal Center Parameters'),
+                  ('ui_systemparam_frame', 'System Characteristics'),
+                  ('ui_table_frame', 'Geometries Table')]
 
         # Create main window
         self.canvas = tk.Frame(parent)
         self.canvas.pack(expand=True, fill='both')
-
-        # Create all frames
-        frames = [('ui_metalcenter_frame', 'Metal Center Parameters'),
-                  ('ui_systemparam_frame', 'System Characteristics'),
-                  ('ui_table_frame', 'Geometries Table')]
         for frame, description in frames:
             setattr(self, frame, tk.LabelFrame(self.canvas, text=description))
-        #Fill Canvas
+        # Select Metal
         self.ui_metals_menu = MetalOptionMenu(self.canvas, command=self._populateframe)
-        # Fill MetalCenterFrame
+        
+        # Select Parameters
         self.ui_metalgeometry = ttk.Combobox(
             self.canvas, textvariable=self.var_metal_geometry)
         self.ui_metalgeometry.config(values=('tetrahedral', 'octahedral', 'square planar', 'square pyramid'))
@@ -228,8 +240,6 @@ class DummyDialog(ModelessDialog):
         	self.canvas,textvariable=self.var_dz_mass)
         self.ui_dz_met_bondlenght = tk.Entry(
         	self.canvas, textvariable=self.var_dz_met_bondlenght)
-
-
         grid_metalcenter_frame = [['',''],
         						 ['Metal Geometry', self.ui_metalgeometry],
                                  ['Metal Charge', self.ui_metalcharge],
@@ -240,7 +250,7 @@ class DummyDialog(ModelessDialog):
                                  ['','']]
         self.auto_grid(self.ui_metalcenter_frame, grid_metalcenter_frame)
 
-        # Fill SystemParamFrame
+        # Select Output
         self.ui_files_to_load = tk.Listbox(
             self.canvas, listvariable=self.var_files_to_load)
         self.ui_addfiles = tk.Button(
@@ -250,65 +260,32 @@ class DummyDialog(ModelessDialog):
         self.ui_outputpath = tk.Entry(
             self.canvas, textvariable=self.var_outputpath)
         self.ui_browseoutput = tk.Button(
-            self.canvas, text='...', command=self.add_outputdirect)
+            self.canvas, text='...', command=self._add_outputdirectory)
         self.ui_outputname = tk.Entry(
             self.canvas, textvariable=self.var_outputname)
         self.ui_waterbox = tk.Checkbutton(
         	self.canvas, variable=self.var_waterbox)
-
-
-
         grid_systemparam_frame = [['Files to be Loaded', self.ui_files_to_load,
                                  (self.ui_addfiles, self.ui_removefiles)],
                                  ['', ('Water Box', self.ui_waterbox), ''],
                                  ['Output Path', self.ui_outputpath, self.ui_browseoutput],
                                  ['Output Name', self.ui_outputname]]
-                                 
         self.auto_grid(self.ui_systemparam_frame, grid_systemparam_frame)
-        """
-        # Table
-        gt = self.ui_geometrytable = SortableTable(self.canvas)
-        gt.addColumn("Ligands", str, headerPadX=60)
-        
-        
-        #Filling table at the end
-        from geomData import geometries
-
-        if var_metal_geometry.get() == 'tetrahedral':
-            sel = 4
-        elif var_metal_geometry.get() == 'octahedral':
-            sel = 6
-        geoms = [g for g in geoms if sel == g.coordinationNumber]
-        
-        
-        self.ui_geometrytable.setData([])
-        gt.launch(title="Geometry Table")
-        """
-        #gt.sortBy(rmsd)
 
         # Grid Frames
-        #grid_allframes = [[(self.ui_metalcenter_frame, self.ui_table_frame)],
-                          #[self.ui_systemparam_frame]]
-        #self.auto_grid(self.canvas, grid_allframes)
-        #self.ui_table_frame.grid(row=len(frames), columnspan=2, sticky='ew', padx=5, pady=5)
-        #self.metals = self._search_metals()
-        #self.ui_metals_menu.setvalue(self.metals)
         self.ui_metals_menu.grid(row=0, column=0, columnspan=2)
         self.ui_metalcenter_frame.grid(row=1, column=0)
-        #self.ui_table_frame.grid(row=1,column=1)
         self.ui_systemparam_frame.grid(row=2, column=0, columnspan=2)
     
     def _populateframe(self, metal):
 
         """
-        Save metal parameters and output the
-        metal center choosen for the user.
-        We perform this by creating dict for
-        each metal and updating them regurlary
-        when needed
+        Method Class, which stores dictionaries
+        for each metal center in menu.
+        Uploading frame variables in case the user
+        comes back to the same metal. 
         """
-        setattr(self, metal.name, {})
-        next_metal = getattr(self, metal.name)
+        next_metal = setattr(self, metal.name, {})
         next_metal["title"] = metal.name
         if self.previous_metal:
             #save previous
@@ -349,9 +326,6 @@ class DummyDialog(ModelessDialog):
                 self.var_dz_met_bondlenght.set(0.9)  
         self.previous_metal = next_metal
 
-
-
-
     def _add_files(self):
         filepath = filedialog.askopenfilename(initialdir='~/', filetypes=(
             ('Lib File', '*.lib'), ('Frcmod File', '*.frcmod'),('Xml File', '*.xml')))
@@ -366,25 +340,11 @@ class DummyDialog(ModelessDialog):
         if selection:
             self.ui_files_to_load.delete(selection)
 
-
-    def add_outputdirect(self):
+    def _add_outputdirectory(self):
         directorypath = filedialog.askdirectory(
             initialdir='~/')
         if directorypath:
             self.var_outputpath.set(directorypath)
-
-    def Apply(self):
-        """
-        Default! Triggered action if you click on an Apply button
-        """
-        pass
-
-    def OK(self):
-        """
-        Default! Triggered action if you click on an OK button
-        """
-        self.Apply()
-        self.Close()
 
     def Close(self):
         """
@@ -394,13 +354,6 @@ class DummyDialog(ModelessDialog):
         ui = None
         ModelessDialog.Close(self)
         self.destroy()
-
-    # Below this line, implement all your custom methods for the GUI.
-    def load_controller(self):
-        pass
-
-
-       # Script Functions
 
     def auto_grid(self, parent, grid, resize_columns=(1,), label_sep=':', **options):
         """
@@ -465,17 +418,12 @@ class DummyDialog(ModelessDialog):
             widget.pack(in_=parent, **options)
             self._fix_styles(widget)
 
-def Center(window):
-        """
-        Update "requested size" from geometry manager
-        """
-        window.update_idletasks()
-        x = (window.winfo_screenwidth() -
-             window.winfo_reqwidth()) / 2
-        y = (window.winfo_screenheight() -
-             window.winfo_reqheight()) / 2
-        window.geometry("+%d+%d" % (x, y))
-        window.deiconify()
+    # Below this line, implement all your custom methods for the GUI.
+    def load_controller(self):
+        pass
+
+    
+
 
 
 

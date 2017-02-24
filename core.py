@@ -52,68 +52,72 @@ class Controller(object):
         self.model.temp_directory()
    
         metals = metal_menu.itemMap.values()
-        i=1
         #Sava metal gui parameters
         self.model.save_variables(metal_menu.getvalue())
-        for metal in metals:
-            #Retrieve metal parameters from gui
-            self.model.retrieve_variables(metal)
-            #Get variables
+        for i, metal in enumerate(metals):
+            # Get variables
             res = str(metal.residue.type)
-            name = str(metal.name)            
-            if self.inputpath.endswith(".mol2"):
-                Type = metal.mol2type
+            name = str(metal.name)
+            if self.inputpath.endswith(".pdb"):
+                Type = str(metal.element.name)  
+            elif self.inputpath.endswith(".mol2"):
+                Type = str(metal.mol2type)
+            else:
+                raise UserError("No Input File")
+
+            # Retrieve metal parameters from gui
+            self.model.retrieve_variables(metal)
+   
             # Create Metal Center Atom
             if str(metal.element.name).lower() == 'zn':
-                Zinc = Atom(model=self.model, metal = metal, symbol='Zn', atomicnumber=30, mass=65.38, residue=res)
+                Zinc = Atom(model=self.model, metal = metal, symbol=Type, atomicnumber=30, mass=65.38, residue=res)
                 metal_class = Zinc
             elif str(metal.element.name).lower() == 'fe':
-                Iron = Atom(model=self.model, symbol='Fe', atomicnumber=26, mass=55.845 , residue=res)
+                Iron = Atom(model=self.model, symbol=Type, atomicnumber=26, mass=55.845 , residue=res)
                 metal_class = Iron
             elif str(metal.element.name).lower() == 'cd':
-                Cadmium = Atom(model=self.model, metal = metal, symbol='CD', atomicnumber=48, mass=112.411, residue=res)
+                Cadmium = Atom(model=self.model, metal = metal, symbol=Type, atomicnumber=48, mass=112.411, residue=res)
                 metal_class = Cadmium
             elif str(metal.element.name).lower() == 'cu':
-                Copper = Atom(model=self.model,  metal = metal, symbol='CU', atomicnumber=29, mass=63.546, residue=res)
+                Copper = Atom(model=self.model,  metal = metal, symbol=Type, atomicnumber=29, mass=63.546, residue=res)
                 metal_class = Copper
             elif str(metal.element.name).lower() == 'co':
-                Cobalt = Atom(model=self.model, metal = metal, symbol='CO', atomicnumber=27, mass=58.933, residue=res)
+                Cobalt = Atom(model=self.model, metal = metal, symbol=Type, atomicnumber=27, mass=58.933, residue=res)
                 metal_class = Cobalt
             elif str(metal.element.name).lower() == 'pt':
-                Platinum = Atom(model=self.model, metal = metal, symbol='PT', atomicnumber=78, mass=195.084, residue=res)
+                Platinum = Atom(model=self.model, metal = metal, symbol=Type, atomicnumber=78, mass=195.084, residue=res)
                 metal_class = Platinum
             elif str(metal.element.name).lower() == 'pd':
-                Palladium = Atom(model=self.model, metal = metal, symbol='PD', atomicnumber=46, mass=106.42, residue=res)
+                Palladium = Atom(model=self.model, metal = metal, symbol=Type, atomicnumber=46, mass=106.42, residue=res)
                 metal_class = Palladium
             elif str(metal.element.name).lower() == 'mg':
-                Magnesium = Atom(model=self.model,metal = metal, symbol='MG', atomicnumber=12, mass=24.305, residue=res)
+                Magnesium = Atom(model=self.model,metal = metal, symbol=Type, atomicnumber=12, mass=24.305, residue=res)
                 metal_class = Magnesium
             elif str(metal.element.name).lower() == 'v':
-                Vanadium = Atom(model=self.model, metal = metal, symbol='V', atomicnumber=23, mass=50.9415, residue=res)
+                Vanadium = Atom(model=self.model, metal = metal, symbol=Type, atomicnumber=23, mass=50.9415, residue=res)
                 metal_class = Vanadium
             elif str(metal.element.name).lower() == 'cr':
-                Chromium = Atom(model=self.model, metal = metal, symbol='CR', atomicnumber=24, mass=51.996, residue=res)
+                Chromium = Atom(model=self.model, metal = metal, symbol=Type, atomicnumber=24, mass=51.996, residue=res)
                 metal_class = Chromium
             elif str(metal.element.name).lower() == 'mn':
-                Manganese = Atom(model=self.model, metal = metal, symbol='MN', atomicnumber=25, mass=54.938, residue=res)
+                Manganese = Atom(model=self.model, metal = metal, symbol=Type, atomicnumber=25, mass=54.938, residue=res)
                 metal_class = Manganese
             else:
                 continue
 
             print('Building dummies...')
             self.model.include_dummies(metal_class)
+
             print('Building Geometry...')
             self.model.specify_geometry(metal_class.residue, metal_class.symbol, metal_class.center,
                 metal_class.dummiespositions, self.model.tempdir)
-            #elif self.model.gui.var_metal_geometry.get() == 'octahedral':
-                #self.model.specify_geometry(Zinc.symbol, Zinc.AtomCoord[0], Zinc.AtomCoord[1], Zinc.AtomCoord[2], '/home/daniel/Baixades/amber14')
+
             print('Creating library')
             self.model.creatlib(self.model.tempdir, metal_class.residue,
                 i, self.model.gui.var_outputpath.get(), self.model.gui.var_outputname.get())
             
             print('Adding charges...')
-            self.model.add_charge(self.model.tempdir, metal_class.charge, metal_class.symbol,
-                metal_class.atomicnumber, metal_class.residue, i)
+            self.model.add_charge(self.model.tempdir, metal_class, name, i)
             
             print('Creating frcmod...')
             self.model.create_frcmod(direcxl=self.model.tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
@@ -121,7 +125,7 @@ class Controller(object):
                 dzmass= metal_class.dzmass)
 
             print('Metal Center Finished Deleting temp Files')
-            i+=1
+          
 
         print('Saving system...')
         self.model.create_system(inputpath=self.inputpath, direcxl=self.model.tempdir,
@@ -217,7 +221,7 @@ class Model(object):
             pos += 1
         dummy_element = chimera.Element('DZ')
 
-        if self.geometry == 'tetrahedral' or self.geometry == 'square plannar':
+        if self.geometry == 'tetrahedral' or self.geometry == 'square planar':
             dummy_names = ["D1", "D2", "D3", "D4"]  
             
         elif self.geometry == 'octahedral':
@@ -336,9 +340,7 @@ class Model(object):
             process.wait()
         self.lib.append(lib_filename)
 
-    def add_charge(self, direcxl,q,met,atm,res,i):
-
-
+    def add_charge(self, direcxl, metal, name, i):
         """
         Include the charge and connectivity inside met.lib created before.
 
@@ -353,19 +355,23 @@ class Model(object):
         atm:int
             Metal atomic number
         """
-        
+
+        q = metal.charge
+        met = metal.symbol
+        atm = metal.atomicnumber
+        res = metal.residue        
 
         if self.geometry == 'tetrahedral':
             lineas=[]
             try:
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
                 lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(met,met,atm)
+                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
                 lineas[4]=' "D1" "DZ" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
                 lineas[5]=' "D2" "DZ" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
                 lineas[6]=' "D3" "DZ" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
                 lineas[7]=' "D4" "DZ" 0 1 196609 5 -1 %.5f\n'%(q/4.0)
-                lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
+                lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
                 lineas[10]=' "D1" "DZ" 0 -1 0.0\n'
                 lineas[11]=' "D2" "DZ" 0 -1 0.0\n'
                 lineas[12]=' "D3" "DZ" 0 -1 0.0\n'
@@ -399,14 +405,14 @@ class Model(object):
             try:
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
                 lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(met,met,atm)
+                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
                 lineas[4]=' "D1" "DX" 0 1 196609 2 -1 %.5f\n'%(q/6.0)
                 lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/6.0)
                 lineas[6]=' "D3" "DY" 0 1 196609 4 -1 %.5f\n'%(q/6.0)
                 lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/6.0)
                 lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.5f\n'%(q/6.0)
                 lineas[9]=' "D6" "DZ" 0 1 196609 7 -1 %.5f\n'%(q/6.0)
-                lineas[11]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
+                lineas[11]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
                 lineas[12]=' "D1" "DX" 0 -1 0.0\n'
                 lineas[13]=' "D2" "DY" 0 -1 0.0\n'
                 lineas[14]=' "D3" "DY" 0 -1 0.0\n'
@@ -442,12 +448,12 @@ class Model(object):
             try:
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
                 lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(met,met,atm)
+                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
                 lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
                 lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
                 lineas[6]=' "D3" "DX" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
                 lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/4.0)
-                lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
+                lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
                 lineas[10]=' "D1" "DY" 0 -1 0.0\n'
                 lineas[11]=' "D2" "DY" 0 -1 0.0\n'
                 lineas[12]=' "D3" "DX" 0 -1 0.0\n'
@@ -476,13 +482,13 @@ class Model(object):
             try:
                 file = open("%s/met%d.lib"%(direcxl,i),"r")
                 lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(met,met,atm)
+                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
                 lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/5.0)
                 lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/5.0)
                 lineas[6]=' "D3" "DX" 0 1 196609 4 -1 %.5f\n'%(q/5.0)
                 lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/5.0)
                 lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.5f\n'%(q/5.0)
-                lineas[10]=' "%s" "%s" 0 -1 0.0\n'%(met,met)
+                lineas[10]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
                 lineas[11]=' "D1" "DY" 0 -1 0.0\n'
                 lineas[12]=' "D2" "DY" 0 -1 0.0\n'
                 lineas[13]=' "D3" "DX" 0 -1 0.0\n'
@@ -766,11 +772,10 @@ class Model(object):
             process.wait()
 
         print('Program Finished')
-        
-        """if os.path.exists(self.tempdir):
+
+        if os.path.exists(self.tempdir):
             print('Cleaning Memory')
             shutil.rmtree(self.tempdir)
-            """
         
 
 
@@ -815,8 +820,8 @@ class Atom(Model):
             self.dummiespositions.append(dummyposition)
         return self.dummiespositions
 
-
-    def search_for_ligands(self, metal):
+    @staticmethod
+    def search_for_ligands(metal):
         data = []
         coordLim=4.0
         from numpy import array
