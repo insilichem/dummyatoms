@@ -46,7 +46,7 @@ Usage
 	- Metal Geometry (Need to be feasable or DummyAtoms will complain)
 	- Metal Charge
 	- Dummy Atoms Mass
-	- Metal-Dmmy bond distance
+	- Metal-Dummy bond distance
 
 3. Upload externals files [.lib, .frcmod]
 
@@ -62,6 +62,9 @@ Usage
 
 	Press run and you will obtain the topology (.prmtop) and coordinates (.inpcrd)
 	of your programm and some visualitation outputs (.mol2, .pdb)
+
+6. MD
+	You can use [@Plumme OpenMM GUI](https://github.com/miniaoshi/Plumme_OpenMM) to easily run the MD inputs you just created.
 
 ## Get help
 
