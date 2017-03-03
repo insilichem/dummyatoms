@@ -3,7 +3,7 @@ Dummy Atoms
 
 Easy to prepare MD inputs for metal systems!
 
-*By  Daniel Soler Viladrich([@miniaoshi](https://bitbucket.org/daniel-soler)). Contributors: Jaime Rodríguez-Guerra, Lur Alonso*
+*By  Daniel Soler Viladrich([@dani-soler](https://github.com/miniaoshi/)). Contributors: Jaime Rodríguez-Guerra, Lur Alonso*
 
 ### Some cool features
 
