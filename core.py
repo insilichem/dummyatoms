@@ -15,9 +15,7 @@ import shutil
 # Chimera stuff
 import chimera
 from chimera import UserError
-from MetalGeom import gui
-from MetalGeom import geomData
-from MetalGeom import Geometry
+from MetalGeom import gui, Geometry  # I don't like this gui bare import. Too broad of a term that can easily pollute the namespace!
 from chimera.molEdit import addAtom
 from chimera import runCommand as rc
 
@@ -72,42 +70,46 @@ class Controller(object):
             self.model.retrieve_variables(metal)
    
             print("Building Metal Center...")
-            metal_class = Metal.handle_atom_creation(metal=metal, Type=self.Type, res=self.res, model=self.model)
+            metal_class = Metal.handle_atom_creation(metal=metal, Type=self.Type, 
+                                                     res=self.res, model=self.model)
 
             print('Building dummies...')
             self.model.include_dummies(metal_class)
 
             print('Building Geometry...')
-            self.model.specify_geometry(metal_class.residue, metal_class.symbol, metal_class.center,
-                metal_class.dummiespositions, tempdir)
+            self.model.specify_geometry(metal_class.residue, metal_class.symbol, 
+                                        metal_class.center, metal_class.dummiespositions,
+                                        tempdir)
 
             print('Creating library')
-            self.model.creatlib(tempdir, metal_class.residue,
-                i, self.model.gui.var_outputpath.get(), self.model.gui.var_outputname.get())
+            self.model.creatlib(tempdir, metal_class.residue, i, 
+                                self.model.gui.var_outputpath.get(), 
+                                self.model.gui.var_outputname.get())
             
             print('Adding charges...')
             self.model.add_charge(tempdir, metal_class, self.name, i)
             
             print('Creating frcmod...')
-            self.model.create_frcmod(temp_path=tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
-                i=i, met_vwradius=metal_class.met_vwradius, dz_met_bondlenght=metal_class.dz_met_bondlenght,
-                dzmass= metal_class.dzmass)
+            self.model.create_frcmod(temp_path=tempdir, metalmass=metal_class.mass,
+                                     met=metal_class.symbol, i=i, 
+                                     met_vwradius=metal_class.met_vwradius, 
+                                     dz_met_bondlenght=metal_class.dz_met_bondlenght,
+                                     dzmass= metal_class.dzmass)
 
             print('Metal Center Finished Deleting temp Files')
           
 
         print('Saving system...')
         self.model.create_system(inputpath=self.inputpath, temp_path=tempdir,
-            met=metal_class.symbol, i=i, output=self.gui.var_outputpath.get(),
-            output_name = self.model.gui.var_outputname.get())
+                                 met=metal_class.symbol, i=i, 
+                                 output=self.gui.var_outputpath.get(),
+                                 output_name=self.model.gui.var_outputname.get())
+
 
 class Model(object):
 
     """
-    The model controls the data we work with. Normally, it'd be a Chimera molecule
-    and some input files from other programs. The role of the model is to create
-    a layer around those to allow the easy access and use to the data contained in
-    those files
+    Proper description of the model!
     """
 
     def __init__(self, gui, *args, **kwargs):
@@ -131,6 +133,10 @@ class Model(object):
         #Saving last metal params
         metal_dicts = self.gui.metals
 
+        # [Note 1]
+        # You are iterating metal_dicts once just to see if you should iterate
+        # over it... Just do it from the beginning. If the if clause does not
+        # returns True, nothing will happen, and that's fine
         if any(dic["title"] == metal.name for dic in metal_dicts):
             for dic in metal_dicts:
                 if dic["title"] == metal.name:
@@ -139,6 +145,7 @@ class Model(object):
                     dic["vw_radius"] = self.gui.var_vw_radius.get()
                     dic["dz_mass"] = self.gui.var_dz_mass.get()
                     dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
+        # Same here [Note 1]
         elif not any(dic["title"] == metal.name for dic in metal_dicts):
             dic = {}
             dic["title"] = metal.name
@@ -153,6 +160,7 @@ class Model(object):
     def retrieve_variables(self, metal):
         #Updating variables for each metal
         metal_dicts = self.gui.metals
+        # Same here [Note 1]
         if any(dic["title"] == metal.name for dic in metal_dicts):
             for dic in metal_dicts:
                 if dic["title"] == metal.name:
@@ -161,6 +169,7 @@ class Model(object):
                     self.vw_radius = dic["vw_radius"]
                     self.dz_mass = dic["dz_mass"] 
                     self.dz_met = dic["dz_met_bond"]
+        # Same here [Note 1]
         elif not any(dic["title"] == metal.name for dic in metal_dicts): 
             self.geometry = "tetrahedral"
             self.charge = 2
@@ -187,8 +196,9 @@ class Model(object):
         return self.tempdir
 
     def include_dummies(self, metal_class):
-
-        
+        """
+        docstring please
+        """
         #Find metal coord
         dummy_names=[]
         dummiespositions = []
@@ -205,32 +215,26 @@ class Model(object):
         res = metal.residue
         mol = metal.molecule
         pos = 1
+        # Are you counting residues? Try with mol.numResidues.
         while mol.findResidue(chimera.MolResId(chain, pos)):
             pos += 1
         dummy_element = chimera.Element('DZ')
 
-        if self.geometry == 'tetrahedral' or self.geometry == 'square planar':
+        # Multi-or checks are cleaner with `in`
+        if self.geometry in ('tetrahedral', 'square planar'):
             dummy_names = ["D1", "D2", "D3", "D4"]  
-            
         elif self.geometry == 'octahedral':
             dummy_names = ["D1", "D5", "D2", "D3", "D6", "D4"]
-
         elif self.geometry == 'square pyramid':
             dummy_names = ["D1", "D5", "D2", "D3", "D4"] 
-
+        else:
+            # In case of errors? What do we do?
+            pass
 
         for i, dummy_name in enumerate(dummy_names): 
-                dummy_coord=chimera.Coord(dummiespositions[i][0],
-                                           dummiespositions[i][1],
-                                           dummiespositions[i][2])
-                addAtom(dummy_name, dummy_element, res, dummy_coord) 
-
-
-        
-
-
-
-
+            # esta te ha gustado, a que si...
+            dummy_coord = chimera.Coord(*dummiespositions[i][0:3])
+            addAtom(dummy_name, dummy_element, res, dummy_coord) 
 
     def specify_geometry(self, res, met, metal, dum, temp_path):
         
@@ -251,6 +255,8 @@ class Model(object):
             temp directory path
 
         """
+        # Wow, just wow. I am sure you are able to do this better, and cleaner.
+        # Use a template string and then iterate with for and zip!
         filename = os.path.join(temp_path,"dummymetal.pdb")
         self.tempfiles.append(filename)
         with open(filename, 'w') as f:
@@ -290,6 +296,7 @@ class Model(object):
                 f.write("HETATM    6  D5  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[4][0], dum[4][1], dum[4][2]))
                 f.write("END")
 
+    # Funny method name... create_lib, maybe?
     def creatlib(self, temp_path, res, i, output, output_name): # ambermini
 
         """
@@ -311,30 +318,35 @@ class Model(object):
         output_name: str
             Desires output name
         """
-
+        # try should only include the critical parts...
+        pdbfile = os.path.join(temp_path, "dummymetal.pdb")
+        filename = os.path.join(temp_path, "leaprc.metal")
+        output_lib = os.path.join(temp_path, "met%d.lib" % i)
+        self.tempfiles.append(filename)
+        lib_filename = os.path.join(temp_path, "met%d.lib" % i)
+        # what is this '\n' for... in the filenameeeee!
+        source = os.path.join(temp_path, "/dat/leap/cmd/oldff/leaprc.ff99SB\n")
         try:
-            pdbfile = os.path.join(temp_path,"dummymetal.pdb")
-            filename = os.path.join(temp_path,"leaprc.metal")
-            output_lib = os.path.join(temp_path,"met%d.lib"%i)
-            self.tempfiles.append(filename)
-            lib_filename = os.path.join(temp_path,"met%d.lib"%i)
             with open(filename, 'w') as f:
                 f.write("logFile leap.log\n")
-                source = os.path.join(temp_path, "/dat/leap/cmd/oldff/leaprc.ff99SB\n")
                 f.write("source " + source)
                 f.write("%s= loadpdb %s\n"%(res,pdbfile))
                 f.write("saveoff %s %s\n"%(res,output_lib))
                 f.write("quit")
         except IOError:
+            # This type of exception masking is not very useful, actually
             raise UserError("Impossible to open leaprc file")
-
- 
-           
+        
+        # Hardcoded paths are worst thing ever. Get rid of that ASAP
+        # If amberhome is not set, raise an error, but don't do this, please.
+        # Anyway, this sould be set at __init__, not here, lost in non-related logic.
         self.amber_path = os.environ['AMBERHOME'] =  "/home/daniel/Baixades/amber14"
-        command = "$AMBERHOME/bin/tleap -s -f %s"%filename
+        # command should be a list of items, not a string
+        command = "$AMBERHOME/bin/tleap -s -f %s" % filename
                
         log_file = os.path.join(output, output_name + ".log")
         with open(log_file, 'w') as log:
+            # shell = True... give me a good reason.
             subprocess.call(command, stdout=log, stderr=log, shell=True)
         self.lib.append(lib_filename)
 
@@ -354,6 +366,8 @@ class Model(object):
         i: int
             Metal Number
         """
+        # I am about to puke. You know it's nasty, so don't do that.
+        # Rewrite this elegantly, please.
 
         q = metal.charge
         met = metal.symbol
@@ -508,13 +522,8 @@ class Model(object):
                 with open(filename,"w") as f:
                     for linea in lineas:    
                         f.write(linea)
-
             except IOError:
                 print('Impossible to open .lib file')
-
-
-
-              
 
     def create_frcmod(self, temp_path, metalmass, dzmass, dz_met_bondlenght, met_vwradius, met,i):
         
@@ -540,7 +549,7 @@ class Model(object):
         i: int
             Metal number
         """
-
+        # Same here....
         try:
             frcmod_filename = os.path.join(temp_path,"zinc%d.frcmod"%i)
             with open(frcmod_filename,"w") as f:
@@ -693,7 +702,7 @@ class Model(object):
 
         self.frcmod.append(frcmod_filename)      
 
-    def create_system (self, inputpath, temp_path, met, i, output, output_name):
+    def create_system(self, inputpath, temp_path, met, i, output, output_name):
        
         """
         System Creation through leaprc file:
@@ -797,7 +806,7 @@ class Model(object):
 
 
 
-
+# What kind of line length are you using? 200 chars? Trim that down to 100 or 100 tops.
 ############################################Elements#################################################
 
 class Metal(Model):
@@ -840,6 +849,8 @@ class Metal(Model):
         Dummies oriented positions 
         """
 
+        # Don't you see a pattern here? Try with:
+        # geom = Geometry.Geometry(self.model.geometry)
         if self.model.geometry == 'tetrahedral':
             geom = Geometry.Geometry('tetrahedral')
         elif self.model.geometry == 'octahedral':
@@ -848,15 +859,16 @@ class Metal(Model):
             geom = Geometry.Geometry('square planar')
         elif self.model.geometry == 'square pyramid':
             geom = Geometry.Geometry('square pyramid')
-        ligands=self.search_for_ligands(metal)
-        print(len(ligands))
+
+        ligands = self.search_for_ligands(metal)
+        print(len(ligands)) # debugging leftovers?
         rmsd, self.center, self.vecs = gui.geomDistEval(geom, metal, ligands)
         self.dummiespositions = []
         for vec in self.vecs:
             vec.length = self.dz_met_bondlenght
             dummyposition =  self.center + vec
             self.dummiespositions.append(dummyposition)
-        return self.dummiespositions
+        return self.dummiespositions  # I don't like this name
 
     @staticmethod
     def search_for_ligands(metal):
@@ -877,7 +889,8 @@ class Metal(Model):
         -------
         chimera ligands object
         """
-        
+        # IMPORTS ALWAYS AT TOP OF THE FILE!!!!!!
+        # Which Chimera file did you steal? :P
         data = []
         coordLim=4.0
         from numpy import array
@@ -946,7 +959,11 @@ class Metal(Model):
         -------
         Metal class object 
         """
-
+        # You know Chimera already includes this information, right?
+        # It'd be enough with this:
+        # return cls(model=model, metal=metal, symbol=Type, residue=res, 
+        #            mass=metal.element.mass, atomicnumber=metal.element.number) 
+        
         if str(metal.element.name).lower() == 'zn':
             return cls(model=model, metal = metal, symbol=Type, atomicnumber=30, mass=65.38, residue=res)   
         elif str(metal.element.name).lower() == 'fe':
