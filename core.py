@@ -46,15 +46,15 @@ class Controller(object):
     def run(self):    
 
         print('Creating tmp directory...')
-        self.model.temp_directory()
+        tempdir = self.model.temp_directory()
 
-        metal_menu = self.gui.ui_metals_menu
-        metals = metal_menu.itemMap.values()
-
+    
         #Save last frame variables
+        metal_menu = self.gui.ui_metals_menu
         self.model.save_variables(metal_menu.getvalue())
 
         #Start process for each metal
+        metals = metal_menu.itemMap.values()
         for i, metal in enumerate(metals):
 
             # Get variables
@@ -66,31 +66,30 @@ class Controller(object):
             elif self.inputpath.endswith(".mol2"):
                 self.Type = str(metal.mol2type)
             else:
-                raise UserError("No Input File")
+                raise UserError("No Valid Input File Type")
   
             #Retrieve metal parameters from gui
             self.model.retrieve_variables(metal)
    
             print("Building Metal Center...")
             metal_class = Metal.handle_atom_creation(metal=metal, Type=self.Type, res=self.res, model=self.model)
-            print(metal_class)
 
             print('Building dummies...')
             self.model.include_dummies(metal_class)
 
             print('Building Geometry...')
             self.model.specify_geometry(metal_class.residue, metal_class.symbol, metal_class.center,
-                metal_class.dummiespositions, self.model.tempdir)
+                metal_class.dummiespositions, tempdir)
 
             print('Creating library')
-            self.model.creatlib(self.model.tempdir, metal_class.residue,
+            self.model.creatlib(tempdir, metal_class.residue,
                 i, self.model.gui.var_outputpath.get(), self.model.gui.var_outputname.get())
             
             print('Adding charges...')
-            self.model.add_charge(self.model.tempdir, metal_class, self.name, i)
+            self.model.add_charge(tempdir, metal_class, self.name, i)
             
             print('Creating frcmod...')
-            self.model.create_frcmod(temp_path=self.model.tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
+            self.model.create_frcmod(temp_path=tempdir, metalmass=metal_class.mass, met=metal_class.symbol,
                 i=i, met_vwradius=metal_class.met_vwradius, dz_met_bondlenght=metal_class.dz_met_bondlenght,
                 dzmass= metal_class.dzmass)
 
@@ -98,7 +97,7 @@ class Controller(object):
           
 
         print('Saving system...')
-        self.model.create_system(inputpath=self.inputpath, temp_path=self.model.tempdir,
+        self.model.create_system(inputpath=self.inputpath, temp_path=tempdir,
             met=metal_class.symbol, i=i, output=self.gui.var_outputpath.get(),
             output_name = self.model.gui.var_outputname.get())
 
@@ -185,7 +184,6 @@ class Model(object):
             self.tempdir = ram_dir
         else:
             self.tempdir = tempfile.mkdtemp(prefix="Dummy")
-        print('Dummy temporary directory: '+ self.tempdir)
         return self.tempdir
 
     def include_dummies(self, metal_class):
@@ -335,15 +333,15 @@ class Model(object):
         self.amber_path = os.environ['AMBERHOME'] =  "/home/daniel/Baixades/amber14"
         command = "$AMBERHOME/bin/tleap -s -f %s"%filename
                
-        log_file = os.path.join(output, output_name + ".txt")
+        log_file = os.path.join(output, output_name + ".log")
         with open(log_file, 'w') as log:
-            process = subprocess.Popen(command, stdout=log, stderr=log, shell=True)
-            process.wait()
+            subprocess.call(command, stdout=log, stderr=log, shell=True)
         self.lib.append(lib_filename)
 
     def add_charge(self, temp_path, metal, name, i):
         """
-        Include the charge and connectivity inside met.lib created before.
+        Nasty but easy and simple way to include the charge
+        and connectivity inside the .lib file created before.
 
         Parameters
         ----------
@@ -521,7 +519,9 @@ class Model(object):
     def create_frcmod(self, temp_path, metalmass, dzmass, dz_met_bondlenght, met_vwradius, met,i):
         
         """
-        Creates a frcmod containig all the parameters about the connectivity of our metal center. (Bonds and angles for met-met and met-Du%sy)
+        Creates a frcmod containig all the parameters about
+        the connectivity of our metal center for each Geom.
+        (Bonds and angles for met-met and met-Dummy)
 
         Parameters
         ----------
@@ -784,11 +784,9 @@ class Model(object):
         command = "$AMBERHOME/bin/tleap -s -f "+leaprc
 
         
-        log_file = os.path.join(output, output_name + ".txt")
+        log_file = os.path.join(output, output_name + ".log")
         with open(log_file, 'a') as log:
-            process = subprocess.Popen(command, stdout=log, stderr=log, shell=True)
-            process.wait()
-
+            subprocess.call(command, stdout=log, stderr=log, shell=True)
         print('Program Finished')
 
         if os.path.exists(self.tempdir):
@@ -935,7 +933,7 @@ class Metal(Model):
 
         """
         Handle metal creation by using a classmethod generator
-        for each ty of metal we can find on the input file.
+        for each type of metal we can find on the input file.
 
         Parameters:
         -----------
@@ -972,4 +970,4 @@ class Metal(Model):
         elif str(metal.element.name).lower() == 'mn':
             return cls(model=model, metal = metal, symbol=Type, atomicnumber=25, mass=54.938, residue=res)
         else:
-            pass#next?? 
+            pass#next???
