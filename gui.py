@@ -7,19 +7,10 @@ from __future__ import print_function, division
 import Tkinter as tk
 import tkFileDialog as filedialog
 import ttk
-import os
-from PIL import Image
-from PIL import ImageTk
-import sys
-import hashlib
 # Chimera stuff
 import chimera
-from chimera import UserError
 from chimera.baseDialog import ModelessDialog
 from chimera.widgets import MetalOptionMenu
-# Additional 3rd parties
-from CGLtk.Table import SortableTable
-
 # Own
 from core import Controller, Model
 
@@ -57,56 +48,6 @@ STYLES = {
 # This is a Chimera thing. Do it, and deal with it.
 ui = None
 def showUI(callback=None, *args, **kwargs):
-    """
-    Requested by Chimera way-of-doing-things
-    """
-    if chimera.nogui:
-        tk.Tk().withdraw()
-    global ui
-    if not ui:
-        global var_password
-        fill_ui_password()
-
-
-def fill_ui_password():
-        """
-        Opening  password GUI
-        """
-        # Create window
-        ui_password = tk.Toplevel()
-        center(ui_password)
-        _top_level_frame = tk.Frame(ui_password)
-        _top_level_frame.pack(expand=True, fill='both')
-        var_password = tk.StringVar()
-        var_username = tk.StringVar()
-        
-        ui_title = tk.Label(_top_level_frame, text='Cathionic Dummy Atom Method', font=("Helvetica", 16))
-        ui_username_lab = tk.Label(_top_level_frame, text= 'Username')
-        ui_username_entry = tk.Entry(_top_level_frame, textvariable = var_username, background='white')
-        ui_password_lab = tk.Label(_top_level_frame, text= 'Password')
-        ui_password_entry = tk.Entry(_top_level_frame, textvariable = var_password, background='white', show="*")
-        ui_ok = tk.Button(_top_level_frame, text= 'Ok', command= lambda: _apply(
-            var_password = var_password.get(), ui_password = ui_password))
-        ui_close = tk.Button(_top_level_frame, text='Close', command=ui_password.destroy)
-
-        ui_title.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
-        ui_username_lab.grid(row=1, column=1, padx=10, pady=10)
-        ui_username_entry.grid(row=1, column=2, padx=10, pady=10)
-        ui_password_lab.grid(row=2, column=1, padx=10, pady=10)
-        ui_password_entry.grid(row=2, column=2, padx=10, pady=10)
-        ui_ok.grid(row=3, column=2, padx=10, pady=10)
-        ui_close.grid(row=3, column=3, padx=10, pady=10)
-
-        file =  os.path.join(os.path.dirname(__file__), 'img/logo.png')
-        im = Image.open(file)
-        resized = im.resize((100, 100), Image.ANTIALIAS)
-        tkimage = ImageTk.PhotoImage(resized)
-        myvar = tk.Label(_top_level_frame, image=tkimage)
-        myvar.image = tkimage
-        myvar.grid(row=1, column=0, rowspan=2, padx=10, pady=10)
-
-
-def _show_dummy_UI(callback=None, *args, **kwargs):
     if chimera.nogui:
         tk.Tk().withdraw()
     global ui
@@ -117,22 +58,6 @@ def _show_dummy_UI(callback=None, *args, **kwargs):
     ui.enter()
     if callback:
         ui.addCallback(callback)
-def _apply(var_password, ui_password):
-    """
-    Default! Triggered action if you click on an Apply button
-    """
-    try:
-        filename = os.path.join(os.path.dirname(__file__), 'pass.txt')
-        with open(filename, 'r') as f:
-            password = f.readline()[:-1]
-    except Exception:
-        sys.exit('There was a problem reading the file!')
-    password_user_encr = hashlib.sha224(var_password.encode()).hexdigest()
-    if  (password_user_encr) == (password):
-       _show_dummy_UI()
-       ui_password.destroy()
-    else:
-        raise UserError('Wrong Username or Password. Try again.')
 
 def center(window):
             """
