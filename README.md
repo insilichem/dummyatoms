@@ -3,7 +3,7 @@ Dummy Atoms
 
 Easy to prepare MD inputs for metal systems!
 
-*By  Daniel Soler Viladrich([@daniel-soler](https://bitbucket.org/daniel-soler)). Contributors: Jaime Rodríguez-Guerra, Lur Alonso*
+*By  Daniel Soler Viladrich([@miniaoshi](https://bitbucket.org/daniel-soler)). Contributors: Jaime Rodríguez-Guerra, Lur Alonso*
 
 ### Some cool features
 
@@ -18,8 +18,7 @@ Installation
 
 1. Git clone this repositorie by doing:
 
-	git clone https://daniel-soler@bitbucket.org/daniel-soler/plumme_dummy.git
-
+	git clone https://github.com/miniaoshi/DummyAtoms.git
 
 2. Create a Symbolic link in UCSFchimera folder that points to your repo
 
@@ -44,7 +43,7 @@ Usage
 
 	For each metal you can choose:
 
-	- Metal Geometry (Need to feasable or DummyAtoms will complain)
+	- Metal Geometry (Need to be feasable or DummyAtoms will complain)
 	- Metal Charge
 	- Dummy Atoms Mass
 	- Metal-Dmmy bond distance
