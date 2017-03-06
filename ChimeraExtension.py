@@ -4,11 +4,13 @@
 from __future__ import print_function, division 
 import chimera.extension
 
-"""
-Fill this in with a proper description of the Extension
-
-"""
-
+##############
+# DummyAtoms: Light interface to parametrize metal
+#             centers fast and efficiently.
+# Authors:  Daniel Soler Viladrich
+#            <daniel.soler@e-campus.uab.cat>
+# Web: https://github.com/miniaoshi/
+##############
 
 class DummyExtension(chimera.extension.EMO):
 
