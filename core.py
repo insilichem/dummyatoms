@@ -15,7 +15,7 @@ import shutil
 # Chimera stuff
 import chimera
 from chimera import UserError
-from MetalGeom import gui, Geometry  # I don't like this gui bare import. Too broad of a term that can easily pollute the namespace!
+from MetalGeom import gui, geomData, Geometry  # I don't like this gui bare import. Too broad of a term that can easily pollute the namespace!
 from chimera.molEdit import addAtom
 from chimera import runCommand as rc
 
@@ -82,7 +82,7 @@ class Controller(object):
                                         tempdir)
 
             print('Creating library')
-            self.model.creatlib(tempdir, metal_class.residue, i, 
+            self.model.create_lib(tempdir, metal_class.residue, i, 
                                 self.model.gui.var_outputpath.get(), 
                                 self.model.gui.var_outputname.get())
             
@@ -109,7 +109,18 @@ class Controller(object):
 class Model(object):
 
     """
-    Proper description of the model!
+    Build up your dummy system and all
+    necessary files for parametrization.
+
+    Model: steps
+    1) Retrieve all variables from GUI
+    2) Create isolated dummy model with desired geom
+    3) Produce .lib from the model before
+    4) Include charge and connectivity inside .lib
+    5) Build up dummy system with already oriented atoms
+    6) Create system frcmod from str template
+    7) Output the system topology and
+       coordinates from step 5 model.
     """
 
     def __init__(self, gui, *args, **kwargs):
@@ -196,29 +207,38 @@ class Model(object):
         return self.tempdir
 
     def include_dummies(self, metal_class):
+
         """
-        docstring please
+        Include oriented Dummy Atoms
+        inside the molecular system.
+
+        Parameters:
+        -----------
+
+        metal_class: str
+        		Build-in Metal class pointer
         """
+
         #Find metal coord
         dummy_names=[]
         dummiespositions = []
         metal = metal_class.metal    
         coord = metal.coord()
+        res = metal.residue
+        dummy_element = chimera.Element('DZ')
         for vec in metal_class.vecs:
             vec.length = self.dz_met
             metal_center=chimera.Vector(coord[0],coord[1],coord[2])
             dummyposition =  metal_center + vec
             dummiespositions.append(dummyposition)
-
         #Include dummies
-        chain = metal.residue.id.chainId
-        res = metal.residue
-        mol = metal.molecule
-        pos = 1
+        #chain = metal.residue.id.chainId
+        #mol = metal.molecule
+        #pos = 1
         # Are you counting residues? Try with mol.numResidues.
-        while mol.findResidue(chimera.MolResId(chain, pos)):
-            pos += 1
-        dummy_element = chimera.Element('DZ')
+        #while mol.findResidue(chimera.MolResId(chain, pos)):
+        #    pos += 1
+
 
         # Multi-or checks are cleaner with `in`
         if self.geometry in ('tetrahedral', 'square planar'):
@@ -228,11 +248,9 @@ class Model(object):
         elif self.geometry == 'square pyramid':
             dummy_names = ["D1", "D5", "D2", "D3", "D4"] 
         else:
-            # In case of errors? What do we do?
-            pass
+            raise UserError("Wrong Geometry for metal center type")
 
         for i, dummy_name in enumerate(dummy_names): 
-            # esta te ha gustado, a que si...
             dummy_coord = chimera.Coord(*dummiespositions[i][0:3])
             addAtom(dummy_name, dummy_element, res, dummy_coord) 
 
@@ -296,8 +314,7 @@ class Model(object):
                 f.write("HETATM    6  D5  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[4][0], dum[4][1], dum[4][2]))
                 f.write("END")
 
-    # Funny method name... create_lib, maybe?
-    def creatlib(self, temp_path, res, i, output, output_name): # ambermini
+    def create_lib(self, temp_path, res, i, output, output_name): # ambermini
 
         """
         Creates a leaprc file. When we run that one in xleap,
@@ -324,12 +341,11 @@ class Model(object):
         output_lib = os.path.join(temp_path, "met%d.lib" % i)
         self.tempfiles.append(filename)
         lib_filename = os.path.join(temp_path, "met%d.lib" % i)
-        # what is this '\n' for... in the filenameeeee!
-        source = os.path.join(temp_path, "/dat/leap/cmd/oldff/leaprc.ff99SB\n")
+        source = os.path.join(temp_path, "/dat/leap/cmd/oldff/leaprc.ff99SB")
         try:
             with open(filename, 'w') as f:
                 f.write("logFile leap.log\n")
-                f.write("source " + source)
+                f.write("source " + source + "\n")
                 f.write("%s= loadpdb %s\n"%(res,pdbfile))
                 f.write("saveoff %s %s\n"%(res,output_lib))
                 f.write("quit")
