@@ -16,8 +16,6 @@ Easy to prepare MD inputs for metal systems!
 Installation
 ------------
 
-_There's a better way! We'll talk about this_
-
 1. Git clone this repository by doing:
 
 	git clone https://github.com/miniaoshi/DummyAtoms.git
@@ -70,7 +68,7 @@ Usage
 
 ## Get help
 
-If you have problems running `ommprotocol`, feel free to ask by e-mail! Also, make sure to visit our main webpage at [http://www.insilichem.com](http://www.insilichem.com).
+If you have problems running `DummyAtoms`, feel free to ask by e-mail! Also, make sure to visit our main webpage at [http://www.insilichem.com](http://www.insilichem.com).
 
 
 
