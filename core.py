@@ -77,9 +77,7 @@ class Controller(object):
             self.model.include_dummies(metal_class)
 
             print('Building Geometry...')
-            self.model.specify_geometry(metal_class.residue, metal_class.symbol, 
-                                        metal_class.center, metal_class.dummiespositions,
-                                        tempdir)
+            self.model.specify_geometry(metal_class, tempdir)
 
             print('Creating library')
             self.model.create_lib(tempdir, metal_class.residue, i, 
@@ -216,12 +214,12 @@ class Model(object):
         -----------
 
         metal_class: str
-        		Build-in Metal class pointer
+                Build-in Metal class pointer
         """
 
         #Find metal coord
         dummy_names=[]
-        dummiespositions = []
+        dummies_xyz = []
         metal = metal_class.metal    
         coord = metal.coord()
         res = metal.residue
@@ -230,7 +228,7 @@ class Model(object):
             vec.length = self.dz_met
             metal_center=chimera.Vector(coord[0],coord[1],coord[2])
             dummyposition =  metal_center + vec
-            dummiespositions.append(dummyposition)
+            dummies_xyz.append(dummyposition)
         #Include dummies
         #chain = metal.residue.id.chainId
         #mol = metal.molecule
@@ -251,10 +249,13 @@ class Model(object):
             raise UserError("Wrong Geometry for metal center type")
 
         for i, dummy_name in enumerate(dummy_names): 
-            dummy_coord = chimera.Coord(*dummiespositions[i][0:3])
+            #dummy_coord = chimera.Coord(*dummies_xyz[i][0:3])
+            dummy_coord=chimera.Coord(dummies_xyz[i][0],
+                                      dummies_xyz[i][1],
+                                      dummies_xyz[i][2])
             addAtom(dummy_name, dummy_element, res, dummy_coord) 
 
-    def specify_geometry(self, res, met, metal, dum, temp_path):
+    def specify_geometry(self, metal, temp_path):
         
         """
         Create a pdb file including a metal center and 4 dummy atoms in tetrahedral geometry.
@@ -275,11 +276,30 @@ class Model(object):
         """
         # Wow, just wow. I am sure you are able to do this better, and cleaner.
         # Use a template string and then iterate with for and zip!
+        residue = metal.residue
+        metal_name = metal.symbol
+        metal_xyz = metal.center
+        dummies = metal.dummies_xyz
         filename = os.path.join(temp_path,"dummymetal.pdb")
+
         self.tempfiles.append(filename)
+
+        template = "HETATM    %d  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n"
+
+        pdb = []
+        pdb.append(template % (1, metal_name, residue, metal_xyz[0], 
+                               metal_xyz[1], metal_xyz[2], metal_name))
+        for i, dummy in enumerate(dummies):
+            dummy = getattr(metal, "D{}".format(i))           
+            pdb.append(template % ((i+1), "D{}".format(i+1), residue, 
+                        dummy.xyz[0], dummy.xyz[1], dummy.xyz[2],  dummy.Type))
+
+        with open(filename, 'w') as f:
+            f.write('\n'.join(pdb))
+        """
         with open(filename, 'w') as f:
             if self.geometry == 'tetrahedral':
-        
+            
                 f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2] ,met))
                 f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
                 f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[1][0], dum[1][1], dum[1][2]))
@@ -313,6 +333,7 @@ class Model(object):
                 f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
                 f.write("HETATM    6  D5  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[4][0], dum[4][1], dum[4][2]))
                 f.write("END")
+        """
 
     def create_lib(self, temp_path, res, i, output, output_name): # ambermini
 
@@ -813,19 +834,42 @@ class Model(object):
         with open(log_file, 'a') as log:
             subprocess.call(command, stdout=log, stderr=log, shell=True)
         print('Program Finished')
-
+        """
         if os.path.exists(self.tempdir):
             print('Cleaning Memory')
             shutil.rmtree(self.tempdir)
+        """
         
 
 
 
 
 # What kind of line length are you using? 200 chars? Trim that down to 100 or 100 tops.
-############################################Elements#################################################
+############################################Atoms#################################################
+class Dummy(object):
+    """
+     A base class to build Dummy atoms
+     and retrieve type and position
+     attributes
+    """
+    def __init__(self, Type, xyz):
+        self.Type = Type
+        self.xyz = xyz
 
-class Metal(Model):
+    def create_dummies(self, dummies_xyz):
+        dummies = []
+        for i, dummy_xyz in enumerate(dummies_xyz):
+            dummy = Dummy("DZ", dummy_xyz)
+            dummies.append(dummy)
+        return self.retrieve(dummies)
+
+    def retrieve(self, dummies):
+        for i, dummy in enumerate(dummies):
+            #self.D1 = Dummy(D1, DZ)
+            setattr(self, "D{}".format(i), dummy)
+            
+
+class Metal(Model, Dummy):
 
     """
      A base class to build the best parameters
@@ -844,7 +888,8 @@ class Metal(Model):
         self.dzmass = self.model.dz_mass
         self.dz_met_bondlenght = self.model.dz_met
         self.metal = metal
-        self.search_for_orientation(self.metal)
+        self.dummies_xyz = self.search_for_orientation(self.metal)
+        self.create_dummies(self.dummies_xyz)
     
     def search_for_orientation(self, metal):
 
@@ -864,27 +909,21 @@ class Metal(Model):
         -------
         Dummies oriented positions 
         """
-
-        # Don't you see a pattern here? Try with:
-        # geom = Geometry.Geometry(self.model.geometry)
-        if self.model.geometry == 'tetrahedral':
-            geom = Geometry.Geometry('tetrahedral')
-        elif self.model.geometry == 'octahedral':
-            geom = Geometry.Geometry('octahedron')
-        elif self.model.geometry == 'square planar':
-            geom = Geometry.Geometry('square planar')
-        elif self.model.geometry == 'square pyramid':
-            geom = Geometry.Geometry('square pyramid')
-
+        if self.model.geometry in ['tetrahedral', 'octahedral',
+                                   'square planar', 'square pyramid']:
+            geom = Geometry.Geometry(self.model.geometry)
+        else:
+            raise UserError("Not Valid Geometry")
+        
         ligands = self.search_for_ligands(metal)
-        print(len(ligands)) # debugging leftovers?
         rmsd, self.center, self.vecs = gui.geomDistEval(geom, metal, ligands)
-        self.dummiespositions = []
+        dummies_xyz = []
         for vec in self.vecs:
             vec.length = self.dz_met_bondlenght
             dummyposition =  self.center + vec
-            self.dummiespositions.append(dummyposition)
-        return self.dummiespositions  # I don't like this name
+            dummies_xyz.append(dummyposition)
+        return dummies_xyz
+
 
     @staticmethod
     def search_for_ligands(metal):
@@ -1004,3 +1043,4 @@ class Metal(Model):
             return cls(model=model, metal = metal, symbol=Type, atomicnumber=25, mass=54.938, residue=res)
         else:
             pass#next???
+
