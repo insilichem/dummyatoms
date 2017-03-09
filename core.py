@@ -241,12 +241,12 @@ class Model(object):
         # Multi-or checks are cleaner with `in`
         if self.geometry in ('tetrahedral', 'square planar'):
             dummy_names = ["D1", "D2", "D3", "D4"]  
-        elif self.geometry == 'octahedral':
+        elif self.geometry == 'octahedron':
             dummy_names = ["D1", "D5", "D2", "D3", "D6", "D4"]
         elif self.geometry == 'square pyramid':
             dummy_names = ["D1", "D5", "D2", "D3", "D4"] 
         else:
-            raise UserError("Wrong Geometry for metal center type")
+            raise UserError("Geometry not implemented")
 
         for i, dummy_name in enumerate(dummy_names): 
             #dummy_coord = chimera.Coord(*dummies_xyz[i][0:3])
@@ -307,7 +307,7 @@ class Model(object):
                 f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
                 f.write("END")
 
-            elif self.geometry == 'octahedral':
+            elif self.geometry == 'octahedron':
                 f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2], met))
                 f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
                 f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[2][0], dum[2][1], dum[2][2]))
@@ -409,12 +409,13 @@ class Model(object):
         q = metal.charge
         met = metal.symbol
         atm = metal.atomicnumber
-        res = metal.residue        
+        res = metal.residue 
+        lib = os.path.join(temp_path, "met%d.lib" % i)       
 
         if self.geometry == 'tetrahedral':
             lineas=[]
             try:
-                file = open("%s/met%d.lib"%(temp_path,i),"r")
+                file = open(lib,"r")
                 lineas=list(file)
                 lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
                 lineas[4]=' "D1" "DZ" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
@@ -439,8 +440,8 @@ class Model(object):
                 lineas.insert(35,' 4 5 1\n')
                 file.close()
 
-                filename = "%s/met%d.lib"%(temp_path,i)
-                with open(filename,"w") as f:
+                
+                with open(lib,"w") as f:
                     for linea in lineas:
                         
                         #if linea==lineas[25]:
@@ -450,10 +451,10 @@ class Model(object):
             except IOError:
                 print('Impossible to open .lib file')
 
-        elif self.geometry == 'octahedral':
+        elif self.geometry == 'octahedron':
             lineas=[]
             try:
-                file = open("%s/met%d.lib"%(temp_path,i),"r")
+                file = open(lib,"r")
                 lineas=list(file)
                 lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
                 lineas[4]=' "D1" "DX" 0 1 196609 2 -1 %.5f\n'%(q/6.0)
@@ -483,8 +484,8 @@ class Model(object):
 
                 file.close()
 
-                filename = os.path.join(temp_path,"/met%d.lib"%i)
-                with open(filename,"w") as f:
+                
+                with open(lib,"w") as f:
                     for linea in lineas:
                         #if linea==lineas[25]:
                         #    f.write("!entry.mm.unit.connectivity table  int atom1x  int atom2x  int flags\n 1 3 1\n 1 2 1\n 1 4 1\n 1 5 1\n 2 3 1\n 2 4 1\n 2 5 1\n 3 5 1\n 3 4 1\n 4 5 1\n"%(RES))    
@@ -496,7 +497,7 @@ class Model(object):
         elif self.geometry == 'square planar':
             lineas=[]
             try:
-                file = open("%s/met%d.lib"%(temp_path,i),"r")
+                file = open(lib,"r")
                 lineas=list(file)
                 lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
                 lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
@@ -519,8 +520,8 @@ class Model(object):
                 lineas.insert(33,' 4 2 1\n')
                 file.close()
 
-                filename = "%s/met%d.lib"%(temp_path,i)
-                with open(filename,"w") as f:
+                
+                with open(lib,"w") as f:
                     for linea in lineas:    
                         f.write(linea)
 
@@ -530,7 +531,7 @@ class Model(object):
         elif self.geometry == 'square pyramid':
             lineas=[]
             try:
-                file = open("%s/met%d.lib"%(temp_path,i),"r")
+                file = open(lib,"r")
                 lineas=list(file)
                 lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
                 lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/5.0)
@@ -555,8 +556,8 @@ class Model(object):
                 lineas.insert(35,' 4 2 1\n')
                 file.close()
 
-                filename = "%s/met%d.lib"%(temp_path,i)
-                with open(filename,"w") as f:
+                
+                with open(lib,"w") as f:
                     for linea in lineas:    
                         f.write(linea)
             except IOError:
@@ -601,7 +602,7 @@ class Model(object):
                     f.write("NONB\nDZ          0.000   0.00\n%s          %.3f   1.0E-6"%(met, met_vwradius ))
                     f.write("")
 
-                elif self.geometry == 'octahedral':
+                elif self.geometry == 'octahedron':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
                     f.write("MASS\nDX  %.3f\n"%(dzmass))
                     f.write("DY  %.3f\n"%(dzmass))
@@ -909,7 +910,7 @@ class Metal(Model, Dummy):
         -------
         Dummies oriented positions 
         """
-        if self.model.geometry in ['tetrahedral', 'octahedral',
+        if self.model.geometry in ['tetrahedral', 'octahedron',
                                    'square planar', 'square pyramid']:
             geom = Geometry.Geometry(self.model.geometry)
         else:
