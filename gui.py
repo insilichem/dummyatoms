@@ -4,6 +4,7 @@
 # Get used to importing this in your Py27 projects!
 from __future__ import print_function, division 
 # Python stdlib
+from os import path
 import Tkinter as tk
 import tkFileDialog as filedialog
 import ttk
@@ -101,7 +102,7 @@ class DummyDialog(ModelessDialog):
         self.var_waterbox = tk.IntVar()
         self.var_dz_met_bondlenght = tk.DoubleVar()
         self.ui_labels = {}
-        self.var_outputpath.set('/home/daniel/md/dummy/')
+        self.var_outputpath.set(path.expanduser('~'))  # HARDCODED PATHS ARE BAD
         self.var_outputname.set('sys')
         self.var_vw_radius.set(3.1)
         self.var_metal_charge.set(2)
@@ -156,7 +157,7 @@ class DummyDialog(ModelessDialog):
         # Select Parameters
         self.ui_metalgeometry = ttk.Combobox(
             self.canvas, textvariable=self.var_metal_geometry)
-        self.ui_metalgeometry.config(values=('tetrahedral', 'octahedral', 'square planar', 'square pyramid'))
+        self.ui_metalgeometry.config(values=('tetrahedral', 'octahedron', 'square planar', 'square pyramid'))
         self.ui_metalcharge = tk.Entry(
             self.canvas, textvariable=self.var_metal_charge)
         self.ui_vw_radius = tk.Entry(
@@ -165,14 +166,11 @@ class DummyDialog(ModelessDialog):
         	self.canvas,textvariable=self.var_dz_mass)
         self.ui_dz_met_bondlenght = tk.Entry(
         	self.canvas, textvariable=self.var_dz_met_bondlenght)
-        grid_metalcenter_frame = [['',''],
-        						 ['Metal Geometry', self.ui_metalgeometry],
+        grid_metalcenter_frame = [['Metal Geometry', self.ui_metalgeometry],
                                  ['Metal Charge', self.ui_metalcharge],
                                  ['Metal VandeWals Radius', self.ui_vw_radius],
-                                 ['',''],
                                  ['Dummy Mass', self.ui_dzmass],
-                                 ['Metal-Dummy Bond Lenght', self.ui_dz_met_bondlenght],
-                                 ['','']]
+                                 ['Metal-Dummy Bond Lenght', self.ui_dz_met_bondlenght]]
         self.auto_grid(self.ui_metalcenter_frame, grid_metalcenter_frame)
 
         # Select Output
@@ -256,7 +254,7 @@ class DummyDialog(ModelessDialog):
 
     def _add_files(self):
         filepath = filedialog.askopenfilename(initialdir='~/', filetypes=(
-            ('Lib File', '*.lib'), ('Frcmod File', '*.frcmod'),('Xml File', '*.xml')))
+            ('Lib File', '*.lib'), ('Frcmod File', '*.frcmod'), ('Xml File', '*.xml')))
         if filepath:
             self.ui_files_to_load.insert('end', filepath)
 

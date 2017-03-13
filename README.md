@@ -3,7 +3,7 @@ Dummy Atoms
 
 Easy to prepare MD inputs for metal systems!
 
-*By  Daniel Soler Viladrich([@dani-soler](https://github.com/miniaoshi/)). Contributors: Jaime Rodríguez-Guerra, Lur Alonso*
+*By  Daniel Soler Viladrich ([@dani-soler](https://github.com/miniaoshi/)). Contributors: [Jaime Rodríguez-Guerra](https://github.com/jaimergp/), Lur Alonso*
 
 ### Some cool features
 
@@ -16,11 +16,11 @@ Easy to prepare MD inputs for metal systems!
 Installation
 ------------
 
-1. Git clone this repositorie by doing:
+1. Git clone this repository by doing:
 
 	git clone https://github.com/miniaoshi/DummyAtoms.git
 
-2. Create a Symbolic link in UCSFchimera folder that points to your repo
+2. Create a Symbolic link in UCSFChimera folder that points to your repo
 
 3. Restart chimera and sometimes your computer before trying.
 
@@ -68,8 +68,7 @@ Usage
 
 ## Get help
 
-	If you have problems running `ommprotocol`, feel free to askby e-mail! Also, make sure to visit our main webpage at [www.insilichem.com](www.insilichem.com).
-
+If you have problems running `DummyAtoms`, feel free to ask by e-mail! Also, make sure to visit our main webpage at [http://www.insilichem.com](http://www.insilichem.com).
 
 
 
