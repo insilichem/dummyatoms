@@ -15,7 +15,8 @@ import shutil
 # Chimera stuff
 import chimera
 from chimera import UserError
-from MetalGeom import gui, geomData, Geometry  # I don't like this gui bare import. Too broad of a term that can easily pollute the namespace!
+from MetalGeom.gui import geomDistEval
+from MetalGeom import geomData, Geometry
 from chimera.molEdit import addAtom
 from chimera import runCommand as rc
 
@@ -142,49 +143,44 @@ class Model(object):
         #Saving last metal params
         metal_dicts = self.gui.metals
 
-        # [Note 1]
-        # You are iterating metal_dicts once just to see if you should iterate
-        # over it... Just do it from the beginning. If the if clause does not
-        # returns True, nothing will happen, and that's fine
-        if any(dic["title"] == metal.name for dic in metal_dicts):
-            for dic in metal_dicts:
-                if dic["title"] == metal.name:
-                    dic["geom"] = self.gui.var_metal_geometry.get()
-                    dic["charge"] =  self.gui.var_metal_charge.get()
-                    dic["vw_radius"] = self.gui.var_vw_radius.get()
-                    dic["dz_mass"] = self.gui.var_dz_mass.get()
-                    dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
-        # Same here [Note 1]
-        elif not any(dic["title"] == metal.name for dic in metal_dicts):
-            dic = {}
-            dic["title"] = metal.name
-            dic["geom"] = self.gui.var_metal_geometry.get()
-            dic["charge"] =  self.gui.var_metal_charge.get()
-            dic["vw_radius"] = self.gui.var_vw_radius.get()
-            dic["dz_mass"] = self.gui.var_dz_mass.get()
-            dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
-            metal_dicts.append(dic)
+        
+        for dic in metal_dicts:
+            if  dic["title"] == metal.name:
+                dic["geom"] = self.gui.var_metal_geometry.get()
+                dic["charge"] =  self.gui.var_metal_charge.get()
+                dic["vw_radius"] = self.gui.var_vw_radius.get()
+                dic["dz_mass"] = self.gui.var_dz_mass.get()
+                dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
+                return
+    
+        dic = {}
+        dic["title"] = metal.name
+        dic["geom"] = self.gui.var_metal_geometry.get()
+        dic["charge"] =  self.gui.var_metal_charge.get()
+        dic["vw_radius"] = self.gui.var_vw_radius.get()
+        dic["dz_mass"] = self.gui.var_dz_mass.get()
+        dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
+        metal_dicts.append(dic)
+
 
 
     def retrieve_variables(self, metal):
         #Updating variables for each metal
         metal_dicts = self.gui.metals
-        # Same here [Note 1]
-        if any(dic["title"] == metal.name for dic in metal_dicts):
-            for dic in metal_dicts:
-                if dic["title"] == metal.name:
-                    self.geometry = dic["geom"]
-                    self.charge = dic["charge"]
-                    self.vw_radius = dic["vw_radius"]
-                    self.dz_mass = dic["dz_mass"] 
-                    self.dz_met = dic["dz_met_bond"]
-        # Same here [Note 1]
-        elif not any(dic["title"] == metal.name for dic in metal_dicts): 
-            self.geometry = "tetrahedral"
-            self.charge = 2
-            self.vw_radius = 3.1
-            self.dz_mass = 3 
-            self.dz_met = 0.9
+        for dic in metal_dicts:
+            if dic["title"] == metal.name:
+                self.geometry = dic["geom"]
+                self.charge = dic["charge"]
+                self.vw_radius = dic["vw_radius"]
+                self.dz_mass = dic["dz_mass"] 
+                self.dz_met = dic["dz_met_bond"]
+                return
+
+        self.geometry = "tetrahedral"
+        self.charge = 2
+        self.vw_radius = 3.1
+        self.dz_mass = 3 
+        self.dz_met = 0.9
 
     def temp_directory(self):
 
@@ -229,13 +225,6 @@ class Model(object):
             metal_center=chimera.Vector(coord[0],coord[1],coord[2])
             dummyposition =  metal_center + vec
             dummies_xyz.append(dummyposition)
-        #Include dummies
-        #chain = metal.residue.id.chainId
-        #mol = metal.molecule
-        #pos = 1
-        # Are you counting residues? Try with mol.numResidues.
-        #while mol.findResidue(chimera.MolResId(chain, pos)):
-        #    pos += 1
 
 
         # Multi-or checks are cleaner with `in`
@@ -258,7 +247,16 @@ class Model(object):
     def specify_geometry(self, metal, temp_path):
         
         """
-        Create a pdb file including a metal center and 4 dummy atoms in tetrahedral geometry.
+        Modeller method to build an isolated
+        metal system consiting on the metal site
+        plus several dummy atoms with its respective
+        geometry. 
+
+        Use of a string template and a for loop
+        to iterate over the dummies instances
+        outputting a pdb describing the system's
+        topology and coordinates.
+
 
         Parameters
         ----------
@@ -274,8 +272,7 @@ class Model(object):
             temp directory path
 
         """
-        # Wow, just wow. I am sure you are able to do this better, and cleaner.
-        # Use a template string and then iterate with for and zip!
+       
         residue = metal.residue
         metal_name = metal.symbol
         metal_xyz = metal.center
@@ -848,27 +845,58 @@ class Model(object):
 # What kind of line length are you using? 200 chars? Trim that down to 100 or 100 tops.
 ############################################Atoms#################################################
 class Dummy(object):
+
     """
      A base class to build Dummy atoms
      and retrieve type and position
      attributes
     """
+
     def __init__(self, Type, xyz):
         self.Type = Type
         self.xyz = xyz
 
-    def create_dummies(self, dummies_xyz):
+    def create_dummies(self, dummies_xyz, geom):
+
+        """
+        Dummy class method to build up
+        the system geom by creating
+        Dummy Atoms instances.
+        """
+
         dummies = []
-        for i, dummy_xyz in enumerate(dummies_xyz):
-            dummy = Dummy("DZ", dummy_xyz)
+        dummies_types = self.type_retriever(geom)
+
+        for dummy_xyz, dummy_type in zip(dummies_xyz, dummies_types):
+            
+            dummy = Dummy(dummy_type, dummy_xyz)
             dummies.append(dummy)
         return self.retrieve(dummies)
 
+    @staticmethod
+    def type_retriever(geom):
+        dummytypes = {'tetrahedral' : ['DZ', 'DZ', 'DZ', 'DZ'],
+            'square planar' : ['DZ', 'DZ', 'DZ', 'DZ'],
+            'square pyramid' : ['DX', 'DX', 'DY', 'DY', 'DZ'],
+            'octahedron' : ['DX', 'DX', 'DY', 'DY', 'DZ', 'DZ']
+            }
+        return dummytypes[geom]
+
+
+
     def retrieve(self, dummies):
+
+        """
+        Retrieve variable name
+        for each dummy instance
+        as self.D1, self.D2 ...
+        """
+
         for i, dummy in enumerate(dummies):
             #self.D1 = Dummy(D1, DZ)
             setattr(self, "D{}".format(i), dummy)
             
+##################################################################################
 
 class Metal(Model, Dummy):
 
@@ -890,17 +918,13 @@ class Metal(Model, Dummy):
         self.dz_met_bondlenght = self.model.dz_met
         self.metal = metal
         self.dummies_xyz = self.search_for_orientation(self.metal)
-        self.create_dummies(self.dummies_xyz)
+        self.create_dummies(self.dummies_xyz, self.model.geometry)#manera millor??
     
     def search_for_orientation(self, metal):
 
         """
-        Search for lingands near by the metal center
-        excluding candidates through the next steps:
-            1-How many electrons on the outter shell
-            2-Metal-Ligand distance
-            3-Geometry angles
-            4-Exclude Hydrogens and other atoms
+        Class method to efficiently orientate
+        the dummy atoms towards its coordinators
 
         Parameters:
         -----------
@@ -908,8 +932,11 @@ class Metal(Model, Dummy):
 
         Output:
         -------
-        Dummies oriented positions 
+        dummies_xyz: list
+            Dummies oriented positions 
         """
+        dummies_xyz = []
+
         if self.model.geometry in ['tetrahedral', 'octahedron',
                                    'square planar', 'square pyramid']:
             geom = Geometry.Geometry(self.model.geometry)
@@ -917,8 +944,7 @@ class Metal(Model, Dummy):
             raise UserError("Not Valid Geometry")
         
         ligands = self.search_for_ligands(metal)
-        rmsd, self.center, self.vecs = gui.geomDistEval(geom, metal, ligands)
-        dummies_xyz = []
+        rmsd, self.center, self.vecs = geomDistEval(geom, metal, ligands)
         for vec in self.vecs:
             vec.length = self.dz_met_bondlenght
             dummyposition =  self.center + vec
@@ -1015,33 +1041,10 @@ class Metal(Model, Dummy):
         -------
         Metal class object 
         """
-        # You know Chimera already includes this information, right?
-        # It'd be enough with this:
-        # return cls(model=model, metal=metal, symbol=Type, residue=res, 
-        #            mass=metal.element.mass, atomicnumber=metal.element.number) 
-        
-        if str(metal.element.name).lower() == 'zn':
-            return cls(model=model, metal = metal, symbol=Type, atomicnumber=30, mass=65.38, residue=res)   
-        elif str(metal.element.name).lower() == 'fe':
-            return cls(model=model, metal = metal, symbol=Type, atomicnumber=26, mass=55.845 , residue=res)
-        elif str(metal.element.name).lower() == 'cd':
-            return cls(model=model, metal = metal, symbol=Type, atomicnumber=48, mass=112.411, residue=res)
-        elif str(metal.element.name).lower() == 'cu':
-            return cls(model=model,  metal = metal, symbol=Type, atomicnumber=29, mass=63.546, residue=res)
-        elif str(metal.element.name).lower() == 'co':
-            return cls(model=model, metal = metal, symbol=Type, atomicnumber=27, mass=58.933, residue=res)
-        elif str(metal.element.name).lower() == 'pt':
-            return cls(model=model, metal = metal, symbol=Type, atomicnumber=78, mass=195.084, residue=res)
-        elif str(metal.element.name).lower() == 'pd':
-            return cls(model=model, metal = metal, symbol=Type, atomicnumber=46, mass=106.42, residue=res)
-        elif str(metal.element.name).lower() == 'mg':
-           return cls(model=model,metal = metal, symbol=Type, atomicnumber=12, mass=24.305, residue=res)
-        elif str(metal.element.name).lower() == 'v':
-            return cls(model=model, metal = metal, symbol=Type, atomicnumber=23, mass=50.9415, residue=res)
-        elif str(metal.element.name).lower() == 'cr':
-            return cls(model=model, metal = metal, symbol=Type, atomicnumber=24, mass=51.996, residue=res)
-        elif str(metal.element.name).lower() == 'mn':
-            return cls(model=model, metal = metal, symbol=Type, atomicnumber=25, mass=54.938, residue=res)
-        else:
-            pass#next???
+               
+        if str(metal.element.name).lower() in ['zn', 'fe', 'cd', 'cu', 'co', 'pt', 'pd',
+                                               'mg', 'v', 'cr', 'mn']:
+
+            return cls(model=model, metal=metal, symbol=Type, residue=res, 
+                   mass=metal.element.mass, atomicnumber=metal.element.number) 
 
