@@ -127,7 +127,12 @@ class Model(object):
         self.lib = []
         self.frcmod = []
         self.tempfiles = []
-
+        """
+        try:
+            self.amber_path = os.environ['AMBERHOME']
+        except KeyError:
+            raise UserError("AMBERHOME environment variable must be set")
+        """
     def save_variables(self, metal):
 
         """
@@ -323,16 +328,14 @@ class Model(object):
         self.tempfiles.append(filename)
         lib_filename = os.path.join(temp_path, "met%d.lib" % i)
         source = os.path.join(temp_path, "/dat/leap/cmd/oldff/leaprc.ff99SB")
-        try:
-            with open(filename, 'w') as f:
-                f.write("logFile leap.log\n")
-                f.write("source " + source + "\n")
-                f.write("%s= loadpdb %s\n"%(res,pdbfile))
-                f.write("saveoff %s %s\n"%(res,output_lib))
-                f.write("quit")
-        except IOError:
-            # This type of exception masking is not very useful, actually
-            raise UserError("Impossible to open leaprc file")
+        
+        with open(filename, 'w') as f:
+            f.write("logFile leap.log\n"
+                "source " + source + "\n" +
+                "{0}= loadpdb {1}\n".format(res,pdbfile) +
+                "saveoff {0} {1}\n".format(res,output_lib) +
+                "quit")
+
         
         # Hardcoded paths are worst thing ever. Get rid of that ASAP
         # If amberhome is not set, raise an error, but don't do this, please.
@@ -343,8 +346,7 @@ class Model(object):
                
         log_file = os.path.join(output, output_name + ".log")
         with open(log_file, 'w') as log:
-            # shell = True... give me a good reason.
-            subprocess.call(command, stdout=log, stderr=log, shell=True)
+            subprocess.call(command, stdout=log, stderr=log)
         self.lib.append(lib_filename)
 
     def add_charge(self, temp_path, metal, name, i):
@@ -793,7 +795,7 @@ class Model(object):
         
         log_file = os.path.join(output, output_name + ".log")
         with open(log_file, 'a') as log:
-            subprocess.call(command, stdout=log, stderr=log, shell=True)
+            subprocess.call(command, stdout=log, stderr=log)
         print('Program Finished')
         """
         if os.path.exists(self.tempdir):
