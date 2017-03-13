@@ -293,44 +293,7 @@ class Model(object):
 
         with open(filename, 'w') as f:
             f.write('\n'.join(pdb))
-        """
-        with open(filename, 'w') as f:
-            if self.geometry == 'tetrahedral':
-            
-                f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2] ,met))
-                f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
-                f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    4  D3  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[2][0], dum[2][1], dum[2][2]))
-                f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
-                f.write("END")
 
-            elif self.geometry == 'octahedron':
-                f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2], met))
-                f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
-                f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[2][0], dum[2][1], dum[2][2]))
-                f.write("HETATM    4  D3  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
-                f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[5][0], dum[5][1], dum[5][2]))
-                f.write("HETATM    6  D5  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    7  D6  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[4][0], dum[4][1], dum[4][2]))
-                f.write("END")
-
-            elif self.geometry == 'square planar':      
-                f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2] ,met))
-                f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
-                f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    4  D3  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[2][0], dum[2][1], dum[2][2]))
-                f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
-                f.write("END")
-
-            elif self.geometry == 'square pyramid':      
-                f.write("HETATM    1  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n" %(met, res, metal[0], metal[1], metal[2] ,met))
-                f.write("HETATM    2  D1  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[0][0], dum[0][1], dum[0][2]))
-                f.write("HETATM    3  D2  %s    1      %.3f  %.3f  %.3f  1.00           DY\n" %(res, dum[1][0], dum[1][1], dum[1][2]))
-                f.write("HETATM    4  D3  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[2][0], dum[2][1], dum[2][2]))
-                f.write("HETATM    5  D4  %s    1      %.3f  %.3f  %.3f  1.00           DX\n" %(res, dum[3][0], dum[3][1], dum[3][2]))
-                f.write("HETATM    6  D5  %s    1      %.3f  %.3f  %.3f  1.00           DZ\n" %(res, dum[4][0], dum[4][1], dum[4][2]))
-                f.write("END")
-        """
 
     def create_lib(self, temp_path, res, i, output, output_name): # ambermini
 
