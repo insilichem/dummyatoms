@@ -286,6 +286,7 @@ class Model(object):
         filename = os.path.join(temp_path,"dummymetal.pdb")
 
 
+
         template = "HETATM    %d  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n"
 
         pdb = []
@@ -300,6 +301,7 @@ class Model(object):
         with open(filename, 'w') as f:
             f.write('\n'.join(pdb))
 
+        self.num_of_dummies = len(dummies)
 
     def create_lib(self, temp_path, res, i, output, output_name): # ambermini
 
@@ -345,7 +347,7 @@ class Model(object):
         self.lib.append(output_lib)
 
 
-    def add_charge(self, temp_path, metal, name, i):
+    def add_charge(self, temp_path, metal, metal_name, i):
         """
         Nasty but easy and simple way to include the charge
         and connectivity inside the .lib file created before.
@@ -365,16 +367,49 @@ class Model(object):
         # Rewrite this elegantly, please.
 
         q = metal.charge
-        met = metal.symbol
+        metal_type = metal.symbol
         atm = metal.atomicnumber
         res = metal.residue 
-        lib = os.path.join(temp_path, "met%d.lib" % i)       
+        lib_file = os.path.join(temp_path, "met%d.lib" % i)       
+
+        lib = []
+
+        #template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
+        template =  "{0} {1} 0 1 196609 {2} {3} {4}"
+        lib.append(template.format(metal_name, metal_type, 1, atm, 0))
+        for i in range(1, self.num_of_dummies+1):
+            dummy = getattr(metal, "D{}".format(i))           
+            lib.append(template.format("D{}".format(i), dummy.Type, i+1, -1, dummy.charge))
+        with open(lib_file,"w") as f:
+            f.write('\n'.join(lib))
+
+        #constant line
+        lib.append("!entry.ZNB.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg")
+        
+        #template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
+        template =  " {0} {1} 0 -1 0.0"
+        lib.append(template.format(metal_name, metal_type))
+        for i in range(1, self.num_of_dummies+1):
+            dummy = getattr(metal, "D{}".format(i))           
+            lib.append(template.format("D{}".format(i), dummy.Type))
+            
+        #reading and substituting lines
+        with open(lib_file,"r") as file:
+                lineas = list(file)
+                for i, new_line in enumerate(lib, start=3):
+                    lineas[i] = new_line
+        #Re-writing lib
+        with open(lib,"w") as f:
+            for new_linea in lineas:    
+                f.write(new_linea)
+
+
+
 
         if self.geometry == 'tetrahedral':
             lineas=[]
             try:
-                file = open(lib,"r")
-                lineas=list(file)
+                
                 lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
                 lineas[4]=' "D1" "DZ" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
                 lineas[5]=' "D2" "DZ" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
@@ -813,11 +848,12 @@ class Dummy(object):
      attributes
     """
 
-    def __init__(self, Type, xyz):
+    def __init__(self, Type, xyz, charge):
         self.Type = Type
         self.xyz = xyz
+        self.charge = charge
 
-    def create_dummies(self, dummies_xyz, geom):
+    def create_dummies(self, dummies_xyz, geom, charge):
 
         """
         Dummy class method to build up
@@ -826,9 +862,10 @@ class Dummy(object):
         """
 
         dummies_types = self.type_retriever(geom)
-        dummies = [Dummy(dummy_type, dummy_xyz) 
-                   for dummy_xyz, dummy_type 
-                   in zip(dummies_xyz, dummies_types)]
+        dummies_charges = self.charge_retriever(geom, charge)
+        dummies = [Dummy(dummy_type, dummy_xyz, dummy_charge) 
+                   for dummy_type, dummy_xyz, dummy_charge
+                   in zip(dummies_types, dummies_xyz, dummies_charges)]
         return self.retrieve(dummies)
 
     @staticmethod
@@ -839,6 +876,15 @@ class Dummy(object):
             'octahedron' : ['DX', 'DX', 'DY', 'DY', 'DZ', 'DZ']
             }
         return dummytypes[geom]
+
+    @staticmethod
+    def charge_retriever(geom, charge):
+        dummycharges = {'tetrahedral' : [charge/4.0 for i in range(0,4)],
+            'square planar' : [charge/4.0 for i in range(0,4)],
+            'square pyramid' : [charge/5.0 for i in range(0,5)],
+            'octahedron' : [charge/6.0 for i in range(0,6)]
+            }
+        return dummycharges[geom]
 
 
 
@@ -876,7 +922,7 @@ class Metal(Model, Dummy):
         self.dz_met_bondlenght = self.model.dz_met
         self.metal = metal
         self.dummies_xyz = self.search_for_orientation(self.metal)
-        self.create_dummies(self.dummies_xyz, self.model.geometry)#manera millor??
+        self.create_dummies(self.dummies_xyz, self.model.geometry, self.charge)#manera millor??
     
     def search_for_orientation(self, metal):
 
