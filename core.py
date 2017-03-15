@@ -349,8 +349,8 @@ class Model(object):
 
     def add_charge(self, temp_path, metal, metal_name, i):
         """
-        Nasty but easy and simple way to include the charge
-        and connectivity inside the .lib file created before.
+        Simple tmeplate method to include the charge
+        within the .lib file created before.
 
         Parameters
         ----------
@@ -363,13 +363,12 @@ class Model(object):
         i: int
             Metal Number
         """
-        # I am about to puke. You know it's nasty, so don't do that.
         # Rewrite this elegantly, please.
 
         q = metal.charge
         metal_type = metal.symbol
         atm = metal.atomicnumber
-        res = metal.residue 
+        residue = metal.residue 
         lib_file = os.path.join(temp_path, "met%d.lib" % i)       
 
         lib = []
@@ -383,20 +382,22 @@ class Model(object):
         with open(lib_file,"w") as f:
             f.write('\n'.join(lib))
 
-        #constant line
-        lib.append("!entry.ZNB.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg")
+        #t-leap line to understand residues type
+        lib.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg".format(residue))
         
-        #template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
+        #template =  "{name} {type} 0 1 0.0\n"
         template =  " {0} {1} 0 -1 0.0"
         lib.append(template.format(metal_name, metal_type))
         for i in range(1, self.num_of_dummies+1):
             dummy = getattr(metal, "D{}".format(i))           
             lib.append(template.format("D{}".format(i), dummy.Type))
-            
+
         #reading and substituting lines
         with open(lib_file,"r") as file:
                 lineas = list(file)
                 for i, new_line in enumerate(lib, start=3):
+                    #starts at 3 to preserve the residue info
+                    #we don't want to overwrite from .lib
                     lineas[i] = new_line
         #Re-writing lib
         with open(lib,"w") as f:
@@ -406,155 +407,71 @@ class Model(object):
 
 
 
+
+
         if self.geometry == 'tetrahedral':
             lineas=[]
-            try:
-                
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
-                lineas[4]=' "D1" "DZ" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
-                lineas[5]=' "D2" "DZ" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
-                lineas[6]=' "D3" "DZ" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
-                lineas[7]=' "D4" "DZ" 0 1 196609 5 -1 %.5f\n'%(q/4.0)
-                lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
-                lineas[10]=' "D1" "DZ" 0 -1 0.0\n'
-                lineas[11]=' "D2" "DZ" 0 -1 0.0\n'
-                lineas[12]=' "D3" "DZ" 0 -1 0.0\n'
-                lineas[13]=' "D4" "DZ" 0 -1 0.0\n'
-                lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
-                lineas.insert(26,' 1 3 1\n')
-                lineas.insert(27,' 1 2 1\n')
-                lineas.insert(28,' 1 4 1\n')
-                lineas.insert(29,' 1 5 1\n')
-                lineas.insert(30,' 2 3 1\n')
-                lineas.insert(31,' 2 4 1\n')
-                lineas.insert(32,' 2 5 1\n')
-                lineas.insert(33,' 3 5 1\n')
-                lineas.insert(34,' 3 4 1\n')
-                lineas.insert(35,' 4 5 1\n')
-                file.close()
-
-                
-                with open(lib,"w") as f:
-                    for linea in lineas:
-                        
-                        #if linea==lineas[25]:
-                        #    f.write("!entry.mm.unit.connectivity table  int atom1x  int atom2x  int flags\n 1 3 1\n 1 2 1\n 1 4 1\n 1 5 1\n 2 3 1\n 2 4 1\n 2 5 1\n 3 5 1\n 3 4 1\n 4 5 1\n"%(RES))    
-                        f.write(linea)
-
-            except IOError:
-                print('Impossible to open .lib file')
+            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
+            lineas.insert(26,' 1 3 1\n')
+            lineas.insert(27,' 1 2 1\n')
+            lineas.insert(28,' 1 4 1\n')
+            lineas.insert(29,' 1 5 1\n')
+            lineas.insert(30,' 2 3 1\n')
+            lineas.insert(31,' 2 4 1\n')
+            lineas.insert(32,' 2 5 1\n')
+            lineas.insert(33,' 3 5 1\n')
+            lineas.insert(34,' 3 4 1\n')
+            lineas.insert(35,' 4 5 1\n')
+            file.close()
 
         elif self.geometry == 'octahedron':
             lineas=[]
-            try:
-                file = open(lib,"r")
-                lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
-                lineas[4]=' "D1" "DX" 0 1 196609 2 -1 %.5f\n'%(q/6.0)
-                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/6.0)
-                lineas[6]=' "D3" "DY" 0 1 196609 4 -1 %.5f\n'%(q/6.0)
-                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/6.0)
-                lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.5f\n'%(q/6.0)
-                lineas[9]=' "D6" "DZ" 0 1 196609 7 -1 %.5f\n'%(q/6.0)
-                lineas[11]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
-                lineas[12]=' "D1" "DX" 0 -1 0.0\n'
-                lineas[13]=' "D2" "DY" 0 -1 0.0\n'
-                lineas[14]=' "D3" "DY" 0 -1 0.0\n'
-                lineas[15]=' "D4" "DX" 0 -1 0.0\n'
-                lineas[16]=' "D5" "DZ" 0 -1 0.0\n'
-                lineas[17]=' "D6" "DZ" 0 -1 0.0\n'
-                lineas.insert(29,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
-                lineas.insert(30, ' 1 5 1\n')
-                lineas.insert(31, ' 1 2 1\n')
-                lineas.insert(32, ' 2 6 1\n')
-                lineas.insert(33, ' 2 4 1\n')
-                lineas.insert(34, ' 6 5 1\n')
-                lineas.insert(35, ' 4 5 1\n')
-                lineas.insert(36, ' 7 2 1\n')
-                lineas.insert(37, ' 5 3 1\n')
-                lineas.insert(38, ' 3 2 1\n')
-                lineas.insert(39, ' 7 5 1\n')
+            file = open(lib,"r")
+            lineas=list(file)
+            lineas.insert(29,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
+            lineas.insert(30, ' 1 5 1\n')
+            lineas.insert(31, ' 1 2 1\n')
+            lineas.insert(32, ' 2 6 1\n')
+            lineas.insert(33, ' 2 4 1\n')
+            lineas.insert(34, ' 6 5 1\n')
+            lineas.insert(35, ' 4 5 1\n')
+            lineas.insert(36, ' 7 2 1\n')
+            lineas.insert(37, ' 5 3 1\n')
+            lineas.insert(38, ' 3 2 1\n')
+            lineas.insert(39, ' 7 5 1\n')
+            file.close()
 
-                file.close()
-
-                
-                with open(lib,"w") as f:
-                    for linea in lineas:
-                        #if linea==lineas[25]:
-                        #    f.write("!entry.mm.unit.connectivity table  int atom1x  int atom2x  int flags\n 1 3 1\n 1 2 1\n 1 4 1\n 1 5 1\n 2 3 1\n 2 4 1\n 2 5 1\n 3 5 1\n 3 4 1\n 4 5 1\n"%(RES))    
-                        f.write(linea)
-
-            except IOError:
-                raise UserError("Impossible to open .lib file")
 
         elif self.geometry == 'square planar':
             lineas=[]
-            try:
-                file = open(lib,"r")
-                lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
-                lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
-                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
-                lineas[6]=' "D3" "DX" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
-                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/4.0)
-                lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
-                lineas[10]=' "D1" "DY" 0 -1 0.0\n'
-                lineas[11]=' "D2" "DY" 0 -1 0.0\n'
-                lineas[12]=' "D3" "DX" 0 -1 0.0\n'
-                lineas[13]=' "D4" "DX" 0 -1 0.0\n'
-                lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
-                lineas.insert(26,' 1 3 1\n')
-                lineas.insert(27,' 1 2 1\n')
-                lineas.insert(28,' 1 4 1\n')
-                lineas.insert(29,' 1 5 1\n')
-                lineas.insert(30,' 2 5 1\n')
-                lineas.insert(31,' 5 3 1\n')
-                lineas.insert(32,' 3 4 1\n')
-                lineas.insert(33,' 4 2 1\n')
-                file.close()
-
-                
-                with open(lib,"w") as f:
-                    for linea in lineas:    
-                        f.write(linea)
-
-            except IOError:
-                print('Impossible to open .lib file')
+            file = open(lib,"r")
+            lineas=list(file)
+            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
+            lineas.insert(26,' 1 3 1\n')
+            lineas.insert(27,' 1 2 1\n')
+            lineas.insert(28,' 1 4 1\n')
+            lineas.insert(29,' 1 5 1\n')
+            lineas.insert(30,' 2 5 1\n')
+            lineas.insert(31,' 5 3 1\n')
+            lineas.insert(32,' 3 4 1\n')
+            lineas.insert(33,' 4 2 1\n')
+            file.close()
 
         elif self.geometry == 'square pyramid':
             lineas=[]
-            try:
-                file = open(lib,"r")
-                lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
-                lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/5.0)
-                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/5.0)
-                lineas[6]=' "D3" "DX" 0 1 196609 4 -1 %.5f\n'%(q/5.0)
-                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/5.0)
-                lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.5f\n'%(q/5.0)
-                lineas[10]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
-                lineas[11]=' "D1" "DY" 0 -1 0.0\n'
-                lineas[12]=' "D2" "DY" 0 -1 0.0\n'
-                lineas[13]=' "D3" "DX" 0 -1 0.0\n'
-                lineas[14]=' "D4" "DX" 0 -1 0.0\n'
-                lineas[15]=' "D5" "DZ" 0 -1 0.0\n'
-                lineas.insert(27,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
-                lineas.insert(28,' 1 3 1\n')
-                lineas.insert(29,' 1 2 1\n')
-                lineas.insert(30,' 1 4 1\n')
-                lineas.insert(31,' 1 5 1\n')
-                lineas.insert(32,' 2 5 1\n')
-                lineas.insert(33,' 5 3 1\n')
-                lineas.insert(34,' 3 4 1\n')
-                lineas.insert(35,' 4 2 1\n')
-                file.close()
+            file = open(lib,"r")
+            lineas=list(file)
+            lineas.insert(27,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
+            lineas.insert(28,' 1 3 1\n')
+            lineas.insert(29,' 1 2 1\n')
+            lineas.insert(30,' 1 4 1\n')
+            lineas.insert(31,' 1 5 1\n')
+            lineas.insert(32,' 2 5 1\n')
+            lineas.insert(33,' 5 3 1\n')
+            lineas.insert(34,' 3 4 1\n')
+            lineas.insert(35,' 4 2 1\n')
+            file.close()
 
-                
-                with open(lib,"w") as f:
-                    for linea in lineas:    
-                        f.write(linea)
-            except IOError:
-                print('Impossible to open .lib file')
 
     def create_frcmod(self, temp_path, metalmass, dzmass, dz_met_bondlenght, met_vwradius, met,i):
         
@@ -1052,4 +969,3 @@ class Metal(Model, Dummy):
 
             return cls(model=model, metal=metal, symbol=Type, residue=res, 
                    mass=metal.element.mass, atomicnumber=metal.element.number) 
-
