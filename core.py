@@ -127,6 +127,7 @@ class Model(object):
         self.lib = []
         self.frcmod = []
         self.tempfiles = []
+        self.amber_path = "/home/daniel/Baixades/amber14"
         """
         try:
             self.amber_path = os.environ['AMBERHOME']
@@ -278,24 +279,24 @@ class Model(object):
 
         """
        
-        residue = metal.residue
+        metal_residue = metal.residue
         metal_name = metal.symbol
         metal_xyz = metal.center
         dummies = metal.dummies_xyz
         filename = os.path.join(temp_path,"dummymetal.pdb")
 
-        self.tempfiles.append(filename)
 
         template = "HETATM    %d  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n"
 
         pdb = []
-        pdb.append(template % (1, metal_name, residue, metal_xyz[0], 
+        pdb.append(template % (1, metal_name, metal_residue, metal_xyz[0], 
                                metal_xyz[1], metal_xyz[2], metal_name))
         for i, dummy in enumerate(dummies):
             dummy = getattr(metal, "D{}".format(i))           
-            pdb.append(template % ((i+1), "D{}".format(i+1), residue, 
-                        dummy.xyz[0], dummy.xyz[1], dummy.xyz[2],  dummy.Type))
-
+            pdb.append(template % ((i+1), "D{}".format(i+1),
+                                    metal_residue, dummy.xyz[0],
+                                    dummy.xyz[1], dummy.xyz[2],
+                                    dummy.Type))
         with open(filename, 'w') as f:
             f.write('\n'.join(pdb))
 
@@ -311,7 +312,7 @@ class Model(object):
         Parameters
         ----------
         temp_path: str
-            Location of the folder amber14 in your computer
+            Temporary file location
         res: str
             Metal Residue name
         i: int
@@ -321,33 +322,28 @@ class Model(object):
         output_name: str
             Desires output name
         """
-        # try should only include the critical parts...
+        # file_paths
+        tleap_input = os.path.join(temp_path, "leaprc.metal")
+        forcefield = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
         pdbfile = os.path.join(temp_path, "dummymetal.pdb")
-        filename = os.path.join(temp_path, "leaprc.metal")
         output_lib = os.path.join(temp_path, "met%d.lib" % i)
-        self.tempfiles.append(filename)
-        lib_filename = os.path.join(temp_path, "met%d.lib" % i)
-        source = os.path.join(temp_path, "/dat/leap/cmd/oldff/leaprc.ff99SB")
-        
-        with open(filename, 'w') as f:
+        tleap_path = os.path.join(self.amber_path, "bin/tleap")
+        log_file = os.path.join(output, output_name + ".log")
+        # tleap_input
+        with open(tleap_input, 'w') as f:
             f.write("logFile leap.log\n"
-                "source " + source + "\n" +
+                "source " + forcefield + "\n" +
                 "{0}= loadpdb {1}\n".format(res,pdbfile) +
                 "saveoff {0} {1}\n".format(res,output_lib) +
                 "quit")
-
-        
-        # Hardcoded paths are worst thing ever. Get rid of that ASAP
-        # If amberhome is not set, raise an error, but don't do this, please.
-        # Anyway, this sould be set at __init__, not here, lost in non-related logic.
-        self.amber_path = os.environ['AMBERHOME'] =  "/home/daniel/Baixades/amber14"
-        # command should be a list of items, not a string
-        command = "$AMBERHOME/bin/tleap -s -f %s" % filename
-               
-        log_file = os.path.join(output, output_name + ".log")
+        #tleap launch
+        os.environ["AMBERHOME"] = self.amber_path
+        command = [tleap_path, "-s", "-f", "{}".format(tleap_input)]
         with open(log_file, 'w') as log:
             subprocess.call(command, stdout=log, stderr=log)
-        self.lib.append(lib_filename)
+        #save library file
+        self.lib.append(output_lib)
+
 
     def add_charge(self, temp_path, metal, name, i):
         """
@@ -829,13 +825,10 @@ class Dummy(object):
         Dummy Atoms instances.
         """
 
-        dummies = []
         dummies_types = self.type_retriever(geom)
-
-        for dummy_xyz, dummy_type in zip(dummies_xyz, dummies_types):
-            
-            dummy = Dummy(dummy_type, dummy_xyz)
-            dummies.append(dummy)
+        dummies = [Dummy(dummy_type, dummy_xyz) 
+                   for dummy_xyz, dummy_type 
+                   in zip(dummies_xyz, dummies_types)]
         return self.retrieve(dummies)
 
     @staticmethod
@@ -900,8 +893,7 @@ class Metal(Model, Dummy):
         dummies_xyz: list
             Dummies oriented positions 
         """
-        dummies_xyz = []
-
+    
         if self.model.geometry in ['tetrahedral', 'octahedron',
                                    'square planar', 'square pyramid']:
             geom = Geometry.Geometry(self.model.geometry)
@@ -910,6 +902,8 @@ class Metal(Model, Dummy):
         
         ligands = self.search_for_ligands(metal)
         rmsd, self.center, self.vecs = geomDistEval(geom, metal, ligands)
+        
+        dummies_xyz = []
         for vec in self.vecs:
             vec.length = self.dz_met_bondlenght
             dummyposition =  self.center + vec
