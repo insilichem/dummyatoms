@@ -294,6 +294,8 @@ class Model(object):
         with open(filename, 'w') as f:
             f.write('\n'.join(pdb))
 
+        self.num_of_dummies = len(dummies)
+
 
     def create_lib(self, temp_path, res, i, output, output_name): # ambermini
 
@@ -549,23 +551,29 @@ class Model(object):
         """
         #initialize file paths
         base_directory = os.path.dirname(os.path.abspath( __file__ ))
-        template = os.path.join(base_directory,"frcmod/{}.frcmod".format(self.geometry))
+        frcmod_filename ="frcmod/{}.frcmod".format(self.geometry.replace(" ", ""))
+        template = os.path.join(base_directory, frcmod_filename)
         frcmod_output = os.path.join(temp_path,"zinc{}.frcmod".format(i))
         #variable dictionary
-        if self.geometry == 'tetrahedral':
-            frcmod_parameters = {
-                "tetrahedral": {"$metal_name" : metal_name,
-                                "$metal_mass" : metal_mass,
-                                "$dz_mass" : dz_mass,
-                                "$dz_metal_bond" : dz_met_bondlenght,
-                                "$metal_vwr" :  metal_vwr},
+        frcmod_parameters = {
+            "tetrahedral":    {"$metal_name" : metal_name,
+                               "$metal_mass" : metal_mass-self.num_of_dummies*dz_mass,
+                               "$dz_mass" : dz_mass,
+                               "$dz_metal_bond" : dz_met_bondlenght,
+                               "$metal_vwr" :  metal_vwr},
 
-                "square planar" : {"$metal_name" : metal_name,
-                                   "$metal_mass" : metal_mass,
-                                   "$dz_mass" : dz_mass,
-                                   "$dz_metal_bond" : dz_met_bondlenght,
-                                   "$metal_vwr" :  metal_vwr}
-                                }
+            "square planar" : {"$metal_name" : metal_name,
+                               "$metal_mass" : metal_mass-4*dz_mass,
+                               "$dz_mass" : dz_mass,
+                               "$dz_metal_bond" : dz_met_bondlenght,
+                               "$metal_vwr" :  metal_vwr},
+
+            "octahedron" :    {"$metal_name" : metal_name,
+                               "$metal_mass" : metal_mass-6*dz_mass,
+                               "$dz_mass" : dz_mass,
+                               "$dz_metal_bond" : dz_met_bondlenght,
+                               "$metal_vwr" :  metal_vwr}  
+                            }
         #Read frcmod template
         with open(template, 'r') as file :
           filedata = file.read()
@@ -582,19 +590,6 @@ class Model(object):
 
 
         """
-        try:
-            frcmod_filename = os.path.join(temp_path,"zinc%d.frcmod"%i)
-            with open(frcmod_filename,"w") as f:
-
-                if self.geometry == 'tetrahedral':
-                        f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
-                        f.write("MASS\nDZ  %.3f\n%s %.2f\n\n"%(dzmass, met, metalmass-dzmass*4))
-                        f.write("BOND\nDZ-%s  640.0    %.3f\nDZ-DZ  640.0    1.47\n\n"%(met, dz_met_bondlenght))
-                        f.write("ANGLE\nDZ-%s-DZ    55.0      109.50\nDZ-DZ-DZ    55.0       60.0\nDZ-DZ-%s    55.0       35.25\n\n"%(met,met))
-                        f.write("DIHE\n%s-DZ-DZ-DZ   1    0.0          35.3             2.00\nDZ-%s-DZ-DZ   1    0.0         120.0             2.00\nDZ-DZ-DZ-DZ   1    0.0          70.5             2.00\n\n"%(met,met))
-                        f.write("IMPROPER\n\n")
-                        f.write("NONB\nDZ          0.000   0.00\n%s          %.3f   1.0E-6"%(met, met_vwradius ))
-                        f.write("")
 
                 elif self.geometry == 'octahedron':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
@@ -644,45 +639,8 @@ class Model(object):
                     f.write("  DY          0.0000  0.0000\n")
                     f.write("  DZ          0.0000  0.0000\n\n")
                     f.write("")
-                    #f.write("  DX          0.7671  0.0125\n")
-                    #f.write("  DY          0.7671  0.0125\n")
-                    #f.write("  DZ          0.7671  0.0125\n\n")
 
-                elif self.geometry == 'square planar':
-                    f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
-                    f.write("MASS\nDX  %.3f\n"%(dzmass))
-                    f.write("DY  %.3f\n"%(dzmass))
-                    f.write("%s %.2f\n\n"%(met, metalmass-dzmass*4))
-                    f.write("\nBOND\n")
-                    f.write("%s-DX  640      %.3f\n"%(met, dz_met_bondlenght))
-                    f.write("%s-DY  640      %.3f\n"%(met, dz_met_bondlenght))
-                    f.write("DX-DY  640      1.273\n")
-                    f.write("\nANGL\n")
-                    f.write("DX-%s-DX    55.0      180.00\n"%(met))
-                    f.write("DY-%s-DY    55.0      180.00\n"%(met))
-                    f.write("DX-%s-DY    55.0      90.00\n"%(met))
-                    f.write("%s-DX-DY    55.0      45.00\n"%(met))
-                    f.write("%s-DY-DX    55.0      45.00\n"%(met))
-                    f.write("DX-DY-DX    55.0      90.00\n")
-                    f.write("DX-DZ-DX    55.0      90.00\n")
-                    f.write("DY-DX-DY    55.0      90.00\n")
-                    f.write("\nDIHE\n")
-                    f.write("%s-DY-DX-DY  4   0.0    0.0    1.\n"%(met))
-                    f.write("DX-DY-%s-DX  4   0.0    0.0    1.\n"%(met))
-                    f.write("DY-DX-%s-DY  4   0.0    0.0    1.\n"%(met))
-                    f.write("DY-DX-%s-DX  4   0.0    0.0    1.\n"%(met))
-                    f.write("DX-%s-DY-DX  4   0.0    0.0    1.\n"%(met))
-                    f.write("DY-%s-DY-DX  4   0.0    0.0    1.\n"%(met))
-                    f.write("DY-%s-DX-DY  4   0.0    0.0    1.\n"%(met))    
-                    f.write("DY-DX-DY-DX  4   0.0    0.0    1.\n")
-                    f.write("%s-DX-DY-DX  4   0.0    0.0    1.\n"%(met))
-                    f.write("DX-DY-DX-DY  4   0.0    0.0    1.\n\n")
-                    f.write("IMPR\n\n")
-                    f.write("NONB\n")
-                    f.write("  %s          %.3f   1.0E-6\n"%(met, met_vwradius ))
-                    f.write("  DX          0.0000  0.000\n")
-                    f.write("  DY          0.0000  0.000\n")
-                    f.write("")
+
 
                 elif self.geometry == 'square pyramid':
                     f.write("BOND\n")
