@@ -89,11 +89,11 @@ class Controller(object):
             self.model.add_charge(tempdir, metal_class, self.name, i)
             
             print('Creating frcmod...')
-            self.model.create_frcmod(temp_path=tempdir, metalmass=metal_class.mass,
-                                     met=metal_class.symbol, i=i, 
-                                     met_vwradius=metal_class.met_vwradius, 
+            self.model.create_frcmod(temp_path=tempdir, metal_mass=metal_class.mass,
+                                     metal_name=metal_class.symbol, i=i, 
+                                     metal_vwr=metal_class.met_vwradius, 
                                      dz_met_bondlenght=metal_class.dz_met_bondlenght,
-                                     dzmass= metal_class.dzmass)
+                                     dz_mass= metal_class.dzmass)
 
             print('Metal Center Finished Deleting temp Files')
           
@@ -523,7 +523,7 @@ class Model(object):
             except IOError:
                 print('Impossible to open .lib file')
 
-    def create_frcmod(self, temp_path, metalmass, dzmass, dz_met_bondlenght, met_vwradius, met,i):
+    def create_frcmod(self, temp_path, metal_mass, dz_mass, dz_met_bondlenght, metal_vwr, metal_name,i):
         
         """
         Creates a frcmod containig all the parameters about
@@ -534,33 +534,67 @@ class Model(object):
         ----------
         temp_path: str
             Temp Folder Path
-        metalmass: int
+        metal_mass: int
             Metal mass
-        dzmass: int
+        dz_mass: int
             Dummies mass
         dz_met_bondlenght: int
             Metal-Dummy lenght bond
-        met_vwradius:
+        metal_vwr:
             VW metal radius
         met: str
             Metal symbol
         i: int
             Metal number
         """
-        # Same here....
+        #initialize file paths
+        base_directory = os.path.dirname(os.path.abspath( __file__ ))
+        template = os.path.join(base_directory,"frcmod/{}.frcmod".format(self.geometry))
+        frcmod_output = os.path.join(temp_path,"zinc{}.frcmod".format(i))
+        #variable dictionary
+        if self.geometry == 'tetrahedral':
+            frcmod_parameters = {
+                "tetrahedral": {"$metal_name" : metal_name,
+                                "$metal_mass" : metal_mass,
+                                "$dz_mass" : dz_mass,
+                                "$dz_metal_bond" : dz_met_bondlenght,
+                                "$metal_vwr" :  metal_vwr},
+
+                "square planar" : {"$metal_name" : metal_name,
+                                   "$metal_mass" : metal_mass,
+                                   "$dz_mass" : dz_mass,
+                                   "$dz_metal_bond" : dz_met_bondlenght,
+                                   "$metal_vwr" :  metal_vwr}
+                                }
+        #Read frcmod template
+        with open(template, 'r') as file :
+          filedata = file.read()
+
+        # Replace the target string
+        for target, replacement in frcmod_parameters[self.geometry].iteritems():
+            print(target)
+            print(replacement)
+            filedata = filedata.replace(target, str(replacement))
+
+        # Write the file out again
+        with open(frcmod_output, 'w') as file:
+          file.write(filedata)
+
+
+        """
         try:
             frcmod_filename = os.path.join(temp_path,"zinc%d.frcmod"%i)
             with open(frcmod_filename,"w") as f:
 
                 if self.geometry == 'tetrahedral':
-                    f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
-                    f.write("MASS\nDZ  %.3f\n%s %.2f\n\n"%(dzmass, met, metalmass-dzmass*4))
-                    f.write("BOND\nDZ-%s  640.0    %.3f\nDZ-DZ  640.0    1.47\n\n"%(met, dz_met_bondlenght))
-                    f.write("ANGLE\nDZ-%s-DZ    55.0      109.50\nDZ-DZ-DZ    55.0       60.0\nDZ-DZ-%s    55.0       35.25\n\n"%(met,met))
-                    f.write("DIHE\n%s-DZ-DZ-DZ   1    0.0          35.3             2.00\nDZ-%s-DZ-DZ   1    0.0         120.0             2.00\nDZ-DZ-DZ-DZ   1    0.0          70.5             2.00\n\n"%(met,met))
-                    f.write("IMPROPER\n\n")
-                    f.write("NONB\nDZ          0.000   0.00\n%s          %.3f   1.0E-6"%(met, met_vwradius ))
-                    f.write("")
+                        f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
+                        f.write("MASS\nDZ  %.3f\n%s %.2f\n\n"%(dzmass, met, metalmass-dzmass*4))
+                        f.write("BOND\nDZ-%s  640.0    %.3f\nDZ-DZ  640.0    1.47\n\n"%(met, dz_met_bondlenght))
+                        f.write("ANGLE\nDZ-%s-DZ    55.0      109.50\nDZ-DZ-DZ    55.0       60.0\nDZ-DZ-%s    55.0       35.25\n\n"%(met,met))
+                        f.write("DIHE\n%s-DZ-DZ-DZ   1    0.0          35.3             2.00\nDZ-%s-DZ-DZ   1    0.0         120.0             2.00\nDZ-DZ-DZ-DZ   1    0.0          70.5             2.00\n\n"%(met,met))
+                        f.write("IMPROPER\n\n")
+                        f.write("NONB\nDZ          0.000   0.00\n%s          %.3f   1.0E-6"%(met, met_vwradius ))
+                        f.write("")
 
                 elif self.geometry == 'octahedron':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
@@ -697,9 +731,9 @@ class Model(object):
 
         except IOError:
             print("Impossible to open .frcmod file")
-
-        self.frcmod.append(frcmod_filename)      
-
+        """
+        self.frcmod.append(frcmod_output)      
+        
     def create_system(self, inputpath, temp_path, met, i, output, output_name):
        
         """
