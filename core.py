@@ -387,25 +387,46 @@ class Model(object):
 
         #reading and substituting lines
         with open(lib_file,"r") as file:
-                lineas = list(file)
-                for i, new_line in enumerate(lib, start=3):
-                    #starts at 3 to preserve the residue info
-                    #we don't want to overwrite from .lib
-                    lineas[i] = new_line
+            lineas = list(file)
+            for i, new_line in enumerate(lib, start=3):
+                #starts at 3 to preserve the residue info
+                #we don't want to overwrite from .lib
+                lineas[i] = new_line
+            self.include_connectivity(residue, lineas)
 
-        self.include_connectivity()
+        
 
         #Re-writing lib
         with open(lib_file,"w") as f:
             for new_linea in lineas:    
                 f.write(new_linea)
 
-    def include_connectivity(self):
-        pass
+    def include_connectivity(self, residue, lineas):
+
         """
+        Include atoms connectivity
+        in .lib file as:
+        
+        {first atom} {second atom} {bond type}'
+
+        where:
+            first atom: first atom of bond
+            second atom: second atom of bond
+            bond type: single (1), double (2), triple (3), aromatic (ar)
+
+
+        Parameters:
+        -----------
+
+        residue: str
+            Metal residue
+
+        lineas: list
+            .lib lines
+        """
+        
         if self.geometry == 'tetrahedral':
-            lineas=[]
-            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
+            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
             lineas.insert(26,' 1 3 1\n')
             lineas.insert(27,' 1 2 1\n')
             lineas.insert(28,' 1 4 1\n')
@@ -416,13 +437,9 @@ class Model(object):
             lineas.insert(33,' 3 5 1\n')
             lineas.insert(34,' 3 4 1\n')
             lineas.insert(35,' 4 5 1\n')
-            file.close()
 
         elif self.geometry == 'octahedron':
-            lineas=[]
-            file = open(lib,"r")
-            lineas=list(file)
-            lineas.insert(29,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
+            lineas.insert(29,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
             lineas.insert(30, ' 1 5 1\n')
             lineas.insert(31, ' 1 2 1\n')
             lineas.insert(32, ' 2 6 1\n')
@@ -433,14 +450,10 @@ class Model(object):
             lineas.insert(37, ' 5 3 1\n')
             lineas.insert(38, ' 3 2 1\n')
             lineas.insert(39, ' 7 5 1\n')
-            file.close()
 
 
         elif self.geometry == 'square planar':
-            lineas=[]
-            file = open(lib,"r")
-            lineas=list(file)
-            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
+            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
             lineas.insert(26,' 1 3 1\n')
             lineas.insert(27,' 1 2 1\n')
             lineas.insert(28,' 1 4 1\n')
@@ -449,13 +462,9 @@ class Model(object):
             lineas.insert(31,' 5 3 1\n')
             lineas.insert(32,' 3 4 1\n')
             lineas.insert(33,' 4 2 1\n')
-            file.close()
 
         elif self.geometry == 'square pyramid':
-            lineas=[]
-            file = open(lib,"r")
-            lineas=list(file)
-            lineas.insert(27,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
+            lineas.insert(27,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
             lineas.insert(28,' 1 3 1\n')
             lineas.insert(29,' 1 2 1\n')
             lineas.insert(30,' 1 4 1\n')
@@ -464,8 +473,7 @@ class Model(object):
             lineas.insert(33,' 5 3 1\n')
             lineas.insert(34,' 3 4 1\n')
             lineas.insert(35,' 4 2 1\n')
-            file.close()
-        """
+        
 
 
     def create_frcmod(self, temp_path, metalmass, dzmass, dz_met_bondlenght, met_vwradius, met,i):
@@ -796,10 +804,10 @@ class Dummy(object):
     @staticmethod
     def charge_retriever(geom, charge):
         dummycharges = {'tetrahedral' : [charge/4.0 for i in range(0,4)],
-            'square planar' : [charge/4.0 for i in range(0,4)],
-            'square pyramid' : [charge/5.0 for i in range(0,5)],
-            'octahedron' : [charge/6.0 for i in range(0,6)]
-            }
+                        'square planar' : [charge/4.0 for i in range(0,4)],
+                        'square pyramid' : [charge/5.0 for i in range(0,5)],
+                        'octahedron' : [charge/6.0 for i in range(0,6)]
+                        }
         return dummycharges[geom]
 
 
