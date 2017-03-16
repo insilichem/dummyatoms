@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-"""
-Still need to do:
-    -ambermini #how to do
-"""
-
 from __future__ import print_function, division 
 # Python stdlib
 import os
@@ -127,18 +122,17 @@ class Model(object):
         self.lib = []
         self.frcmod = []
         self.tempfiles = []
-        self.amber_path = "/home/daniel/Baixades/amber14"
-        """
-        try:
+        """try:
             self.amber_path = os.environ['AMBERHOME']
         except KeyError:
             raise UserError("AMBERHOME environment variable must be set")
         """
+        self.amber_path = os.environ['AMBERHOME'] = "/home/daniel/Baixades/amber14/"
     def save_variables(self, metal):
 
         """
-        Save last minute change variables made by client
-        and retrieve GUI variables.
+        Save last minute variable changes made
+        by client and retrieve GUI variables.
 
         Parameters:
         ------------
@@ -292,9 +286,9 @@ class Model(object):
         pdb = []
         pdb.append(template % (1, metal_name, metal_residue, metal_xyz[0], 
                                metal_xyz[1], metal_xyz[2], metal_name))
-        for i, dummy in enumerate(dummies):
+        for i, dummy in enumerate(dummies, start=1):
             dummy = getattr(metal, "D{}".format(i))           
-            pdb.append(template % ((i+1), "D{}".format(i+1),
+            pdb.append(template % ((i+1), "D{}".format(i),
                                     metal_residue, dummy.xyz[0],
                                     dummy.xyz[1], dummy.xyz[2],
                                     dummy.Type))
@@ -339,7 +333,7 @@ class Model(object):
                 "saveoff {0} {1}\n".format(res,output_lib) +
                 "quit")
         #tleap launch
-        os.environ["AMBERHOME"] = self.amber_path
+        #os.environ["AMBERHOME"] = self.amber_path
         command = [tleap_path, "-s", "-f", "{}".format(tleap_input)]
         with open(log_file, 'w') as log:
             subprocess.call(command, stdout=log, stderr=log)
@@ -374,19 +368,18 @@ class Model(object):
         lib = []
 
         #template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
-        template =  "{0} {1} 0 1 196609 {2} {3} {4}"
+        template =  "{0} {1} 0 1 196609 {2} {3} {4}\n"
         lib.append(template.format(metal_name, metal_type, 1, atm, 0))
         for i in range(1, self.num_of_dummies+1):
             dummy = getattr(metal, "D{}".format(i))           
             lib.append(template.format("D{}".format(i), dummy.Type, i+1, -1, dummy.charge))
-        with open(lib_file,"w") as f:
-            f.write('\n'.join(lib))
+       
 
         #t-leap line to understand residues type
-        lib.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg".format(residue))
+        lib.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg\n".format(residue))
         
         #template =  "{name} {type} 0 1 0.0\n"
-        template =  " {0} {1} 0 -1 0.0"
+        template =  " {0} {1} 0 -1 0.0\n"
         lib.append(template.format(metal_name, metal_type))
         for i in range(1, self.num_of_dummies+1):
             dummy = getattr(metal, "D{}".format(i))           
@@ -399,16 +392,17 @@ class Model(object):
                     #starts at 3 to preserve the residue info
                     #we don't want to overwrite from .lib
                     lineas[i] = new_line
+
+        self.include_connectivity()
+
         #Re-writing lib
-        with open(lib,"w") as f:
+        with open(lib_file,"w") as f:
             for new_linea in lineas:    
                 f.write(new_linea)
 
-
-
-
-
-
+    def include_connectivity(self):
+        pass
+        """
         if self.geometry == 'tetrahedral':
             lineas=[]
             lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
@@ -471,6 +465,7 @@ class Model(object):
             lineas.insert(34,' 3 4 1\n')
             lineas.insert(35,' 4 2 1\n')
             file.close()
+        """
 
 
     def create_frcmod(self, temp_path, metalmass, dzmass, dz_met_bondlenght, met_vwradius, met,i):
@@ -703,14 +698,15 @@ class Model(object):
             f.write("source " + source)
             f.write("""addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met))
             f.write("""addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
+            #metal frcmod file
             if self.frcmod:
                 for frcmod in self.frcmod:
                     f.write("loadamberparams %s\n"%(frcmod))
-
+            #metal lib file
             if self.lib:
                 for lib in self.lib:
                     f.write("loadOff %s\n"%(lib))
-
+            #externals lib and frcomd file
             FilesToLoad = self.gui.ui_files_to_load.get(0,'end')
             if FilesToLoad:
                 for file in list(FilesToLoad):
@@ -718,19 +714,21 @@ class Model(object):
                         f.write("loadOff %s\n"%(file))
                     elif file.endswith('.frcmod'):
                         f.write("loadamberparams %s\n"%(file))
-
-            
-
+            #load system
             if inputpath.endswith(".pdb"):
                 f.write("sys=loadpdb %s\n"%(pdb))
             elif inputpath.endswith(".mol2"):
                 f.write("sys=loadmol2 %s\n"%(mol2))
+            #neutralize system
             f.write("addIons sys Cl- 0\n")
             f.write("addIons sys Na+ 0\n")
+            #add waterbox
             if self.gui.var_waterbox.get()==1:
                 f.write("solvatebox sys TIP3PBOX 10\n")
+            #create cord and top
             prmtop = os.path.join(output, output_name+".prmtop")
             inpcrd = os.path.join(output, output_name+".inpcrd")
+            #Output top to visualize as mol2 and pdb
             f.write("saveamberparm sys " + prmtop + " " + inpcrd + "\n")
             mol2 = os.path.join(output, output_name+".mol2")
             f.write("savemol2 sys " + mol2 + " 0\n")
@@ -740,11 +738,12 @@ class Model(object):
         leaprc = os.path.join(temp_path, "leaprc.final")
         command = "$AMBERHOME/bin/tleap -s -f "+leaprc
 
-        
+        #Output errors
         log_file = os.path.join(output, output_name + ".log")
         with open(log_file, 'a') as log:
             subprocess.call(command, stdout=log, stderr=log)
         print('Program Finished')
+        #Remove temporary directory
         """
         if os.path.exists(self.tempdir):
             print('Cleaning Memory')
@@ -813,7 +812,7 @@ class Dummy(object):
         as self.D1, self.D2 ...
         """
 
-        for i, dummy in enumerate(dummies):
+        for i, dummy in enumerate(dummies, start=1):
             #self.D1 = Dummy(D1, DZ)
             setattr(self, "D{}".format(i), dummy)
             
@@ -893,8 +892,8 @@ class Metal(Model, Dummy):
         -------
         chimera ligands object
         """
-        # IMPORTS ALWAYS AT TOP OF THE FILE!!!!!!
-        # Which Chimera file did you steal? :P
+        # Extracted directly from:
+        # Metal Geom Chimera
         data = []
         coordLim=4.0
         from numpy import array
