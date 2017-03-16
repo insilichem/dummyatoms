@@ -555,31 +555,18 @@ class Model(object):
         template = os.path.join(base_directory, frcmod_filename)
         frcmod_output = os.path.join(temp_path,"zinc{}.frcmod".format(i))
         #variable dictionary
-        frcmod_parameters = {
-            "tetrahedral":    {"$metal_name" : metal_name,
+        frcmod_parameters = {"$metal_name" : metal_name,
                                "$metal_mass" : metal_mass-self.num_of_dummies*dz_mass,
                                "$dz_mass" : dz_mass,
                                "$dz_metal_bond" : dz_met_bondlenght,
-                               "$metal_vwr" :  metal_vwr},
-
-            "square planar" : {"$metal_name" : metal_name,
-                               "$metal_mass" : metal_mass-4*dz_mass,
-                               "$dz_mass" : dz_mass,
-                               "$dz_metal_bond" : dz_met_bondlenght,
-                               "$metal_vwr" :  metal_vwr},
-
-            "octahedron" :    {"$metal_name" : metal_name,
-                               "$metal_mass" : metal_mass-6*dz_mass,
-                               "$dz_mass" : dz_mass,
-                               "$dz_metal_bond" : dz_met_bondlenght,
-                               "$metal_vwr" :  metal_vwr}  
+                               "$metal_vwr" :  metal_vwr 
                             }
         #Read frcmod template
         with open(template, 'r') as file :
           filedata = file.read()
 
         # Replace the target string
-        for target, replacement in frcmod_parameters[self.geometry].iteritems():
+        for target, replacement in frcmod_parameters.iteritems():
             print(target)
             print(replacement)
             filedata = filedata.replace(target, str(replacement))
