@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-"""
-Still need to do:
-    -ambermini #how to do
-"""
-
 from __future__ import print_function, division 
 # Python stdlib
 import os
@@ -71,8 +66,14 @@ class Controller(object):
             self.model.retrieve_variables(metal)
 
             print("Building Metal Center...")
-            metal_class = Metal.handle_atom_creation(metal=metal, Type=self.Type,
-                                                     res=self.res, model=self.model)
+
+            metal_class = Metal.handle_metal_creation(
+                metal=metal, Type=self.Type, residue=self.res,
+                charge=self.model.charge, geometry=self.model.geometry,
+                dz_met_bondlenght=self.model.dz_met_bondlenght,
+                dz_mass=self.model.dz_mass, metal_vwr=self.model.metal_vwr)
+
+
 
             print('Building dummies...')
             self.model.include_dummies(metal_class)
@@ -89,11 +90,15 @@ class Controller(object):
             self.model.add_charge(tempdir, metal_class, self.name, i)
 
             print('Creating frcmod...')
-            self.model.create_frcmod(temp_path=tempdir, metal_mass=metal_class.mass,
-                                     metal_name=metal_class.symbol, i=i,
-                                     metal_vwr=metal_class.met_vwradius,
+
+            self.model.create_frcmod(temp_path=tempdir, metalmass=metal_class.mass,
+                                     met=metal_class.symbol, i=i, 
+                                     metal_vwr=metal_class.metal_vwr, 
                                      dz_met_bondlenght=metal_class.dz_met_bondlenght,
-                                     dz_mass=metal_class.dzmass)
+                                     dz_mass= metal_class.dz_mass)
+
+    
+
 
             print('Metal Center Finished Deleting temp Files')
         print('Saving system...')
@@ -125,12 +130,17 @@ class Model(object):
         self.lib = []
         self.frcmod = []
         self.tempfiles = []
-
+        """try:
+            self.amber_path = os.environ['AMBERHOME']
+        except KeyError:
+            raise UserError("AMBERHOME environment variable must be set")
+        """
+        self.amber_path = os.environ['AMBERHOME'] = "/home/daniel/Baixades/amber14/"
     def save_variables(self, metal):
 
         """
-        Save last minute change variables made by client
-        and retrieve GUI variables.
+        Save last minute variable changes made
+        by client and retrieve GUI variables.
 
         Parameters:
         ------------
@@ -166,16 +176,16 @@ class Model(object):
             if dic["title"] == metal.name:
                 self.geometry = dic["geom"]
                 self.charge = dic["charge"]
-                self.vw_radius = dic["vw_radius"]
+                self.metal_vwr = dic["vw_radius"]
                 self.dz_mass = dic["dz_mass"] 
-                self.dz_met = dic["dz_met_bond"]
+                self.dz_met_bondlenght = dic["dz_met_bond"]
                 return
 
         self.geometry = "tetrahedral"
         self.charge = 2
-        self.vw_radius = 3.1
+        self.metal_vwr = 3.1
         self.dz_mass = 3 
-        self.dz_met = 0.9
+        self.dz_met_bondlenght = 0.9
 
     def temp_directory(self):
 
@@ -216,9 +226,9 @@ class Model(object):
         res = metal.residue
         dummy_element = chimera.Element('DZ')
         for vec in metal_class.vecs:
-            vec.length = self.dz_met
-            metal_center = chimera.Vector(coord[0], coord[1], coord[2])
-            dummyposition = metal_center + vec
+            vec.length = self.dz_met_bondlenght
+            metal_center=chimera.Vector(coord[0],coord[1],coord[2])
+            dummyposition =  metal_center + vec
             dummies_xyz.append(dummyposition)
 
         # Multi-or checks are cleaner with `in`
@@ -267,23 +277,26 @@ class Model(object):
 
         """
        
-        residue = metal.residue
+        metal_residue = metal.residue
         metal_name = metal.symbol
         metal_xyz = metal.center
         dummies = metal.dummies_xyz
         filename = os.path.join(temp_path, "dummymetal.pdb")
 
-        self.tempfiles.append(filename)
+
 
         template = "HETATM    %d  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n"
 
         pdb = []
-        pdb.append(template % (1, metal_name, residue, metal_xyz[0], 
+        pdb.append(template % (1, metal_name, metal_residue, metal_xyz[0], 
                                metal_xyz[1], metal_xyz[2], metal_name))
-        for i, dummy in enumerate(dummies):
+        for i, dummy in enumerate(dummies, start=1):
             dummy = getattr(metal, "D{}".format(i))           
-            pdb.append(template % ((i+1), "D{}".format(i+1), residue, 
-                        dummy.xyz[0], dummy.xyz[1], dummy.xyz[2], dummy.Type))
+
+            pdb.append(template % ((i+1), "D{}".format(i),
+                                    metal_residue, dummy.xyz[0],
+                                    dummy.xyz[1], dummy.xyz[2],
+                                    dummy.Type))
 
         with open(filename, 'w') as f:
             f.write('\n'.join(pdb))
@@ -302,7 +315,7 @@ class Model(object):
         Parameters
         ----------
         temp_path: str
-            Location of the folder amber14 in your computer
+            Temporary file location
         res: str
             Metal Residue name
         i: int
@@ -312,41 +325,33 @@ class Model(object):
         output_name: str
             Desires output name
         """
-        # try should only include the critical parts...
+        # file_paths
+        tleap_input = os.path.join(temp_path, "leaprc.metal")
+        forcefield = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
         pdbfile = os.path.join(temp_path, "dummymetal.pdb")
-        filename = os.path.join(temp_path, "leaprc.metal")
         output_lib = os.path.join(temp_path, "met%d.lib" % i)
-        self.tempfiles.append(filename)
-        lib_filename = os.path.join(temp_path, "met%d.lib" % i)
-        source = os.path.join(temp_path, "/dat/leap/cmd/oldff/leaprc.ff99SB")
-        try:
-            with open(filename, 'w') as f:
-                f.write("logFile leap.log\n")
-                f.write("source " + source + "\n")
-                f.write("%s= loadpdb %s\n"%(res, pdbfile))
-                f.write("saveoff %s %s\n"%(res, output_lib))
-                f.write("quit")
-        except IOError:
-            # This type of exception masking is not very useful, actually
-            raise UserError("Impossible to open leaprc file")
-        
-        # Hardcoded paths are worst thing ever. Get rid of that ASAP
-        # If amberhome is not set, raise an error, but don't do this, please.
-        # Anyway, this sould be set at __init__, not here, lost in non-related logic.
-        self.amber_path = os.environ['AMBERHOME'] = "/home/daniel/Baixades/amber14"
-        # command should be a list of items, not a string
-        command = "$AMBERHOME/bin/tleap -s -f %s" % filename
-               
+        self.tleap_path = os.path.join(self.amber_path, "bin/tleap")
         log_file = os.path.join(output, output_name + ".log")
+        # tleap_input
+        with open(tleap_input, 'w') as f:
+            f.write("logFile leap.log\n"
+                "source " + forcefield + "\n" +
+                "{0}= loadpdb {1}\n".format(res,pdbfile) +
+                "saveoff {0} {1}\n".format(res,output_lib) +
+                "quit")
+        #tleap launch
+        #os.environ["AMBERHOME"] = self.amber_path
+        command = [self.tleap_path, "-s", "-f", "{}".format(tleap_input)]
         with open(log_file, 'w') as log:
-            # shell = True... give me a good reason.
-            subprocess.call(command, stdout=log, stderr=log, shell=True)
-        self.lib.append(lib_filename)
+            subprocess.call(command, stdout=log, stderr=log)
+        #save library file
+        self.lib.append(output_lib)
 
-    def add_charge(self, temp_path, metal, name, i):
+
+    def add_charge(self, temp_path, metal, metal_name, i):
         """
-        Nasty but easy and simple way to include the charge
-        and connectivity inside the .lib file created before.
+        Simple tmeplate method to include the charge
+        within the .lib file created before.
 
         Parameters
         ----------
@@ -359,167 +364,117 @@ class Model(object):
         i: int
             Metal Number
         """
-        # I am about to puke. You know it's nasty, so don't do that.
-        # Rewrite this elegantly, please.
+        metal_type = metal.symbol
+        atomicnumber = metal.atomicnumber
+        residue = metal.residue 
+        lib_file = os.path.join(temp_path, "met%d.lib" % i)       
+        lib = []
 
-        q = metal.charge
-        met = metal.symbol
-        atm = metal.atomicnumber
-        res = metal.residue 
-        lib = os.path.join(temp_path, "met%d.lib" % i)       
+        #template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
+        template =  "{0} {1} 0 1 196609 {2} {3} {4}\n"
+        lib.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
+        for i in range(1, self.num_of_dummies+1):
+            dummy = getattr(metal, "D{}".format(i))           
+            lib.append(template.format("D{}".format(i), dummy.Type, i+1, -1, dummy.charge))
+       
+        #t-leap line to understand residues type
+        lib.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg\n".format(residue))
+        
+        #template =  "{name} {type} 0 1 0.0\n"
+        template =  " {0} {1} 0 -1 0.0\n"
+        lib.append(template.format(metal_name, metal_type))
+        for i in range(1, self.num_of_dummies+1):
+            dummy = getattr(metal, "D{}".format(i))           
+            lib.append(template.format("D{}".format(i), dummy.Type))
 
+        #reading and substituting lines
+        with open(lib_file,"r") as file:
+            lineas = list(file)
+            for i, new_line in enumerate(lib, start=3):
+                #starts at 3 to preserve the residue info
+                #we don't want to overwrite from .lib
+                lineas[i] = new_line
+            self.include_connectivity(residue, lineas)
+
+        #Re-writing lib
+        with open(lib_file,"w") as f:
+            for new_linea in lineas:    
+                f.write(new_linea)
+
+    def include_connectivity(self, residue, lineas):
+
+        """
+        Include atoms connectivity
+        in .lib file as:
+        
+        {first atom} {second atom} {bond type}'
+
+        where:
+            first atom: first atom of bond
+            second atom: second atom of bond
+            bond type: single (1), double (2), triple (3), aromatic (ar)
+
+
+        Parameters:
+        -----------
+
+        residue: str
+            Metal residue
+
+        lineas: list
+            .lib lines
+        """
+        
         if self.geometry == 'tetrahedral':
-            lineas = []
-            try:
-                file = open(lib,"r")
-                lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
-                lineas[4]=' "D1" "DZ" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
-                lineas[5]=' "D2" "DZ" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
-                lineas[6]=' "D3" "DZ" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
-                lineas[7]=' "D4" "DZ" 0 1 196609 5 -1 %.5f\n'%(q/4.0)
-                lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
-                lineas[10]=' "D1" "DZ" 0 -1 0.0\n'
-                lineas[11]=' "D2" "DZ" 0 -1 0.0\n'
-                lineas[12]=' "D3" "DZ" 0 -1 0.0\n'
-                lineas[13]=' "D4" "DZ" 0 -1 0.0\n'
-                lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
-                lineas.insert(26,' 1 3 1\n')
-                lineas.insert(27,' 1 2 1\n')
-                lineas.insert(28,' 1 4 1\n')
-                lineas.insert(29,' 1 5 1\n')
-                lineas.insert(30,' 2 3 1\n')
-                lineas.insert(31,' 2 4 1\n')
-                lineas.insert(32,' 2 5 1\n')
-                lineas.insert(33,' 3 5 1\n')
-                lineas.insert(34,' 3 4 1\n')
-                lineas.insert(35,' 4 5 1\n')
-                file.close()
-
-                
-                with open(lib,"w") as f:
-                    for linea in lineas:
-                        
-                        #if linea==lineas[25]:
-                        #    f.write("!entry.mm.unit.connectivity table  int atom1x  int atom2x  int flags\n 1 3 1\n 1 2 1\n 1 4 1\n 1 5 1\n 2 3 1\n 2 4 1\n 2 5 1\n 3 5 1\n 3 4 1\n 4 5 1\n"%(RES))    
-                        f.write(linea)
-
-            except IOError:
-                print('Impossible to open .lib file')
+            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
+            lineas.insert(26,' 1 3 1\n')
+            lineas.insert(27,' 1 2 1\n')
+            lineas.insert(28,' 1 4 1\n')
+            lineas.insert(29,' 1 5 1\n')
+            lineas.insert(30,' 2 3 1\n')
+            lineas.insert(31,' 2 4 1\n')
+            lineas.insert(32,' 2 5 1\n')
+            lineas.insert(33,' 3 5 1\n')
+            lineas.insert(34,' 3 4 1\n')
+            lineas.insert(35,' 4 5 1\n')
 
         elif self.geometry == 'octahedron':
-            lineas=[]
-            try:
-                file = open(lib,"r")
-                lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
-                lineas[4]=' "D1" "DX" 0 1 196609 2 -1 %.5f\n'%(q/6.0)
-                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/6.0)
-                lineas[6]=' "D3" "DY" 0 1 196609 4 -1 %.5f\n'%(q/6.0)
-                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/6.0)
-                lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.5f\n'%(q/6.0)
-                lineas[9]=' "D6" "DZ" 0 1 196609 7 -1 %.5f\n'%(q/6.0)
-                lineas[11]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
-                lineas[12]=' "D1" "DX" 0 -1 0.0\n'
-                lineas[13]=' "D2" "DY" 0 -1 0.0\n'
-                lineas[14]=' "D3" "DY" 0 -1 0.0\n'
-                lineas[15]=' "D4" "DX" 0 -1 0.0\n'
-                lineas[16]=' "D5" "DZ" 0 -1 0.0\n'
-                lineas[17]=' "D6" "DZ" 0 -1 0.0\n'
-                lineas.insert(29,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
-                lineas.insert(30, ' 1 5 1\n')
-                lineas.insert(31, ' 1 2 1\n')
-                lineas.insert(32, ' 2 6 1\n')
-                lineas.insert(33, ' 2 4 1\n')
-                lineas.insert(34, ' 6 5 1\n')
-                lineas.insert(35, ' 4 5 1\n')
-                lineas.insert(36, ' 7 2 1\n')
-                lineas.insert(37, ' 5 3 1\n')
-                lineas.insert(38, ' 3 2 1\n')
-                lineas.insert(39, ' 7 5 1\n')
+            lineas.insert(29,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
+            lineas.insert(30, ' 1 5 1\n')
+            lineas.insert(31, ' 1 2 1\n')
+            lineas.insert(32, ' 2 6 1\n')
+            lineas.insert(33, ' 2 4 1\n')
+            lineas.insert(34, ' 6 5 1\n')
+            lineas.insert(35, ' 4 5 1\n')
+            lineas.insert(36, ' 7 2 1\n')
+            lineas.insert(37, ' 5 3 1\n')
+            lineas.insert(38, ' 3 2 1\n')
+            lineas.insert(39, ' 7 5 1\n')
 
-                file.close()
-
-                
-                with open(lib,"w") as f:
-                    for linea in lineas:
-                        #if linea==lineas[25]:
-                        #    f.write("!entry.mm.unit.connectivity table  int atom1x  int atom2x  int flags\n 1 3 1\n 1 2 1\n 1 4 1\n 1 5 1\n 2 3 1\n 2 4 1\n 2 5 1\n 3 5 1\n 3 4 1\n 4 5 1\n"%(RES))    
-                        f.write(linea)
-
-            except IOError:
-                raise UserError("Impossible to open .lib file")
 
         elif self.geometry == 'square planar':
-            lineas=[]
-            try:
-                file = open(lib,"r")
-                lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
-                lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/4.0)
-                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/4.0)
-                lineas[6]=' "D3" "DX" 0 1 196609 4 -1 %.5f\n'%(q/4.0)
-                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/4.0)
-                lineas[9]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
-                lineas[10]=' "D1" "DY" 0 -1 0.0\n'
-                lineas[11]=' "D2" "DY" 0 -1 0.0\n'
-                lineas[12]=' "D3" "DX" 0 -1 0.0\n'
-                lineas[13]=' "D4" "DX" 0 -1 0.0\n'
-                lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
-                lineas.insert(26,' 1 3 1\n')
-                lineas.insert(27,' 1 2 1\n')
-                lineas.insert(28,' 1 4 1\n')
-                lineas.insert(29,' 1 5 1\n')
-                lineas.insert(30,' 2 5 1\n')
-                lineas.insert(31,' 5 3 1\n')
-                lineas.insert(32,' 3 4 1\n')
-                lineas.insert(33,' 4 2 1\n')
-                file.close()
-
-                
-                with open(lib,"w") as f:
-                    for linea in lineas:    
-                        f.write(linea)
-
-            except IOError:
-                print('Impossible to open .lib file')
+            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
+            lineas.insert(26,' 1 3 1\n')
+            lineas.insert(27,' 1 2 1\n')
+            lineas.insert(28,' 1 4 1\n')
+            lineas.insert(29,' 1 5 1\n')
+            lineas.insert(30,' 2 5 1\n')
+            lineas.insert(31,' 5 3 1\n')
+            lineas.insert(32,' 3 4 1\n')
+            lineas.insert(33,' 4 2 1\n')
 
         elif self.geometry == 'square pyramid':
-            lineas=[]
-            try:
-                file = open(lib,"r")
-                lineas=list(file)
-                lineas[3]=' "%s" "%s" 0 1 196609 1 %d 0.0\n'%(name,met,atm)
-                lineas[4]=' "D1" "DY" 0 1 196609 2 -1 %.5f\n'%(q/5.0)
-                lineas[5]=' "D2" "DY" 0 1 196609 3 -1 %.5f\n'%(q/5.0)
-                lineas[6]=' "D3" "DX" 0 1 196609 4 -1 %.5f\n'%(q/5.0)
-                lineas[7]=' "D4" "DX" 0 1 196609 5 -1 %.5f\n'%(q/5.0)
-                lineas[8]=' "D5" "DZ" 0 1 196609 6 -1 %.5f\n'%(q/5.0)
-                lineas[10]=' "%s" "%s" 0 -1 0.0\n'%(name,met)
-                lineas[11]=' "D1" "DY" 0 -1 0.0\n'
-                lineas[12]=' "D2" "DY" 0 -1 0.0\n'
-                lineas[13]=' "D3" "DX" 0 -1 0.0\n'
-                lineas[14]=' "D4" "DX" 0 -1 0.0\n'
-                lineas[15]=' "D5" "DZ" 0 -1 0.0\n'
-                lineas.insert(27,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%res)
-                lineas.insert(28,' 1 3 1\n')
-                lineas.insert(29,' 1 2 1\n')
-                lineas.insert(30,' 1 4 1\n')
-                lineas.insert(31,' 1 5 1\n')
-                lineas.insert(32,' 2 5 1\n')
-                lineas.insert(33,' 5 3 1\n')
-                lineas.insert(34,' 3 4 1\n')
-                lineas.insert(35,' 4 2 1\n')
-                file.close()
-
-                
-                with open(lib,"w") as f:
-                    for linea in lineas:    
-                        f.write(linea)
-            except IOError:
-                print('Impossible to open .lib file')
-
-    def create_frcmod(self, temp_path, metal_mass, dz_mass, dz_met_bondlenght, metal_vwr, metal_name,i):
+            lineas.insert(27,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
+            lineas.insert(28,' 1 3 1\n')
+            lineas.insert(29,' 1 2 1\n')
+            lineas.insert(30,' 1 4 1\n')
+            lineas.insert(31,' 1 5 1\n')
+            lineas.insert(32,' 2 5 1\n')
+            lineas.insert(33,' 5 3 1\n')
+            lineas.insert(34,' 3 4 1\n')
+            lineas.insert(35,' 4 2 1\n')
+        
+    def create_frcmod(self, temp_path, metalmass, dz_mass, dz_met_bondlenght, metal_vwr, met,i):
         
         """
         Creates a frcmod containig all the parameters about
@@ -543,6 +498,7 @@ class Model(object):
         i: int
             Metal number
         """
+   
         #initialize file paths
         base_directory = os.path.dirname(os.path.abspath(__file__))
         frcmod_filename = "frcmod/{}.frcmod".format(self.geometry.replace(" ", ""))
@@ -611,25 +567,27 @@ class Model(object):
             Filename = self.gui.var_outputname.get() + '.mol2'
             mol2 = os.path.join(self.tempdir, Filename)
             rc("write format mol2 0 " + mol2)
-
-
+        #filepaths
+        log_file = os.path.join(output, output_name + ".log")
         output_name = self.gui.var_outputname.get()
-        filename = os.path.join(temp_path,"leaprc.final")
-        with open(filename,"w") as f:
-            f.write("logFile leap.log\n")
-            f.write("source /home/daniel/leaprc\n")
-            source = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB\n")
-            f.write("source " + source)
-            f.write("""addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met))
-            f.write("""addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
+        tleap_input = os.path.join(temp_path, "leaprc.final")
+        source = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
+        #Writting t-leap input
+        with open(tleap_input,"w") as f:
+            f.write("logFile leap.log\n" +
+                "source /home/daniel/leaprc\n" +
+                "source " + source + "\n" +
+                """addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met) +
+                """addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
+            #metal frcmod file
             if self.frcmod:
                 for frcmod in self.frcmod:
                     f.write("loadamberparams %s\n"%(frcmod))
-
+            #metal lib file
             if self.lib:
                 for lib in self.lib:
                     f.write("loadOff %s\n"%(lib))
-
+            #externals lib and frcomd file
             FilesToLoad = self.gui.ui_files_to_load.get(0,'end')
             if FilesToLoad:
                 for file in list(FilesToLoad):
@@ -637,19 +595,21 @@ class Model(object):
                         f.write("loadOff %s\n"%(file))
                     elif file.endswith('.frcmod'):
                         f.write("loadamberparams %s\n"%(file))
-
-            
-
+            #load system
             if inputpath.endswith(".pdb"):
                 f.write("sys=loadpdb %s\n"%(pdb))
             elif inputpath.endswith(".mol2"):
                 f.write("sys=loadmol2 %s\n"%(mol2))
+            #neutralize system
             f.write("addIons sys Cl- 0\n")
             f.write("addIons sys Na+ 0\n")
+            #add waterbox
             if self.gui.var_waterbox.get()==1:
                 f.write("solvatebox sys TIP3PBOX 10\n")
+            #create cord and top
             prmtop = os.path.join(output, output_name+".prmtop")
             inpcrd = os.path.join(output, output_name+".inpcrd")
+            #Output top to visualize as mol2 and pdb
             f.write("saveamberparm sys " + prmtop + " " + inpcrd + "\n")
             mol2 = os.path.join(output, output_name+".mol2")
             f.write("savemol2 sys " + mol2 + " 0\n")
@@ -657,25 +617,21 @@ class Model(object):
             f.write("savepdb sys " + pdb + "\n")
             f.write("")
         leaprc = os.path.join(temp_path, "leaprc.final")
-        command = "$AMBERHOME/bin/tleap -s -f "+leaprc
-
-        
-        log_file = os.path.join(output, output_name + ".log")
+        command = [self.tleap_path, "-s", "-f", "{}".format(tleap_input)]
+        #Output errors
         with open(log_file, 'a') as log:
-            subprocess.call(command, stdout=log, stderr=log, shell=True)
+            subprocess.call(command, stdout=log, stderr=log)
         print('Program Finished')
+        #Remove temporary directory
         """
         if os.path.exists(self.tempdir):
             print('Cleaning Memory')
             shutil.rmtree(self.tempdir)
         """
         
+############################################Classes#################################################
 
 
-
-
-# What kind of line length are you using? 200 chars? Trim that down to 100 or 100 tops.
-############################################Atoms#################################################
 class Dummy(object):
 
     """
@@ -684,11 +640,12 @@ class Dummy(object):
      attributes
     """
 
-    def __init__(self, Type, xyz):
+    def __init__(self, Type, xyz, charge):
         self.Type = Type
         self.xyz = xyz
+        self.charge = charge
 
-    def create_dummies(self, dummies_xyz, geom):
+    def build_dummies(self, dummies_xyz, geom, charge):
 
         """
         Dummy class method to build up
@@ -696,13 +653,11 @@ class Dummy(object):
         Dummy Atoms instances.
         """
 
-        dummies = []
         dummies_types = self.type_retriever(geom)
-
-        for dummy_xyz, dummy_type in zip(dummies_xyz, dummies_types):
-            
-            dummy = Dummy(dummy_type, dummy_xyz)
-            dummies.append(dummy)
+        dummies_charges = self.charge_retriever(geom, charge)
+        dummies = [Dummy(dummy_type, dummy_xyz, dummy_charge) 
+                   for dummy_type, dummy_xyz, dummy_charge
+                   in zip(dummies_types, dummies_xyz, dummies_charges)]
         return self.retrieve(dummies)
 
     @staticmethod
@@ -714,7 +669,14 @@ class Dummy(object):
             }
         return dummytypes[geom]
 
-
+    @staticmethod
+    def charge_retriever(geom, charge):
+        dummycharges = {'tetrahedral' : [charge/4.0 for i in range(0,4)],
+                        'square planar' : [charge/4.0 for i in range(0,4)],
+                        'square pyramid' : [charge/5.0 for i in range(0,5)],
+                        'octahedron' : [charge/6.0 for i in range(0,6)]
+                        }
+        return dummycharges[geom]
 
     def retrieve(self, dummies):
 
@@ -724,33 +686,34 @@ class Dummy(object):
         as self.D1, self.D2 ...
         """
 
-        for i, dummy in enumerate(dummies):
+        for i, dummy in enumerate(dummies, start=1):
             #self.D1 = Dummy(D1, DZ)
             setattr(self, "D{}".format(i), dummy)
             
-##################################################################################
 
-class Metal(Model, Dummy):
+class Metal(Dummy):
 
     """
      A base class to build the best parameters
      to create the metal residue such as dummy
-     orientationa and metal type.
+     orientation and metal type.
     """
 
-    def __init__(self, model, metal, symbol, atomicnumber, mass, residue):
-        self.model = model
+    def __init__(self, metal, symbol, atomicnumber, mass,
+                 residue, geometry, charge, dz_met_bondlenght,
+                 metal_vwr, dz_mass):
+        self.metal = metal
         self.symbol = symbol
         self.atomicnumber = atomicnumber
         self.mass = mass
         self.residue = residue
-        self.charge = self.model.charge
-        self.met_vwradius = self.model.vw_radius
-        self.dzmass = self.model.dz_mass
-        self.dz_met_bondlenght = self.model.dz_met
-        self.metal = metal
+        self.geometry = geometry
+        self.charge = charge
+        self.dz_met_bondlenght = dz_met_bondlenght
+        self.metal_vwr = metal_vwr
+        self.dz_mass = dz_mass
         self.dummies_xyz = self.search_for_orientation(self.metal)
-        self.create_dummies(self.dummies_xyz, self.model.geometry)#manera millor??
+        self.build_dummies(self.dummies_xyz, self.geometry, self.charge)
     
     def search_for_orientation(self, metal):
 
@@ -767,22 +730,23 @@ class Metal(Model, Dummy):
         dummies_xyz: list
             Dummies oriented positions 
         """
-        dummies_xyz = []
-
-        if self.model.geometry in ['tetrahedral', 'octahedron',
-                                   'square planar', 'square pyramid']:
-            geom = Geometry.Geometry(self.model.geometry)
+    
+        if self.geometry in ['tetrahedral', 'octahedron',
+                             'square planar', 'square pyramid']:
+            geom = Geometry.Geometry(self.geometry)
         else:
             raise UserError("Not Valid Geometry")
-        
+
         ligands = self.search_for_ligands(metal)
+        #Find the optimium metal ligands vectors for the given geometry
         rmsd, self.center, self.vecs = geomDistEval(geom, metal, ligands)
+        #From the optimium vectors find all best dummies coordinates
+        dummies_xyz = []
         for vec in self.vecs:
             vec.length = self.dz_met_bondlenght
-            dummyposition =  self.center + vec
+            dummyposition = self.center + vec
             dummies_xyz.append(dummyposition)
         return dummies_xyz
-
 
     @staticmethod
     def search_for_ligands(metal):
@@ -803,8 +767,8 @@ class Metal(Model, Dummy):
         -------
         chimera ligands object
         """
-        # IMPORTS ALWAYS AT TOP OF THE FILE!!!!!!
-        # Which Chimera file did you steal? :P
+        # Extracted directly from:
+        # Metal Geom Chimera
         data = []
         coordLim=4.0
         from numpy import array
@@ -856,7 +820,8 @@ class Metal(Model, Dummy):
         return data
     
     @classmethod    
-    def handle_atom_creation(cls, metal, Type, res , model):
+    def handle_metal_creation(cls, metal, Type, residue , geometry,
+                              charge, dz_met_bondlenght, metal_vwr, dz_mass):
 
         """
         Handle metal creation by using a classmethod generator
@@ -877,6 +842,7 @@ class Metal(Model, Dummy):
         if str(metal.element.name).lower() in ['zn', 'fe', 'cd', 'cu', 'co', 'pt', 'pd',
                                                'mg', 'v', 'cr', 'mn']:
 
-            return cls(model=model, metal=metal, symbol=Type, residue=res, 
-                   mass=metal.element.mass, atomicnumber=metal.element.number) 
-
+            return cls(metal=metal, symbol=Type, residue=residue, 
+                   mass=metal.element.mass, atomicnumber=metal.element.number,
+                   geometry=geometry, charge=charge, dz_mass=dz_mass,
+                   dz_met_bondlenght=dz_met_bondlenght, metal_vwr=metal_vwr)
