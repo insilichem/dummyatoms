@@ -23,6 +23,10 @@ with one or more metal centers.
 
 SUPPORTED_ELEMENTS = ['zn', 'fe', 'cd', 'cu', 'co',
                       'pt', 'pd', 'mg', 'v', 'cr', 'mn']
+TETRAHEDRAL = 'tetrahedral'
+OCTAHEDRON = 'octahedron'
+SQUARE_PLANAR = 'square planar'
+SQUARE_PYRAMID = 'square pyramid'
                                            
 
 class Controller(object):
@@ -222,11 +226,11 @@ class Model(object):
         dummy_element = chimera.Element('DZ')
 
         #Exact-order where ot draw the atoms for tleap
-        if self.geometry in ('tetrahedral', 'square planar'):
+        if self.geometry in (TETRAHEDRAL, SQUARE_PLANAR):
             dummy_names = ["D1", "D2", "D3", "D4"]  
-        elif self.geometry == 'octahedron':
+        elif self.geometry == OCTAHEDRON:
             dummy_names = ["D1", "D5", "D2", "D3", "D6", "D4"]
-        elif self.geometry == 'square pyramid':
+        elif self.geometry == SQUARE_PYRAMID:
             dummy_names = ["D1", "D5", "D2", "D3", "D4"] 
         else:
             raise UserError("Geometry not implemented")
@@ -413,7 +417,7 @@ class Model(object):
             .lib lines
         """
         
-        if self.geometry == 'tetrahedral':
+        if self.geometry == TETRAHEDRAL:
             lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
             lineas.insert(26,' 1 3 1\n')
             lineas.insert(27,' 1 2 1\n')
@@ -426,7 +430,7 @@ class Model(object):
             lineas.insert(34,' 3 4 1\n')
             lineas.insert(35,' 4 5 1\n')
 
-        elif self.geometry == 'octahedron':
+        elif self.geometry == OCTAHEDRON:
             lineas.insert(29,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
             lineas.insert(30, ' 1 5 1\n')
             lineas.insert(31, ' 1 2 1\n')
@@ -440,7 +444,7 @@ class Model(object):
             lineas.insert(39, ' 7 5 1\n')
 
 
-        elif self.geometry == 'square planar':
+        elif self.geometry == SQUARE_PLANAR:
             lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
             lineas.insert(26,' 1 3 1\n')
             lineas.insert(27,' 1 2 1\n')
@@ -451,7 +455,7 @@ class Model(object):
             lineas.insert(32,' 3 4 1\n')
             lineas.insert(33,' 4 2 1\n')
 
-        elif self.geometry == 'square pyramid':
+        elif self.geometry == SQUARE_PYRAMID:
             lineas.insert(27,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
             lineas.insert(28,' 1 3 1\n')
             lineas.insert(29,' 1 2 1\n')
@@ -650,19 +654,19 @@ class Dummy(object):
 
     @staticmethod
     def type_retriever(geom):
-        dummytypes = {'tetrahedral' : ['DZ', 'DZ', 'DZ', 'DZ'],
-            'square planar' : ['DZ', 'DZ', 'DZ', 'DZ'],
-            'square pyramid' : ['DX', 'DX', 'DY', 'DY', 'DZ'],
-            'octahedron' : ['DX', 'DX', 'DY', 'DY', 'DZ', 'DZ']
+        dummytypes = {TETRAHEDRAL : ['DZ', 'DZ', 'DZ', 'DZ'],
+            SQUARE_PLANAR : ['DZ', 'DZ', 'DZ', 'DZ'],
+            SQUARE_PYRAMID : ['DX', 'DX', 'DY', 'DY', 'DZ'],
+            OCTAHEDRON : ['DX', 'DX', 'DY', 'DY', 'DZ', 'DZ']
             }
         return dummytypes[geom]
 
     @staticmethod
     def charge_retriever(geom, charge):
-        dummycharges = {'tetrahedral' : [charge/4.0 for i in range(0,4)],
-                        'square planar' : [charge/4.0 for i in range(0,4)],
-                        'square pyramid' : [charge/5.0 for i in range(0,5)],
-                        'octahedron' : [charge/6.0 for i in range(0,6)]
+        dummycharges = {TETRAHEDRAL : [charge/4.0 for i in range(0,4)],
+                        SQUARE_PLANAR : [charge/4.0 for i in range(0,4)],
+                        SQUARE_PYRAMID : [charge/5.0 for i in range(0,5)],
+                        OCTAHEDRON : [charge/6.0 for i in range(0,6)]
                         }
         return dummycharges[geom]
 
@@ -719,8 +723,8 @@ class Metal(Dummy):
             Dummies oriented positions 
         """
     
-        if self.geometry in ['tetrahedral', 'octahedron',
-                             'square planar', 'square pyramid']:
+        if self.geometry in [TETRAHEDRAL, OCTAHEDRON,
+                             SQUARE_PLANAR, SQUARE_PYRAMID]:
             geom = Geometry.Geometry(self.geometry)
         else:
             raise UserError("Not Valid Geometry")
