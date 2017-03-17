@@ -26,11 +26,12 @@ A GUI to apply cationc dummy atom method to systems
 with one or more metal centers.
 """
 
+
 class Controller(object):
 
     """
     The controller manages the communication between the UI (graphic interface)
-    and the data model. Actions such as clicks on buttons, enabling certain areas, 
+    and the data model. Actions such as clicks on buttons, enabling certain areas,
     or running external programs, are the responsibility of the controller.
     """
 
@@ -47,7 +48,6 @@ class Controller(object):
         print('Creating tmp directory...')
         tempdir = self.model.temp_directory()
 
-    
         #Save last frame variables
         metal_menu = self.gui.ui_metals_menu
         self.model.save_variables(metal_menu.getvalue())
@@ -69,9 +69,9 @@ class Controller(object):
   
             #Retrieve metal parameters from gui
             self.model.retrieve_variables(metal)
-   
+
             print("Building Metal Center...")
-            metal_class = Metal.handle_atom_creation(metal=metal, Type=self.Type, 
+            metal_class = Metal.handle_atom_creation(metal=metal, Type=self.Type,
                                                      res=self.res, model=self.model)
 
             print('Building dummies...')
@@ -81,26 +81,24 @@ class Controller(object):
             self.model.specify_geometry(metal_class, tempdir)
 
             print('Creating library')
-            self.model.create_lib(tempdir, metal_class.residue, i, 
-                                self.model.gui.var_outputpath.get(), 
+            self.model.create_lib(tempdir, metal_class.residue, i,
+                                self.model.gui.var_outputpath.get(),
                                 self.model.gui.var_outputname.get())
-            
+
             print('Adding charges...')
             self.model.add_charge(tempdir, metal_class, self.name, i)
-            
+
             print('Creating frcmod...')
             self.model.create_frcmod(temp_path=tempdir, metal_mass=metal_class.mass,
-                                     metal_name=metal_class.symbol, i=i, 
-                                     metal_vwr=metal_class.met_vwradius, 
+                                     metal_name=metal_class.symbol, i=i,
+                                     metal_vwr=metal_class.met_vwradius,
                                      dz_met_bondlenght=metal_class.dz_met_bondlenght,
-                                     dz_mass= metal_class.dzmass)
+                                     dz_mass=metal_class.dzmass)
 
             print('Metal Center Finished Deleting temp Files')
-          
-
         print('Saving system...')
         self.model.create_system(inputpath=self.inputpath, temp_path=tempdir,
-                                 met=metal_class.symbol, i=i, 
+                                 met=metal_class.symbol, i=i,
                                  output=self.gui.var_outputpath.get(),
                                  output_name=self.model.gui.var_outputname.get())
 
@@ -142,12 +140,11 @@ class Model(object):
 
         #Saving last metal params
         metal_dicts = self.gui.metals
-
         
         for dic in metal_dicts:
-            if  dic["title"] == metal.name:
+            if dic["title"] == metal.name:
                 dic["geom"] = self.gui.var_metal_geometry.get()
-                dic["charge"] =  self.gui.var_metal_charge.get()
+                dic["charge"] = self.gui.var_metal_charge.get()
                 dic["vw_radius"] = self.gui.var_vw_radius.get()
                 dic["dz_mass"] = self.gui.var_dz_mass.get()
                 dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
@@ -156,13 +153,11 @@ class Model(object):
         dic = {}
         dic["title"] = metal.name
         dic["geom"] = self.gui.var_metal_geometry.get()
-        dic["charge"] =  self.gui.var_metal_charge.get()
+        dic["charge"] = self.gui.var_metal_charge.get()
         dic["vw_radius"] = self.gui.var_vw_radius.get()
         dic["dz_mass"] = self.gui.var_dz_mass.get()
         dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
         metal_dicts.append(dic)
-
-
 
     def retrieve_variables(self, metal):
         #Updating variables for each metal
@@ -214,7 +209,7 @@ class Model(object):
         """
 
         #Find metal coord
-        dummy_names=[]
+        dummy_names = []
         dummies_xyz = []
         metal = metal_class.metal    
         coord = metal.coord()
@@ -222,10 +217,9 @@ class Model(object):
         dummy_element = chimera.Element('DZ')
         for vec in metal_class.vecs:
             vec.length = self.dz_met
-            metal_center=chimera.Vector(coord[0],coord[1],coord[2])
-            dummyposition =  metal_center + vec
+            metal_center = chimera.Vector(coord[0], coord[1], coord[2])
+            dummyposition = metal_center + vec
             dummies_xyz.append(dummyposition)
-
 
         # Multi-or checks are cleaner with `in`
         if self.geometry in ('tetrahedral', 'square planar'):
@@ -239,7 +233,7 @@ class Model(object):
 
         for i, dummy_name in enumerate(dummy_names): 
             #dummy_coord = chimera.Coord(*dummies_xyz[i][0:3])
-            dummy_coord=chimera.Coord(dummies_xyz[i][0],
+            dummy_coord = chimera.Coord(dummies_xyz[i][0],
                                       dummies_xyz[i][1],
                                       dummies_xyz[i][2])
             addAtom(dummy_name, dummy_element, res, dummy_coord) 
@@ -277,7 +271,7 @@ class Model(object):
         metal_name = metal.symbol
         metal_xyz = metal.center
         dummies = metal.dummies_xyz
-        filename = os.path.join(temp_path,"dummymetal.pdb")
+        filename = os.path.join(temp_path, "dummymetal.pdb")
 
         self.tempfiles.append(filename)
 
@@ -289,7 +283,7 @@ class Model(object):
         for i, dummy in enumerate(dummies):
             dummy = getattr(metal, "D{}".format(i))           
             pdb.append(template % ((i+1), "D{}".format(i+1), residue, 
-                        dummy.xyz[0], dummy.xyz[1], dummy.xyz[2],  dummy.Type))
+                        dummy.xyz[0], dummy.xyz[1], dummy.xyz[2], dummy.Type))
 
         with open(filename, 'w') as f:
             f.write('\n'.join(pdb))
@@ -329,8 +323,8 @@ class Model(object):
             with open(filename, 'w') as f:
                 f.write("logFile leap.log\n")
                 f.write("source " + source + "\n")
-                f.write("%s= loadpdb %s\n"%(res,pdbfile))
-                f.write("saveoff %s %s\n"%(res,output_lib))
+                f.write("%s= loadpdb %s\n"%(res, pdbfile))
+                f.write("saveoff %s %s\n"%(res, output_lib))
                 f.write("quit")
         except IOError:
             # This type of exception masking is not very useful, actually
@@ -339,7 +333,7 @@ class Model(object):
         # Hardcoded paths are worst thing ever. Get rid of that ASAP
         # If amberhome is not set, raise an error, but don't do this, please.
         # Anyway, this sould be set at __init__, not here, lost in non-related logic.
-        self.amber_path = os.environ['AMBERHOME'] =  "/home/daniel/Baixades/amber14"
+        self.amber_path = os.environ['AMBERHOME'] = "/home/daniel/Baixades/amber14"
         # command should be a list of items, not a string
         command = "$AMBERHOME/bin/tleap -s -f %s" % filename
                
@@ -375,7 +369,7 @@ class Model(object):
         lib = os.path.join(temp_path, "met%d.lib" % i)       
 
         if self.geometry == 'tetrahedral':
-            lineas=[]
+            lineas = []
             try:
                 file = open(lib,"r")
                 lineas=list(file)
@@ -550,20 +544,20 @@ class Model(object):
             Metal number
         """
         #initialize file paths
-        base_directory = os.path.dirname(os.path.abspath( __file__ ))
-        frcmod_filename ="frcmod/{}.frcmod".format(self.geometry.replace(" ", ""))
+        base_directory = os.path.dirname(os.path.abspath(__file__))
+        frcmod_filename = "frcmod/{}.frcmod".format(self.geometry.replace(" ", ""))
         template = os.path.join(base_directory, frcmod_filename)
-        frcmod_output = os.path.join(temp_path,"zinc{}.frcmod".format(i))
+        frcmod_output = os.path.join(temp_path, "zinc{}.frcmod".format(i))
         #variable dictionary
-        frcmod_parameters = {"$metal_name" : metal_name,
-                               "$metal_mass" : metal_mass-self.num_of_dummies*dz_mass,
-                               "$dz_mass" : dz_mass,
-                               "$dz_metal_bond" : dz_met_bondlenght,
-                               "$metal_vwr" :  metal_vwr 
+        frcmod_parameters = {"$metal_name": metal_name,
+                               "$metal_mass": metal_mass - self.num_of_dummies*dz_mass,
+                               "$dz_mass": dz_mass,
+                               "$dz_metal_bond": dz_met_bondlenght,
+                               "$metal_vwr": metal_vwr 
                             }
         #Read frcmod template
-        with open(template, 'r') as file :
-          filedata = file.read()
+        with open(template, 'r') as file:
+            filedata = file.read()
 
         # Replace the target string
         for target, replacement in frcmod_parameters.iteritems():
@@ -571,7 +565,7 @@ class Model(object):
             
         # Write the file out again
         with open(frcmod_output, 'w') as file:
-          file.write(filedata)
+            file.write(filedata)
 
         self.frcmod.append(frcmod_output)      
         
