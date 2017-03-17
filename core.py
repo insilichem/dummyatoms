@@ -21,6 +21,9 @@ A GUI to apply cationc dummy atom method to systems
 with one or more metal centers.
 """
 
+SUPPORTED_ELEMENTS = ['zn', 'fe', 'cd', 'cu', 'co',
+                      'pt', 'pd', 'mg', 'v', 'cr', 'mn']
+                                           
 
 class Controller(object):
 
@@ -213,21 +216,12 @@ class Model(object):
         metal_class: str
                 Build-in Metal class pointer
         """
-
-        #Find metal coord
-        dummy_names = []
-        dummies_xyz = []
-        metal = metal_class.metal    
-        coord = metal.coord()
-        res = metal.residue
+        metal = metal_class.metal  
+        dummies = metal_class.dummies  
+        residue = metal.residue
         dummy_element = chimera.Element('DZ')
-        for vec in metal_class.vecs:
-            vec.length = self.dz_met_bondlenght
-            metal_center=chimera.Vector(coord[0],coord[1],coord[2])
-            dummyposition =  metal_center + vec
-            dummies_xyz.append(dummyposition)
 
-        # Multi-or checks are cleaner with `in`
+        #Exact-order where ot draw the atoms for tleap
         if self.geometry in ('tetrahedral', 'square planar'):
             dummy_names = ["D1", "D2", "D3", "D4"]  
         elif self.geometry == 'octahedron':
@@ -237,12 +231,10 @@ class Model(object):
         else:
             raise UserError("Geometry not implemented")
 
-        for i, dummy_name in enumerate(dummy_names): 
-            #dummy_coord = chimera.Coord(*dummies_xyz[i][0:3])
-            dummy_coord = chimera.Coord(dummies_xyz[i][0],
-                                      dummies_xyz[i][1],
-                                      dummies_xyz[i][2])
-            addAtom(dummy_name, dummy_element, res, dummy_coord) 
+        #Adding Dummies
+        for i, dummy in enumerate(dummies):
+            dummy = getattr(metal, "D{}".format(i+1))  # dummy= metal.D1, metal.D2 ... 
+            addAtom(dummy_names[i], dummy_element, residue, chimera.Coord(dummy.xyz)) 
 
     def specify_geometry(self, metal, temp_path):
         
@@ -337,7 +329,7 @@ class Model(object):
                 "quit")
         #tleap launch
         #os.environ["AMBERHOME"] = self.amber_path
-        command = [self.tleap_path, "-s", "-f", "{}".format(tleap_input)]
+        command = [self.tleap_path, "-s", "-f", tleap_input]
         with open(log_file, 'w') as log:
             subprocess.call(command, stdout=log, stderr=log)
         #save library file
@@ -613,7 +605,7 @@ class Model(object):
             f.write("savepdb sys " + pdb + "\n")
             f.write("")
         leaprc = os.path.join(temp_path, "leaprc.final")
-        command = [self.tleap_path, "-s", "-f", "{}".format(tleap_input)]
+        command = [self.tleap_path, "-s", "-f", tleap_input]
         #Output errors
         with open(log_file, 'a') as log:
             subprocess.call(command, stdout=log, stderr=log)
@@ -835,8 +827,7 @@ class Metal(Dummy):
         Metal class object 
         """
                
-        if str(metal.element.name).lower() in ['zn', 'fe', 'cd', 'cu', 'co', 'pt', 'pd',
-                                               'mg', 'v', 'cr', 'mn']:
+        if str(metal.element.name).lower() in SUPPORTED_ELEMENTS:
 
             return cls(metal=metal, symbol=Type, residue=residue, 
                    mass=metal.element.mass, atomicnumber=metal.element.number,
