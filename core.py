@@ -21,6 +21,7 @@ A GUI to apply cationc dummy atom method to systems
 with one or more metal centers.
 """
 
+#Constants
 SUPPORTED_ELEMENTS = ['zn', 'fe', 'cd', 'cu', 'co',
                       'pt', 'pd', 'mg', 'v', 'cr', 'mn']
 TETRAHEDRAL = 'tetrahedral'
@@ -221,7 +222,7 @@ class Model(object):
                 Build-in Metal class pointer
         """
         metal = metal_class.metal  
-        dummies = metal_class.dummies  
+        dummies = metal_class.dummies_xyz  
         residue = metal.residue
         dummy_element = chimera.Element('DZ')
 
@@ -236,9 +237,8 @@ class Model(object):
             raise UserError("Geometry not implemented")
 
         #Adding Dummies
-        for i, dummy in enumerate(dummies):
-            dummy = getattr(metal, "D{}".format(i+1))  # dummy= metal.D1, metal.D2 ... 
-            addAtom(dummy_names[i], dummy_element, residue, chimera.Coord(dummy.xyz)) 
+        for i, dummy_xyz in enumerate(dummies):
+            addAtom(dummy_names[i], dummy_element, residue, chimera.Coord(dummy_xyz)) 
 
     def specify_geometry(self, metal, temp_path):
         
