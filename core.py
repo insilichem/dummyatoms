@@ -66,8 +66,12 @@ class Controller(object):
             self.model.retrieve_variables(metal)
    
             print("Building Metal Center...")
-            metal_class = Metal.handle_atom_creation(metal=metal, Type=self.Type, 
-                                                     res=self.res, model=self.model)
+            metal_class = Metal.handle_metal_creation(
+                metal=metal, Type=self.Type, residue=self.res,
+                charge=self.model.charge, geometry=self.model.geometry,
+                dz_met_bondlenght=self.model.dz_met_bondlenght,
+                dz_mass=self.model.dz_mass, metal_vwr=self.model.metal_vwr)
+
 
             print('Building dummies...')
             self.model.include_dummies(metal_class)
@@ -86,9 +90,9 @@ class Controller(object):
             print('Creating frcmod...')
             self.model.create_frcmod(temp_path=tempdir, metalmass=metal_class.mass,
                                      met=metal_class.symbol, i=i, 
-                                     met_vwradius=metal_class.met_vwradius, 
+                                     metal_vwr=metal_class.metal_vwr, 
                                      dz_met_bondlenght=metal_class.dz_met_bondlenght,
-                                     dzmass= metal_class.dzmass)
+                                     dz_mass= metal_class.dz_mass)
 
             print('Metal Center Finished Deleting temp Files')
           
@@ -171,16 +175,16 @@ class Model(object):
             if dic["title"] == metal.name:
                 self.geometry = dic["geom"]
                 self.charge = dic["charge"]
-                self.vw_radius = dic["vw_radius"]
+                self.metal_vwr = dic["vw_radius"]
                 self.dz_mass = dic["dz_mass"] 
-                self.dz_met = dic["dz_met_bond"]
+                self.dz_met_bondlenght = dic["dz_met_bond"]
                 return
 
         self.geometry = "tetrahedral"
         self.charge = 2
-        self.vw_radius = 3.1
+        self.metal_vwr = 3.1
         self.dz_mass = 3 
-        self.dz_met = 0.9
+        self.dz_met_bondlenght = 0.9
 
     def temp_directory(self):
 
@@ -221,7 +225,7 @@ class Model(object):
         res = metal.residue
         dummy_element = chimera.Element('DZ')
         for vec in metal_class.vecs:
-            vec.length = self.dz_met
+            vec.length = self.dz_met_bondlenght
             metal_center=chimera.Vector(coord[0],coord[1],coord[2])
             dummyposition =  metal_center + vec
             dummies_xyz.append(dummyposition)
@@ -323,7 +327,7 @@ class Model(object):
         forcefield = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
         pdbfile = os.path.join(temp_path, "dummymetal.pdb")
         output_lib = os.path.join(temp_path, "met%d.lib" % i)
-        tleap_path = os.path.join(self.amber_path, "bin/tleap")
+        self.tleap_path = os.path.join(self.amber_path, "bin/tleap")
         log_file = os.path.join(output, output_name + ".log")
         # tleap_input
         with open(tleap_input, 'w') as f:
@@ -334,7 +338,7 @@ class Model(object):
                 "quit")
         #tleap launch
         #os.environ["AMBERHOME"] = self.amber_path
-        command = [tleap_path, "-s", "-f", "{}".format(tleap_input)]
+        command = [self.tleap_path, "-s", "-f", "{}".format(tleap_input)]
         with open(log_file, 'w') as log:
             subprocess.call(command, stdout=log, stderr=log)
         #save library file
@@ -357,24 +361,19 @@ class Model(object):
         i: int
             Metal Number
         """
-        # Rewrite this elegantly, please.
-
-        q = metal.charge
         metal_type = metal.symbol
-        atm = metal.atomicnumber
+        atomicnumber = metal.atomicnumber
         residue = metal.residue 
         lib_file = os.path.join(temp_path, "met%d.lib" % i)       
-
         lib = []
 
         #template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
         template =  "{0} {1} 0 1 196609 {2} {3} {4}\n"
-        lib.append(template.format(metal_name, metal_type, 1, atm, 0))
+        lib.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
         for i in range(1, self.num_of_dummies+1):
             dummy = getattr(metal, "D{}".format(i))           
             lib.append(template.format("D{}".format(i), dummy.Type, i+1, -1, dummy.charge))
        
-
         #t-leap line to understand residues type
         lib.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg\n".format(residue))
         
@@ -393,8 +392,6 @@ class Model(object):
                 #we don't want to overwrite from .lib
                 lineas[i] = new_line
             self.include_connectivity(residue, lineas)
-
-        
 
         #Re-writing lib
         with open(lib_file,"w") as f:
@@ -476,7 +473,7 @@ class Model(object):
         
 
 
-    def create_frcmod(self, temp_path, metalmass, dzmass, dz_met_bondlenght, met_vwradius, met,i):
+    def create_frcmod(self, temp_path, metalmass, dz_mass, dz_met_bondlenght, metal_vwr, met,i):
         
         """
         Creates a frcmod containig all the parameters about
@@ -489,11 +486,11 @@ class Model(object):
             Temp Folder Path
         metalmass: int
             Metal mass
-        dzmass: int
+        dz_mass: int
             Dummies mass
         dz_met_bondlenght: int
             Metal-Dummy lenght bond
-        met_vwradius:
+        metal_vwr:
             VW metal radius
         met: str
             Metal symbol
@@ -507,19 +504,19 @@ class Model(object):
 
                 if self.geometry == 'tetrahedral':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
-                    f.write("MASS\nDZ  %.3f\n%s %.2f\n\n"%(dzmass, met, metalmass-dzmass*4))
+                    f.write("MASS\nDZ  %.3f\n%s %.2f\n\n"%(dz_mass, met, metalmass-dz_mass*4))
                     f.write("BOND\nDZ-%s  640.0    %.3f\nDZ-DZ  640.0    1.47\n\n"%(met, dz_met_bondlenght))
                     f.write("ANGLE\nDZ-%s-DZ    55.0      109.50\nDZ-DZ-DZ    55.0       60.0\nDZ-DZ-%s    55.0       35.25\n\n"%(met,met))
                     f.write("DIHE\n%s-DZ-DZ-DZ   1    0.0          35.3             2.00\nDZ-%s-DZ-DZ   1    0.0         120.0             2.00\nDZ-DZ-DZ-DZ   1    0.0          70.5             2.00\n\n"%(met,met))
                     f.write("IMPROPER\n\n")
-                    f.write("NONB\nDZ          0.000   0.00\n%s          %.3f   1.0E-6"%(met, met_vwradius ))
+                    f.write("NONB\nDZ          0.000   0.00\n%s          %.3f   1.0E-6"%(met, metal_vwr ))
                     f.write("")
 
                 elif self.geometry == 'octahedron':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
-                    f.write("MASS\nDX  %.3f\n"%(dzmass))
-                    f.write("DY  %.3f\n"%(dzmass))
-                    f.write("DZ  %.3f\n%s %.2f\n\n"%(dzmass, met, metalmass-dzmass*6))
+                    f.write("MASS\nDX  %.3f\n"%(dz_mass))
+                    f.write("DY  %.3f\n"%(dz_mass))
+                    f.write("DZ  %.3f\n%s %.2f\n\n"%(dz_mass, met, metalmass-dz_mass*6))
                     f.write("BOND\n")
                     f.write("%s-DX  640      %.3f\n"%(met, dz_met_bondlenght))
                     f.write("%s-DY  640      %.3f\n"%(met, dz_met_bondlenght))
@@ -558,7 +555,7 @@ class Model(object):
                     f.write("DX-DY-DX-DY  4   0.0    0.0    1.\n\n")
                     f.write("IMPR\n\n")
                     f.write("NONB\n")
-                    f.write("  %s          %.3f   1.0E-6\n"%(met, met_vwradius ))
+                    f.write("  %s          %.3f   1.0E-6\n"%(met, metal_vwr ))
                     f.write("  DX          0.0000  0.0000\n")
                     f.write("  DY          0.0000  0.0000\n")
                     f.write("  DZ          0.0000  0.0000\n\n")
@@ -569,9 +566,9 @@ class Model(object):
 
                 elif self.geometry == 'square planar':
                     f.write("Amber Force Field Parameters for a Cathionic Dummy Atoms Method\n")
-                    f.write("MASS\nDX  %.3f\n"%(dzmass))
-                    f.write("DY  %.3f\n"%(dzmass))
-                    f.write("%s %.2f\n\n"%(met, metalmass-dzmass*4))
+                    f.write("MASS\nDX  %.3f\n"%(dz_mass))
+                    f.write("DY  %.3f\n"%(dz_mass))
+                    f.write("%s %.2f\n\n"%(met, metalmass-dz_mass*4))
                     f.write("\nBOND\n")
                     f.write("%s-DX  640      %.3f\n"%(met, dz_met_bondlenght))
                     f.write("%s-DY  640      %.3f\n"%(met, dz_met_bondlenght))
@@ -598,7 +595,7 @@ class Model(object):
                     f.write("DX-DY-DX-DY  4   0.0    0.0    1.\n\n")
                     f.write("IMPR\n\n")
                     f.write("NONB\n")
-                    f.write("  %s          %.3f   1.0E-6\n"%(met, met_vwradius ))
+                    f.write("  %s          %.3f   1.0E-6\n"%(met, metal_vwr ))
                     f.write("  DX          0.0000  0.000\n")
                     f.write("  DY          0.0000  0.000\n")
                     f.write("")
@@ -642,7 +639,7 @@ class Model(object):
                     f.write("DX-DY-DX-DY  4   0.0    0.0    1.\n\n")
                     f.write("IMPR\n\n")
                     f.write("NONB\n")
-                    f.write("  %s          %.3f   1.0E-6\n"%(met, met_vwradius ))
+                    f.write("  %s          %.3f   1.0E-6\n"%(met, metal_vwr ))
                     f.write("  DX          0.0000  0.0000\n")
                     f.write("  DY          0.0000  0.0000\n")
                     f.write("  DZ          0.0000  0.0000\n\n")
@@ -695,17 +692,18 @@ class Model(object):
             Filename = self.gui.var_outputname.get() + '.mol2'
             mol2 = os.path.join(self.tempdir, Filename)
             rc("write format mol2 0 " + mol2)
-
-
+        #filepaths
+        log_file = os.path.join(output, output_name + ".log")
         output_name = self.gui.var_outputname.get()
-        filename = os.path.join(temp_path,"leaprc.final")
-        with open(filename,"w") as f:
-            f.write("logFile leap.log\n")
-            f.write("source /home/daniel/leaprc\n")
-            source = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB\n")
-            f.write("source " + source)
-            f.write("""addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met))
-            f.write("""addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
+        tleap_input = os.path.join(temp_path, "leaprc.final")
+        source = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
+        #Writting t-leap input
+        with open(tleap_input,"w") as f:
+            f.write("logFile leap.log\n" +
+                "source /home/daniel/leaprc\n" +
+                "source " + source + "\n" +
+                """addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met) +
+                """addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
             #metal frcmod file
             if self.frcmod:
                 for frcmod in self.frcmod:
@@ -744,10 +742,8 @@ class Model(object):
             f.write("savepdb sys " + pdb + "\n")
             f.write("")
         leaprc = os.path.join(temp_path, "leaprc.final")
-        command = "$AMBERHOME/bin/tleap -s -f "+leaprc
-
+        command = [self.tleap_path, "-s", "-f", "{}".format(tleap_input)]
         #Output errors
-        log_file = os.path.join(output, output_name + ".log")
         with open(log_file, 'a') as log:
             subprocess.call(command, stdout=log, stderr=log)
         print('Program Finished')
@@ -758,12 +754,9 @@ class Model(object):
             shutil.rmtree(self.tempdir)
         """
         
+############################################Classes#################################################
 
 
-
-
-# What kind of line length are you using? 200 chars? Trim that down to 100 or 100 tops.
-############################################Atoms#################################################
 class Dummy(object):
 
     """
@@ -777,7 +770,7 @@ class Dummy(object):
         self.xyz = xyz
         self.charge = charge
 
-    def create_dummies(self, dummies_xyz, geom, charge):
+    def build_dummies(self, dummies_xyz, geom, charge):
 
         """
         Dummy class method to build up
@@ -810,8 +803,6 @@ class Dummy(object):
                         }
         return dummycharges[geom]
 
-
-
     def retrieve(self, dummies):
 
         """
@@ -824,29 +815,30 @@ class Dummy(object):
             #self.D1 = Dummy(D1, DZ)
             setattr(self, "D{}".format(i), dummy)
             
-##################################################################################
 
-class Metal(Model, Dummy):
+class Metal(Dummy):
 
     """
      A base class to build the best parameters
      to create the metal residue such as dummy
-     orientationa and metal type.
+     orientation and metal type.
     """
 
-    def __init__(self, model, metal, symbol, atomicnumber, mass, residue):
-        self.model = model
+    def __init__(self, metal, symbol, atomicnumber, mass,
+                 residue, geometry, charge, dz_met_bondlenght,
+                 metal_vwr, dz_mass):
+        self.metal = metal
         self.symbol = symbol
         self.atomicnumber = atomicnumber
         self.mass = mass
         self.residue = residue
-        self.charge = self.model.charge
-        self.met_vwradius = self.model.vw_radius
-        self.dzmass = self.model.dz_mass
-        self.dz_met_bondlenght = self.model.dz_met
-        self.metal = metal
+        self.geometry = geometry
+        self.charge = charge
+        self.dz_met_bondlenght = dz_met_bondlenght
+        self.metal_vwr = metal_vwr
+        self.dz_mass = dz_mass
         self.dummies_xyz = self.search_for_orientation(self.metal)
-        self.create_dummies(self.dummies_xyz, self.model.geometry, self.charge)#manera millor??
+        self.build_dummies(self.dummies_xyz, self.geometry, self.charge)
     
     def search_for_orientation(self, metal):
 
@@ -864,22 +856,22 @@ class Metal(Model, Dummy):
             Dummies oriented positions 
         """
     
-        if self.model.geometry in ['tetrahedral', 'octahedron',
-                                   'square planar', 'square pyramid']:
-            geom = Geometry.Geometry(self.model.geometry)
+        if self.geometry in ['tetrahedral', 'octahedron',
+                             'square planar', 'square pyramid']:
+            geom = Geometry.Geometry(self.geometry)
         else:
             raise UserError("Not Valid Geometry")
-        
+
         ligands = self.search_for_ligands(metal)
+        #Find the optimium metal ligands vectors for the given geometry
         rmsd, self.center, self.vecs = geomDistEval(geom, metal, ligands)
-        
+        #From the optimium vectors find all best dummies coordinates
         dummies_xyz = []
         for vec in self.vecs:
             vec.length = self.dz_met_bondlenght
-            dummyposition =  self.center + vec
+            dummyposition = self.center + vec
             dummies_xyz.append(dummyposition)
         return dummies_xyz
-
 
     @staticmethod
     def search_for_ligands(metal):
@@ -953,7 +945,8 @@ class Metal(Model, Dummy):
         return data
     
     @classmethod    
-    def handle_atom_creation(cls, metal, Type, res , model):
+    def handle_metal_creation(cls, metal, Type, residue , geometry,
+                              charge, dz_met_bondlenght, metal_vwr, dz_mass):
 
         """
         Handle metal creation by using a classmethod generator
@@ -974,5 +967,7 @@ class Metal(Model, Dummy):
         if str(metal.element.name).lower() in ['zn', 'fe', 'cd', 'cu', 'co', 'pt', 'pd',
                                                'mg', 'v', 'cr', 'mn']:
 
-            return cls(model=model, metal=metal, symbol=Type, residue=res, 
-                   mass=metal.element.mass, atomicnumber=metal.element.number) 
+            return cls(metal=metal, symbol=Type, residue=residue, 
+                   mass=metal.element.mass, atomicnumber=metal.element.number,
+                   geometry=geometry, charge=charge, dz_mass=dz_mass,
+                   dz_met_bondlenght=dz_met_bondlenght, metal_vwr=metal_vwr)
