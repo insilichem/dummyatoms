@@ -91,16 +91,12 @@ class Controller(object):
 
             print('Creating frcmod...')
 
-            self.model.create_frcmod(temp_path=tempdir, metalmass=metal_class.mass,
-                                     met=metal_class.symbol, i=i, 
+            self.model.create_frcmod(temp_path=tempdir, metal_mass=metal_class.mass,
+                                     metal_name=metal_class.symbol, i=i, 
                                      metal_vwr=metal_class.metal_vwr, 
                                      dz_met_bondlenght=metal_class.dz_met_bondlenght,
                                      dz_mass= metal_class.dz_mass)
 
-    
-
-
-            print('Metal Center Finished Deleting temp Files')
         print('Saving system...')
         self.model.create_system(inputpath=self.inputpath, temp_path=tempdir,
                                  met=metal_class.symbol, i=i,
@@ -474,7 +470,7 @@ class Model(object):
             lineas.insert(34,' 3 4 1\n')
             lineas.insert(35,' 4 2 1\n')
         
-    def create_frcmod(self, temp_path, metalmass, dz_mass, dz_met_bondlenght, metal_vwr, met,i):
+    def create_frcmod(self, temp_path, metal_mass, dz_mass, dz_met_bondlenght, metal_vwr, metal_name,i):
         
         """
         Creates a frcmod containig all the parameters about
