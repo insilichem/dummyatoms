@@ -392,7 +392,7 @@ class Model(object):
         lib_charge_lines = []
 
         #template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
-        template = "{0} {1} 0 1 196609 {2} {3} {4}"
+        template = " {0} {1} 0 1 196609 {2} {3} {4}"
         lib_charge_lines.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
         for i in range(1, self.num_of_dummies + 1):
             dummy = getattr(metal, "D{}".format(i))           
@@ -437,53 +437,58 @@ class Model(object):
         connectivity = []
         connectivity.append('!entry.{}.unit.connectivity table  int atom1x  int atom2x  int flags'.format(residue))
 
-        #USAR EXTEND!
 
         if self.geometry == TETRAHEDRAL:
-            connectivity.append(' 1 3 1')
-            connectivity.append(' 1 2 1')
-            connectivity.append(' 1 4 1')
-            connectivity.append(' 1 5 1')
-            connectivity.append(' 2 3 1')
-            connectivity.append(' 2 4 1')
-            connectivity.append(' 2 5 1')
-            connectivity.append(' 3 5 1')
-            connectivity.append(' 3 4 1')
-            connectivity.append(' 4 5 1')
+            geom_connectivity = [
+                    ' 1 3 1',
+                    ' 1 2 1',
+                    ' 1 4 1',
+                    ' 1 5 1',
+                    ' 2 3 1',
+                    ' 2 4 1',
+                    ' 2 5 1',
+                    ' 3 5 1',
+                    ' 3 4 1',
+                    ' 4 5 1']
+
 
         elif self.geometry == OCTAHEDRON:
-            connectivity.append(' 1 5 1')
-            connectivity.append(' 1 2 1')
-            connectivity.append(' 2 6 1')
-            connectivity.append(' 2 4 1')
-            connectivity.append(' 6 5 1')
-            connectivity.append(' 4 5 1')
-            connectivity.append(' 7 2 1')
-            connectivity.append(' 5 3 1')
-            connectivity.append(' 3 2 1')
-            connectivity.append(' 7 5 1')
+            geom_connectivity = [
+                    ' 1 5 1',
+                    ' 1 2 1',
+                    ' 2 6 1',
+                    ' 2 4 1',                    ' 6 5 1',
+                    ' 4 5 1',
+                    ' 7 2 1',
+                    ' 5 3 1',
+                    ' 3 2 1',
+                    ' 7 5 1']
 
 
         elif self.geometry == SQUARE_PLANAR:
-            connectivity.append(' 1 3 1')
-            connectivity.append(' 1 2 1')
-            connectivity.append(' 1 4 1')
-            connectivity.append(' 1 5 1')
-            connectivity.append(' 2 5 1')
-            connectivity.append(' 5 3 1')
-            connectivity.append(' 3 4 1')
-            connectivity.append(' 4 2 1')
+            geom_connectivity = [
+                   ' 1 3 1'
+                   ' 1 2 1'
+                   ' 1 4 1'
+                   ' 1 5 1'
+                   ' 2 5 1'
+                   ' 5 3 1'
+                   ' 3 4 1'
+                   ' 4 2 1']
 
-        elif self.geometry == SQUARE_PYRAMID:         
-            connectivity.append(' 1 3 1')
-            connectivity.append(' 1 2 1')
-            connectivity.append(' 1 4 1')
-            connectivity.append(' 1 5 1')
-            connectivity.append(' 2 5 1')
-            connectivity.append(' 5 3 1')
-            connectivity.append(' 3 4 1')
-            connectivity.append(' 4 2 1')
+        elif self.geometry == SQUARE_PYRAMID:
+        #unimplemented    
+            geom_connectivity = [
+                    ' 1 3 1',
+                    ' 1 2 1',
+                    ' 1 4 1',
+                    ' 1 5 1',
+                    ' 2 5 1',
+                    ' 5 3 1',
+                    ' 3 4 1',
+                    ' 4 2 1']
 
+        connectivity.extend(geom_connectivity)
         return connectivity
         
     def create_frcmod(self, temp_path, metal_mass, dz_mass, dz_met_bondlenght, metal_vwr, metal_name,i):
