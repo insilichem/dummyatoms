@@ -24,6 +24,7 @@ with one or more metal centers.
 #Constants
 SUPPORTED_ELEMENTS = ['zn', 'fe', 'cd', 'cu', 'co',
                       'pt', 'pd', 'mg', 'v', 'cr', 'mn']
+SUPPORTED_FILE_TYPES = ['lib', 'frcmod']
 TETRAHEDRAL = 'tetrahedral'
 OCTAHEDRON = 'octahedron'
 SQUARE_PLANAR = 'square planar'
@@ -61,12 +62,12 @@ class Controller(object):
 
             # Get variables
             self.inputpath = metal_menu.getvalue().molecule.openedAs[0]
-            self.res = str(metal.residue.type)
-            self.name = str(metal.name)
+            self.metal_residue = str(metal.residue.type)
+            self.metal_name = str(metal.name)
             if self.inputpath.endswith(".pdb"):
-                self.Type = str(metal.element.name)  
+                self.metal_type = str(metal.element.name)  
             elif self.inputpath.endswith(".mol2"):
-                self.Type = str(metal.mol2type)
+                self.metal_type = str(metal.mol2type)
             else:
                 raise UserError("No Valid Input File Type")
   
@@ -76,7 +77,7 @@ class Controller(object):
             print("Building Metal Center...")
 
             metal_class = Metal.handle_metal_creation(
-                metal=metal, Type=self.Type, residue=self.res,
+                metal=metal, Type=self.metal_type, residue=self.metal_residue,
                 charge=self.model.charge, geometry=self.model.geometry,
                 dz_met_bondlenght=self.model.dz_met_bondlenght,
                 dz_mass=self.model.dz_mass, metal_vwr=self.model.metal_vwr)
@@ -95,7 +96,7 @@ class Controller(object):
                                 self.model.gui.var_outputname.get())
 
             print('Adding charges...')
-            self.model.add_charge(tempdir, metal_class, self.name, i)
+            self.model.modify_lib(metal_class, self.metal_name, i)
 
             print('Creating frcmod...')
 
@@ -339,8 +340,37 @@ class Model(object):
         #save library file
         self.lib.append(output_lib)
 
+    def modify_lib(self, metal, metal_name, i):    
+        """
+        Modify the lib file where metal's parameters are found
+        to include charge and metal connectivity
+        """
+        #Initialize variables
+        residue = metal.residue
+        lib_file = os.path.join(self.tempdir, "met%d.lib" % i)
+        
+        # Retrieve charge&connectivity
+        charge = self.retrieve_charge(metal, metal_name)
+        connectivity = self.retrieve_connectivity(residue)
 
-    def add_charge(self, temp_path, metal, metal_name, i):
+        #connectivity insert index variable
+        lastindex_charges = len(charge) + 3
+        startindex_connectivity = lastindex_charges + 11  # not to overwrite coordinates in lib file
+
+        #Reading and reordering lines
+        with open(lib_file, "r") as file:
+            lineas = file.read().splitlines()
+            for i, new_line in enumerate(charge, start=3):
+                #starts at 3 to preserve the residue info
+                #we don't want to overwrite from .lib
+                lineas[i] = new_line
+            lineas[startindex_connectivity:startindex_connectivity] = connectivity
+
+        #Re-writing lib
+        with open(lib_file, "w") as f:
+            f.write('\n'.join(lineas))
+
+    def retrieve_charge(self, metal, metal_name):
         """
         Simple tmeplate method to include the charge
         within the .lib file created before.
@@ -358,42 +388,29 @@ class Model(object):
         """
         metal_type = metal.symbol
         atomicnumber = metal.atomicnumber
-        residue = metal.residue 
-        lib_file = os.path.join(temp_path, "met%d.lib" % i)       
-        lib = []
+        residue = metal.residue        
+        lib_charge_lines = []
 
         #template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
-        template =  "{0} {1} 0 1 196609 {2} {3} {4}\n"
-        lib.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
-        for i in range(1, self.num_of_dummies+1):
+        template = "{0} {1} 0 1 196609 {2} {3} {4}"
+        lib_charge_lines.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
+        for i in range(1, self.num_of_dummies + 1):
             dummy = getattr(metal, "D{}".format(i))           
-            lib.append(template.format("D{}".format(i), dummy.Type, i+1, -1, dummy.charge))
+            lib_charge_lines.append(template.format("D{}".format(i), dummy.Type, i + 1, -1, dummy.charge))
        
         #t-leap line to understand residues type
-        lib.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg\n".format(residue))
+        lib_charge_lines.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg".format(residue))
         
         #template =  "{name} {type} 0 1 0.0\n"
-        template =  " {0} {1} 0 -1 0.0\n"
-        lib.append(template.format(metal_name, metal_type))
+        template =  " {0} {1} 0 -1 0.0"
+        lib_charge_lines.append(template.format(metal_name, metal_type))
         for i in range(1, self.num_of_dummies+1):
             dummy = getattr(metal, "D{}".format(i))           
-            lib.append(template.format("D{}".format(i), dummy.Type))
+            lib_charge_lines.append(template.format("D{}".format(i), dummy.Type))
 
-        #reading and substituting lines
-        with open(lib_file,"r") as file:
-            lineas = list(file)
-            for i, new_line in enumerate(lib, start=3):
-                #starts at 3 to preserve the residue info
-                #we don't want to overwrite from .lib
-                lineas[i] = new_line
-            self.include_connectivity(residue, lineas)
-
-        #Re-writing lib
-        with open(lib_file,"w") as f:
-            for new_linea in lineas:    
-                f.write(new_linea)
-
-    def include_connectivity(self, residue, lineas):
+        return lib_charge_lines
+        
+    def retrieve_connectivity(self, residue):
 
         """
         Include atoms connectivity
@@ -416,55 +433,58 @@ class Model(object):
         lineas: list
             .lib lines
         """
-        
+        # we started the fro loop at 3 before
+        connectivity = []
+        connectivity.append('!entry.{}.unit.connectivity table  int atom1x  int atom2x  int flags'.format(residue))
+
+        #USAR EXTEND!
+
         if self.geometry == TETRAHEDRAL:
-            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
-            lineas.insert(26,' 1 3 1\n')
-            lineas.insert(27,' 1 2 1\n')
-            lineas.insert(28,' 1 4 1\n')
-            lineas.insert(29,' 1 5 1\n')
-            lineas.insert(30,' 2 3 1\n')
-            lineas.insert(31,' 2 4 1\n')
-            lineas.insert(32,' 2 5 1\n')
-            lineas.insert(33,' 3 5 1\n')
-            lineas.insert(34,' 3 4 1\n')
-            lineas.insert(35,' 4 5 1\n')
+            connectivity.append(' 1 3 1')
+            connectivity.append(' 1 2 1')
+            connectivity.append(' 1 4 1')
+            connectivity.append(' 1 5 1')
+            connectivity.append(' 2 3 1')
+            connectivity.append(' 2 4 1')
+            connectivity.append(' 2 5 1')
+            connectivity.append(' 3 5 1')
+            connectivity.append(' 3 4 1')
+            connectivity.append(' 4 5 1')
 
         elif self.geometry == OCTAHEDRON:
-            lineas.insert(29,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
-            lineas.insert(30, ' 1 5 1\n')
-            lineas.insert(31, ' 1 2 1\n')
-            lineas.insert(32, ' 2 6 1\n')
-            lineas.insert(33, ' 2 4 1\n')
-            lineas.insert(34, ' 6 5 1\n')
-            lineas.insert(35, ' 4 5 1\n')
-            lineas.insert(36, ' 7 2 1\n')
-            lineas.insert(37, ' 5 3 1\n')
-            lineas.insert(38, ' 3 2 1\n')
-            lineas.insert(39, ' 7 5 1\n')
+            connectivity.append(' 1 5 1')
+            connectivity.append(' 1 2 1')
+            connectivity.append(' 2 6 1')
+            connectivity.append(' 2 4 1')
+            connectivity.append(' 6 5 1')
+            connectivity.append(' 4 5 1')
+            connectivity.append(' 7 2 1')
+            connectivity.append(' 5 3 1')
+            connectivity.append(' 3 2 1')
+            connectivity.append(' 7 5 1')
 
 
         elif self.geometry == SQUARE_PLANAR:
-            lineas.insert(25,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
-            lineas.insert(26,' 1 3 1\n')
-            lineas.insert(27,' 1 2 1\n')
-            lineas.insert(28,' 1 4 1\n')
-            lineas.insert(29,' 1 5 1\n')
-            lineas.insert(30,' 2 5 1\n')
-            lineas.insert(31,' 5 3 1\n')
-            lineas.insert(32,' 3 4 1\n')
-            lineas.insert(33,' 4 2 1\n')
+            connectivity.append(' 1 3 1')
+            connectivity.append(' 1 2 1')
+            connectivity.append(' 1 4 1')
+            connectivity.append(' 1 5 1')
+            connectivity.append(' 2 5 1')
+            connectivity.append(' 5 3 1')
+            connectivity.append(' 3 4 1')
+            connectivity.append(' 4 2 1')
 
-        elif self.geometry == SQUARE_PYRAMID:
-            lineas.insert(27,'!entry.%s.unit.connectivity table  int atom1x  int atom2x  int flags\n'%residue)
-            lineas.insert(28,' 1 3 1\n')
-            lineas.insert(29,' 1 2 1\n')
-            lineas.insert(30,' 1 4 1\n')
-            lineas.insert(31,' 1 5 1\n')
-            lineas.insert(32,' 2 5 1\n')
-            lineas.insert(33,' 5 3 1\n')
-            lineas.insert(34,' 3 4 1\n')
-            lineas.insert(35,' 4 2 1\n')
+        elif self.geometry == SQUARE_PYRAMID:         
+            connectivity.append(' 1 3 1')
+            connectivity.append(' 1 2 1')
+            connectivity.append(' 1 4 1')
+            connectivity.append(' 1 5 1')
+            connectivity.append(' 2 5 1')
+            connectivity.append(' 5 3 1')
+            connectivity.append(' 3 4 1')
+            connectivity.append(' 4 2 1')
+
+        return connectivity
         
     def create_frcmod(self, temp_path, metal_mass, dz_mass, dz_met_bondlenght, metal_vwr, metal_name,i):
         
@@ -551,69 +571,78 @@ class Model(object):
 
         # Saving model
         if inputpath.endswith(".pdb"):
-            Filename = self.gui.var_outputname.get() + '.pdb'
-            pdb = os.path.join(self.tempdir, Filename)
-            rc('write 0 ' + pdb)
-
+            input_format = 'pdb'
         elif inputpath.endswith(".mol2"):
-            Filename = self.gui.var_outputname.get() + '.mol2'
-            mol2 = os.path.join(self.tempdir, Filename)
-            rc("write format mol2 0 " + mol2)
+            input_format = 'mol2'
+        file_name = self.gui.var_outputname.get() + '.{}'.format(input_format)
+        file_path = os.path.join(self.tempdir, file_name)
+        rc('write format {0} 0 {1}'.format(input_format, file_path))
+
         #filepaths
         log_file = os.path.join(output, output_name + ".log")
         output_name = self.gui.var_outputname.get()
         tleap_input = os.path.join(temp_path, "leaprc.final")
+        leaprc = os.path.join(temp_path, "leaprc.final")
         source = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
+        
         #Writting t-leap input
         with open(tleap_input,"w") as f:
+
+            #Forcefield and atomtypes
             f.write("logFile leap.log\n" +
-                "source /home/daniel/leaprc\n" +
                 "source " + source + "\n" +
                 """addAtomTypes { { "DZ" "%s" "sp3" } { "%s" "%s" "sp3" } }\n"""%(met,met,met) +
                 """addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}\n"""%(met,met)) 
-            #metal frcmod file
+            
+            #metal frcmod&lib file
             if self.frcmod:
                 for frcmod in self.frcmod:
                     f.write("loadamberparams %s\n"%(frcmod))
-            #metal lib file
-            if self.lib:
+            elif self.lib:
                 for lib in self.lib:
                     f.write("loadOff %s\n"%(lib))
+
             #externals lib and frcomd file
-            FilesToLoad = self.gui.ui_files_to_load.get(0,'end')
-            if FilesToLoad:
-                for file in list(FilesToLoad):
+            files_to_load = self.gui.ui_files_to_load.get(0, 'end')
+            if files_to_load:
+                for file in list(files_to_load):
                     if file.endswith('.lib'):
                         f.write("loadOff %s\n"%(file))
                     elif file.endswith('.frcmod'):
                         f.write("loadamberparams %s\n"%(file))
+
             #load system
-            if inputpath.endswith(".pdb"):
-                f.write("sys=loadpdb %s\n"%(pdb))
-            elif inputpath.endswith(".mol2"):
-                f.write("sys=loadmol2 %s\n"%(mol2))
+            if input_format == 'pdb':
+                f.write("sys=loadpdb %s\n"%(file_path))
+            elif input_format == 'mol2':
+                f.write("sys=loadmol2 %s\n"%(file_path))
+
             #neutralize system
             f.write("addIons sys Cl- 0\n")
             f.write("addIons sys Na+ 0\n")
+
             #add waterbox
             if self.gui.var_waterbox.get()==1:
                 f.write("solvatebox sys TIP3PBOX 10\n")
+
             #create cord and top
             prmtop = os.path.join(output, output_name+".prmtop")
             inpcrd = os.path.join(output, output_name+".inpcrd")
-            #Output top to visualize as mol2 and pdb
             f.write("saveamberparm sys " + prmtop + " " + inpcrd + "\n")
+            
             mol2 = os.path.join(output, output_name+".mol2")
             f.write("savemol2 sys " + mol2 + " 0\n")
             pdb = os.path.join(output, output_name+".pdb")
             f.write("savepdb sys " + pdb + "\n")
+
             f.write("")
-        leaprc = os.path.join(temp_path, "leaprc.final")
+        
+        #Run&Output errors
         command = [self.tleap_path, "-s", "-f", tleap_input]
-        #Output errors
         with open(log_file, 'a') as log:
             subprocess.call(command, stdout=log, stderr=log)
         print('Program Finished')
+
         #Remove temporary directory
         """
         if os.path.exists(self.tempdir):
