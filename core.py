@@ -564,9 +564,9 @@ class Model(object):
             input_format = 'pdb'
         elif inputpath.endswith(".mol2"):
             input_format = 'mol2'
-        file_name = self.gui.var_outputname.get() + '.{}'.format(input_format)
-        file_path = os.path.join(self.tempdir, file_name)
-        rc('write format {0} 0 {1}'.format(input_format, file_path))
+        input_name = self.gui.var_outputname.get() + '.{}'.format(input_format)
+        input_path = os.path.join(self.tempdir, input_name)
+        rc('write format {0} 0 {1}'.format(input_format, input_path))
 
         # filepaths
         log_file = os.path.join(output, output_name + ".log")
@@ -635,11 +635,10 @@ class Model(object):
             subprocess.call(command, stdout=log, stderr=log)
 
         # Remove temporary directory
-        """
         if os.path.exists(self.tempdir):
             print('Cleaning Memory')
             shutil.rmtree(self.tempdir)
-        """
+        
         
 ############################################Classes#################################################
 
