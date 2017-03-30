@@ -7,7 +7,6 @@ import os
 import subprocess
 import tempfile
 import shutil
-import better_exceptions
 # Chimera stuff
 import chimera
 from chimera import UserError
@@ -106,10 +105,9 @@ class Controller(object):
                                      dz_mass=metal_class.dz_mass)
 
         print('Saving system...')
-        self.model.create_system(inputpath=self.inputpath, temp_path=tempdir,
-                                 met=metal_class.symbol, i=i,
-                                 output=self.gui.var_outputpath.get(),
-                                 output_name=self.model.gui.var_outputname.get())
+        self.model.create_system(inputpath=self.inputpath,
+                                 met=metal_class.symbol,
+                                 output=self.gui.var_outputpath.get())
 
 
 class Model(object):
@@ -384,7 +382,7 @@ class Model(object):
         lib_charge_lines = []
 
         # template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
-        template = " {0} {1} 0 1 196609 {2} {3} {4}"
+        template = ' "{0}" "{1}" 0 1 196609 {2} {3} {4}'
         lib_charge_lines.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
         for i in range(1, self.num_of_dummies + 1):
             dummy = getattr(metal, "D{}".format(i))
@@ -394,7 +392,7 @@ class Model(object):
         lib_charge_lines.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg".format(residue))
 
         # template =  "{name} {type} 0 1 0.0\n"
-        template = " {0} {1} 0 -1 0.0"
+        template = ' "{0}" "{1}" 0 -1 0.0'
         lib_charge_lines.append(template.format(metal_name, metal_type))
         for i in range(1, self.num_of_dummies + 1):
             dummy = getattr(metal, "D{}".format(i))
@@ -564,7 +562,7 @@ class Model(object):
         
         self.write_tleap_instructions(output, met, topology_format, topology_path)
 
-        self.remove_temporary_directory()
+        #self.remove_temporary_directory()
 
     def define_tleap_topology(self, inputpath):
 
@@ -651,7 +649,7 @@ class Model(object):
         if self.frcmod:
             for frcmod in self.frcmod:
                 tleapfile_content.append("loadamberparams {}".format(frcmod))
-        elif self.lib:
+        if self.lib:
             for lib in self.lib:
                 tleapfile_content.append("loadOff {}".format(lib))
 
