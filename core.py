@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 import shutil
+import better_exceptions
 # Chimera stuff
 import chimera
 from chimera import UserError
@@ -530,11 +531,7 @@ class Model(object):
 
     def create_system(self, inputpath, temp_path, met, i, output, output_name):
         """
-        System Creation through leaprc file:
-            1-Charge Library
-            2-Charge frcmod
-            3-Build Water Box+
-            4-System Neutralization
+        
 
         Parameters
         ----------
@@ -558,20 +555,82 @@ class Model(object):
         topology: prmtop
         coordinates: inpcrd
         """
+ 
+        topology_format, topology_path = self.define_tleap_topology(inputpath)
+        
+        self.write_tleap_instructions(output, met, topology_format, topology_path)
+
+        self.remove_temporary_directory()
+
+    def define_tleap_topology(self, inputpath):
+
+        """
+        Search for input path format and
+        write tleap input with the same
+        extension avoiding compatibility issues.
+
+        Parameters:
+        -----------
+
+        Input)
+
+        inputpath:  str
+            Path to chimera input file
+
+        Output)
+
+        input_format: str
+            Chimera input file format
+
+        tleap_topology_path: str
+            Topology of chimera system used
+            as tleap input for bonds and position.
+        """
 
         # Saving model
         if inputpath.endswith(".pdb"):
-            input_format = 'pdb'
+            topology_format = 'pdb'
         elif inputpath.endswith(".mol2"):
-            input_format = 'mol2'
-        input_name = self.gui.var_outputname.get() + '.{}'.format(input_format)
-        input_path = os.path.join(self.tempdir, input_name)
-        rc('write format {0} 0 {1}'.format(input_format, input_path))
+            topology_format = 'mol2'
+        input_name = self.gui.var_outputname.get() + '.{}'.format(topology_format)
+        tleap_topology_path = os.path.join(self.tempdir, input_name)
+        rc('write format {0} 0 {1}'.format(topology_format, tleap_topology_path))
+        return topology_format, tleap_topology_path
 
-        # filepaths
-        log_file = os.path.join(output, output_name + ".log")
+    def write_tleap_instructions(self, output, met, topology_format, topology_path):
+
+        """
+        System Creation through leaprc file:
+            1-Load organic forcefield
+            2-Load  Libraries
+            3-Load  Metal Frcmods
+            4-Build Water Box+
+            5-System Neutralization
+            6-Create Coordinates and Topology
+            7-Report Errors to .log file
+
+         Parameters
+        ----------
+
+        met: str
+            Metal symbol
+        output: str
+            Output path
+        input_format: str
+            Input format type
+        inputpath: str
+            Input path File
+
+        Output:
+        -------
+        topology: prmtop
+        coordinates: inpcrd
+        """
+        
+        #Initialize filepaths
         output_name = self.gui.var_outputname.get()
-        tleap_input = os.path.join(temp_path, "leaprc.final")
+        log_file = os.path.join(output, output_name + ".log")
+        tleap_input = os.path.join(self.tempdir, "leaprc.final")
         source = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
 
         # Tleap content
@@ -602,10 +661,10 @@ class Model(object):
                     tleapfile_content.append("loadamberparams {}".format(file))
 
         # load system
-        if input_format == 'pdb':
-            tleapfile_content.append("sys=loadpdb {}".format(file_path))
-        elif input_format == 'mol2':
-            tleapfile_content.append("sys=loadmol2 {}".format(file_path))
+        if topology_format == 'pdb':
+            tleapfile_content.append("sys=loadpdb {}".format(topology_path))
+        elif topology_format == 'mol2':
+            tleapfile_content.append("sys=loadmol2 {}".format(topology_path))
 
         # neutralize system
         tleapfile_content.extend([
@@ -634,10 +693,11 @@ class Model(object):
         with open(log_file, 'a') as log:
             subprocess.call(command, stdout=log, stderr=log)
 
-        # Remove temporary directory
+    def remove_temporary_directory(self):
         if os.path.exists(self.tempdir):
             print('Cleaning Memory')
             shutil.rmtree(self.tempdir)
+
         
         
 ############################################Classes#################################################
