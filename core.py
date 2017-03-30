@@ -529,9 +529,13 @@ class Model(object):
 
         self.frcmod.append(frcmod_output)
 
-    def create_system(self, inputpath, temp_path, met, i, output, output_name):
+    def create_system(self, inputpath,  met, output):
+
         """
-        
+        1- Produce tleap topology
+        2- write tleap instructions
+        3- Create topology and coordinates for simulation
+        4- Clear memory
 
         Parameters
         ----------
@@ -565,9 +569,9 @@ class Model(object):
     def define_tleap_topology(self, inputpath):
 
         """
-        Search for input path format and
-        write tleap input with the same
-        extension avoiding compatibility issues.
+        Produce tleap topology
+        from chimera input considering
+        file format compatibility.
 
         Parameters:
         -----------
@@ -579,8 +583,8 @@ class Model(object):
 
         Output)
 
-        input_format: str
-            Chimera input file format
+        topology_format: str
+            Tleap topology input file format
 
         tleap_topology_path: str
             Topology of chimera system used
@@ -616,10 +620,10 @@ class Model(object):
             Metal symbol
         output: str
             Output path
-        input_format: str
-            Input format type
-        inputpath: str
-            Input path File
+        topology_format: str
+            Topology format
+        topology_path: str
+            Topology filepath
 
         Output:
         -------
