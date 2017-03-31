@@ -75,12 +75,7 @@ class Controller(object):
             self.model.retrieve_variables(metal)
 
             print("Building Metal Center...")
-
-            metal_class = Metal.handle_metal_creation(
-                metal=metal, Type=self.metal_type, residue=self.metal_residue,
-                charge=self.model.charge, geometry=self.model.geometry,
-                dz_met_bondlenght=self.model.dz_met_bondlenght,
-                dz_mass=self.model.dz_mass, metal_vwr=self.model.metal_vwr)
+            metal_class = self.model.create_metal_center(metal, self.metal_type)
 
             print('Building dummies...')
             self.model.include_dummies(metal_class)
@@ -205,6 +200,36 @@ class Model(object):
         else:
             self.tempdir = tempfile.mkdtemp(prefix="Dummy")
         return self.tempdir
+
+    def create_metal_center(self, metal, Type):
+        """
+        Return a base class Metal with
+        Dummy atoms object around already
+        oriented to its ligands by:
+
+        1- Create Metal class
+        2- Apply method to find Dummy Atoms oriented coord
+        3- Build Dummy atoms class around the metela center
+        4- Return this system
+
+        Parameters:
+        -----------
+
+        Input)
+        metal: Chimera object
+            Metal center where to build the system.
+
+        """
+        metal_class = Metal.handle_metal_creation(
+            metal=metal, Type=Type,
+            charge=self.charge, geometry=self.geometry,
+            dz_met_bondlenght=self.dz_met_bondlenght,
+            dz_mass=self.dz_mass, metal_vwr=self.metal_vwr)
+
+        metal_class.dummies_xyz = metal_class.search_for_orientation(metal)
+        metal_class.build_dummies(metal_class.dummies_xyz, metal_class.geometry, metal_class.charge)
+
+        return metal_class
 
     def include_dummies(self, metal_class):
         """
@@ -785,8 +810,7 @@ class Metal(Dummy):
         self.dz_met_bondlenght = dz_met_bondlenght
         self.metal_vwr = metal_vwr
         self.dz_mass = dz_mass
-        self.dummies_xyz = self.search_for_orientation(self.metal)
-        self.build_dummies(self.dummies_xyz, self.geometry, self.charge)
+        
     
     def search_for_orientation(self, metal):
 
@@ -893,7 +917,7 @@ class Metal(Dummy):
         return data
     
     @classmethod    
-    def handle_metal_creation(cls, metal, Type, residue , geometry,
+    def handle_metal_creation(cls, metal, Type, geometry,
                               charge, dz_met_bondlenght, metal_vwr, dz_mass):
 
         """
@@ -914,7 +938,7 @@ class Metal(Dummy):
                
         if str(metal.element.name).lower() in SUPPORTED_ELEMENTS:
 
-            return cls(metal=metal, symbol=Type, residue=residue, 
+            return cls(metal=metal, symbol=Type, residue=str(metal.residue.type), 
                    mass=metal.element.mass, atomicnumber=metal.element.number,
                    geometry=geometry, charge=charge, dz_mass=dz_mass,
                    dz_met_bondlenght=dz_met_bondlenght, metal_vwr=metal_vwr)
