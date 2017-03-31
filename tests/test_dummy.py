@@ -22,12 +22,15 @@
 # limitations under the License.
 ##############
 
-import os
+
 import pytest
-from conftest import Dummy, Metal, metal_atom
+from conftest import metal_atom, datapath, search_for_metal
 
 
-def test_build_dummies(metal, charge, geom, dummies_xyz):
+@pytest.mark.parametrize("charge", "geom", "dummies_xyz" [
+    (2, "tetrahedral", [[28.299, 41.696, 30.738], [29.650, 41.653, 30.161], [28.485, 41.307, 29.333], [28.916, 40.404, 30.409]])
+])
+def test_build_dummies(charge, geom, dummies_xyz):
     # Right Values
     dummies_type = {'TETRAHEDRAL': ['DZ', 'DZ', 'DZ', 'DZ'],
                     'SQUARE_PLANAR': ['DZ', 'DZ', 'DZ', 'DZ'],
@@ -40,6 +43,9 @@ def test_build_dummies(metal, charge, geom, dummies_xyz):
                       'SQUARE_PYRAMID': [charge / 5.0 for i in range(0, 5)],
                       'OCTAHEDRON': [charge / 6.0 for i in range(0, 6)]
                       }
+    # get metal
+    path = datapath('zinc.pdb')
+    metal = search_for_metal(path, 'zn')
     # Produce dummy instances as a metal attribute
     metal_atom(metal, charge, geom)
     metal.build_dummies(dummies_xyz, geom, charge)

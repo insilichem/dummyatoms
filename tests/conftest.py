@@ -23,8 +23,8 @@
 ##############
 
 import os
-import pytest
-from DummyAtoms.core import Dummy, Metal
+from DummyAtoms.core import Metal
+import chimera
 
 TESTPATH = os.path.dirname(os.path.abspath(__file__))
 DZ_MET_BONDLENGHT = 0.9
@@ -34,6 +34,14 @@ METAL_VWR = 3.1
 
 def datapath(path):
     return os.path.join(TESTPATH, 'data', path)
+
+
+def search_for_metal(path, metal_symbol):
+    model = chimera.openModels.open(path)
+    for atom in model.atoms:
+        atom_name = atom.name
+        if (atom_name.lower() == metal_symbol and atom.isMetal):
+            return atom
 
 
 def metal_atom(metal, charge, geometry):
