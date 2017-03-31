@@ -24,10 +24,28 @@
 
 import os
 import pytest
-from conftest import Dummy, Metals
+from conftest import Dummy, Metal, metal_atom
 
 
-def test_dummy(Type, dummies_xyz, charge, geom):
-    for xyz in dummies_xyz:
-        dummy = Dummy(Type, xyz, charge)
-    dummy.build_dummies(dummies_xyz, geom, charge):
+def test_build_dummies(metal, charge, geom, dummies_xyz):
+    # Right Values
+    dummies_type = {'TETRAHEDRAL': ['DZ', 'DZ', 'DZ', 'DZ'],
+                    'SQUARE_PLANAR': ['DZ', 'DZ', 'DZ', 'DZ'],
+                    'SQUARE_PYRAMID': ['DX', 'DX', 'DY', 'DY', 'DZ'],
+                    'OCTAHEDRON': ['DX', 'DX', 'DY', 'DY', 'DZ', 'DZ']
+                    }
+
+    dummies_charge = {'TETRAHEDRAL': [charge / 4.0 for i in range(0, 4)],
+                      'SQUARE_PLANAR': [charge / 4.0 for i in range(0, 4)],
+                      'SQUARE_PYRAMID': [charge / 5.0 for i in range(0, 5)],
+                      'OCTAHEDRON': [charge / 6.0 for i in range(0, 6)]
+                      }
+    # Produce dummy instances as a metal attribute
+    metal_atom(metal, charge, geom)
+    metal.build_dummies(dummies_xyz, geom, charge)
+    # Evaluation
+    for i in range(0, len(dummies_xyz)):
+        dummy = getattr(metal, "D{}".format(i))
+        assert dummy.xyz == dummies_xyz[i - 1]
+        assert dummy.Type == dummies_type[geom.upper][i - 1]
+        assert dummy.charge == dummies_charge[geom.upper][i - 1]
