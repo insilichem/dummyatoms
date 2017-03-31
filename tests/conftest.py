@@ -22,5 +22,27 @@
 # limitations under the License.
 ##############
 
-from DummyAtoms.core import Dummy
-from DummyAtoms.core import Metal
+import os
+import pytest
+from DummyAtoms.core import Dummy, Metal
+
+TESTPATH = os.path.dirname(os.path.abspath(__file__))
+DZ_MET_BONDLENGHT = 0.9
+DZ_MASS = 3
+METAL_VWR = 3.1
+
+
+def datapath(path):
+    return os.path.join(TESTPATH, 'data', path)
+
+
+def metal_atom(metal, charge, geometry):
+
+    Type = metal.element.name
+    residue = metal.residue.type
+
+    metal = Metal(
+        metal=metal, Type=Type, residue=residue,
+        charge=charge, geometry=geometry,
+        dz_met_bondlenght=DZ_MET_BONDLENGHT,
+        dz_mass=DZ_MASS, metal_vwr=METAL_VWR)
