@@ -24,6 +24,7 @@
 
 
 import pytest
+import chimera
 from conftest import metal_atom, datapath, search_for_metal
 
 
@@ -55,3 +56,21 @@ def test_build_dummies(charge, geom, dummies_xyz):
         assert dummy.xyz == dummies_xyz[i - 1]
         assert dummy.Type == dummies_type[geom.upper()][i - 1]
         assert dummy.charge == dummies_charge[geom.upper()][i - 1]
+
+
+@pytest.mark.parametrize("charge, geom, right_coord", [
+    (2, "tetrahedral",
+        [chimera.Point(27.593, 42.011, 27.821), chimera.Point(27.548, 41.99, 31.341),
+         chimera.Point(29.407, 38.808, 31.527), chimera.Point(30.875, 41.854, 30.355)])
+])
+def test_search_for_orientation(charge, geom, right_coord):
+    # get metal chimera object
+    path = datapath('zinc.pdb')
+    metal = search_for_metal(path, 'zn')
+    # Produce dummy&metal instances from chimera object
+    metal_class = metal_atom(metal, charge, geom)
+    #get oriented ligand pos
+    ligands = metal_class.search_for_ligands(metal)
+    #Eval
+    for i, ligand in enumerate(ligands):
+        assert (ligand.labelCoord() in right_coord)
