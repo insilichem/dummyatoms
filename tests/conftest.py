@@ -23,7 +23,7 @@
 ##############
 
 import os
-from DummyAtoms.core import Metal
+from DummyAtoms.atoms import Metal
 import chimera
 
 TESTPATH = os.path.dirname(os.path.abspath(__file__))
@@ -37,10 +37,10 @@ def datapath(path):
 
 
 def search_for_metal(path, metal_symbol):
-    model = chimera.openModels.open(path)
+    model = chimera.openModels.open(path)[0]
     for atom in model.atoms:
         atom_name = atom.name
-        if (atom_name.lower() == metal_symbol and atom.isMetal):
+        if (atom_name.lower() == metal_symbol and atom.element.isMetal):
             return atom
 
 
@@ -48,9 +48,8 @@ def metal_atom(metal, charge, geometry):
 
     Type = metal.element.name
     residue = metal.residue.type
+    atomic_num = metal.element.number
 
-    metal = Metal(
-        metal=metal, Type=Type, residue=residue,
-        charge=charge, geometry=geometry,
-        dz_met_bondlenght=DZ_MET_BONDLENGHT,
-        dz_mass=DZ_MASS, metal_vwr=METAL_VWR)
+    return Metal(
+        metal, Type, residue, atomic_num, geometry, charge,
+        DZ_MASS, DZ_MET_BONDLENGHT, DZ_MASS, METAL_VWR)
