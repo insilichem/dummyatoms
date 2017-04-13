@@ -24,16 +24,20 @@
 
 
 import pytest
-import chimera
 from conftest import metal_atom, datapath, search_for_metal
+
+# get metal chimera object
+path = datapath('zinc.pdb')
+metal = search_for_metal(path, 'zn')
+# Produce dmetal instances from chimera object
 
 
 @pytest.mark.parametrize("charge, geom, dummies_xyz", [
     (2, "tetrahedral", [[28.299, 41.696, 30.738], [29.650, 41.653, 30.161], [28.485, 41.307, 29.333], [28.916, 40.404, 30.409]])
 ])
-def test_build_dummies(charge, geom, dummies_xyz):
+def test_build_dummies(charge, geom, dummies_xyz, path=path, metal=metal):
     # Right Values
-    dummies_type = {'TETRAHEDRAL': ['DZ', 'DZ', 'DZ', 'DZ'],
+    DUMMIES_TYPE = {'TETRAHEDRAL': ['DZ', 'DZ', 'DZ', 'DZ'],
                     'SQUARE_PLANAR': ['DZ', 'DZ', 'DZ', 'DZ'],
                     'SQUARE_PYRAMID': ['DX', 'DX', 'DY', 'DY', 'DZ'],
                     'OCTAHEDRON': ['DX', 'DX', 'DY', 'DY', 'DZ', 'DZ']
@@ -44,33 +48,28 @@ def test_build_dummies(charge, geom, dummies_xyz):
                       'SQUARE_PYRAMID': [charge / 5.0 for i in range(0, 5)],
                       'OCTAHEDRON': [charge / 6.0 for i in range(0, 6)]
                       }
-    # get metal chimera object
-    path = datapath('zinc.pdb')
-    metal = search_for_metal(path, 'zn')
-    # Produce dummy&metal instances from chimera object
+    # Produce metal instances from chimera object
     metal_class = metal_atom(metal, charge, geom)
+    # Produce dummies instances from chimera object
     metal_class.build_dummies(dummies_xyz, geom, charge)
     # Evaluation
     for i in range(1, len(dummies_xyz)):
         dummy = getattr(metal_class, "D{}".format(i))
         assert dummy.xyz == dummies_xyz[i - 1]
-        assert dummy.Type == dummies_type[geom.upper()][i - 1]
+        assert dummy.Type == DUMMIES_TYPE[geom.upper()][i - 1]
         assert dummy.charge == dummies_charge[geom.upper()][i - 1]
 
 
 @pytest.mark.parametrize("charge, geom, right_coord", [
     (2, "tetrahedral",
-        [chimera.Point(27.593, 42.011, 27.821), chimera.Point(27.548, 41.99, 31.341),
-         chimera.Point(29.407, 38.808, 31.527), chimera.Point(30.875, 41.854, 30.355)])
+        [[27.593, 42.011, 27.821], [27.548, 41.99, 31.341],
+         [29.407, 38.808, 31.527], [30.875, 41.854, 30.355]])
 ])
-def test_search_for_ligands(charge, geom, right_coord):
-    # get metal chimera object
-    path = datapath('zinc.pdb')
-    metal = search_for_metal(path, 'zn')
-    # Produce dummy&metal instances from chimera object
+def test_search_for_ligands(charge, geom, right_coord, path=path, metal=metal):
+    # metal instance
     metal_class = metal_atom(metal, charge, geom)
     # get oriented ligand pos
     ligands = metal_class.search_for_ligands(metal)
     # Eval
     for i, ligand in enumerate(ligands):
-        assert (ligand.labelCoord() in right_coord)
+        assert (list(ligand.labelCoord()) in right_coord)
