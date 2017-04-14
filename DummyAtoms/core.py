@@ -100,7 +100,7 @@ class Controller(object):
         self.model.create_system(inputpath=self.inputpath,
                                  met=metal_class.symbol,
                                  output=self.gui.var_outputpath.get())
-        self.model.remove_temporary_directory()
+        #self.model.remove_temporary_directory()
 
 
 class Model(object):
@@ -240,26 +240,27 @@ class Model(object):
         -----------
 
         metal_class: str
-                Build-in Metal class pointer
+                Build-in Metal clas
+
+                s pointer
         """
         metal = metal_class.metal
-        dummies = metal_class.dummies_xyz
         residue = metal.residue
-        dummy_element = chimera.Element('DZ')
 
         # Exact-order where ot draw the atoms for tleap
         if self.geometry in (TETRAHEDRAL, SQUARE_PLANAR):
             dummy_names = ["D1", "D2", "D3", "D4"]
         elif self.geometry == OCTAHEDRON:
-            dummy_names = ["D1", "D5", "D2", "D3", "D6", "D4"]
+            dummy_names = ["D1", "D2", "D3", "D4", "D5", "D6"]
         elif self.geometry == SQUARE_PYRAMID:
             dummy_names = ["D1", "D5", "D2", "D3", "D4"]
         else:
             raise UserError("Geometry not implemented")
 
         # Adding Dummies
-        for i, dummy_xyz in enumerate(dummies):
-            addAtom(dummy_names[i], dummy_element, residue, chimera.Coord(dummy_xyz))
+        for i in range(0, len(dummy_names)):
+            dummy = getattr(metal_class, "D{}".format(i + 1))
+            addAtom(dummy_names[i], dummy.Type, residue, chimera.Coord(dummy.xyz))
 
     def specify_geometry(self, metal, temp_path):
         """
@@ -724,4 +725,4 @@ class Model(object):
     def remove_temporary_directory(self):
         if os.path.exists(self.tempdir):
             print('Cleaning Memory')
-            shutil.rmtree(self.tempdir)
+            shutil.rmtree(self.tempdir,ignore_errors=True)

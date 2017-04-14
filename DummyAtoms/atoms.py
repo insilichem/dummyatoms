@@ -39,10 +39,25 @@ class Dummy(object):
 
         dummies_types = self.type_retriever(geom)
         dummies_charges = self.charge_retriever(geom, charge)
+        dummies_ordered_xyz = self.order_retriever(dummies_xyz)
         dummies = [Dummy(dummy_type, dummy_xyz, dummy_charge)
                    for dummy_type, dummy_xyz, dummy_charge
-                   in zip(dummies_types, dummies_xyz, dummies_charges)]
+                   in zip(dummies_types, dummies_ordered_xyz, dummies_charges)]
+
         return self.retrieve(dummies)
+
+    @staticmethod
+    def order_retriever(dummies_xyz):
+        new_order = []
+        for dummy in dummies_xyz:
+            if dummy not in new_order:
+                for i in range(0, len(dummies_xyz)):
+                    if abs(chimera.distance(dummy, dummies_xyz[i]) - 1.8) < 0.01 and dummies_xyz[i] not in new_order:
+                        new_order.append(dummy)
+                        new_order.append(dummies_xyz[i])
+                        print(new_order)
+                        break
+        return new_order
 
     @staticmethod
     def type_retriever(geom):
@@ -71,6 +86,9 @@ class Dummy(object):
 
         for i, dummy in enumerate(dummies, start=1):
             # self.D1 = Dummy(D1, DZ)
+            print(dummy.Type)
+            print(dummy.xyz)
+            print(i)
             setattr(self, "D{}".format(i), dummy)
 
 
@@ -108,7 +126,7 @@ class Metal(Dummy):
         Output:
         -------
         dummies_xyz: list
-            Dummies oriented positions 
+            Dummies oriented positions
         """
 
         if self.geometry in [TETRAHEDRAL, OCTAHEDRON,
@@ -214,7 +232,7 @@ class Metal(Dummy):
 
         Output:
         -------
-        Metal class object 
+        Metal class object
         """
 
         if str(metal.element.name).lower() in SUPPORTED_ELEMENTS:
