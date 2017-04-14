@@ -25,6 +25,7 @@
 import os
 from DummyAtoms.atoms import Metal
 import chimera
+from DummyAtoms.core import Model
 
 TESTPATH = os.path.dirname(os.path.abspath(__file__))
 DZ_MET_BONDLENGHT = 0.9
@@ -36,7 +37,16 @@ def datapath(path):
     return os.path.join(TESTPATH, 'data', path)
 
 
+def create_metal_class(element, charge, geom, file):
+    # get metal chimera object
+    path = datapath(file)
+    metal = search_for_metal(path, element)
+    metal_class = metal_atom(metal, charge, geom)
+    return metal, metal_class
+
+
 def search_for_metal(path, metal_symbol):
+    chimera.openModels.close(chimera.openModels.list())
     model = chimera.openModels.open(path)[0]
     for atom in model.atoms:
         atom_name = atom.name

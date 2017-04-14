@@ -7,6 +7,8 @@ import os
 import subprocess
 import tempfile
 import shutil
+import string
+import random
 # Chimera stuff
 import chimera
 from chimera import UserError
@@ -118,7 +120,7 @@ class Model(object):
        coordinates from step 5 model.
     """
 
-    def __init__(self, gui, *args, **kwargs):
+    def __init__(self, gui=None, *args, **kwargs):
         self.gui = gui
         self.lib = []
         self.frcmod = []
@@ -188,10 +190,12 @@ class Model(object):
         -------
         Temporary Folder Path
         """
-
-        if os.path.isdir("/dev/shm/"):
-            ram_dir = "/dev/shm/temp/"
-            os.makedirs(ram_dir)
+        RAM_PATH = "/dev/shm"
+        if os.path.isdir(RAM_PATH):
+            random_directory = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+            ram_dir = os.path.abspath(os.path.join(RAM_PATH, random_directory))
+            if not os.path.isdir(ram_dir):
+                os.makedirs(ram_dir)
             self.tempdir = ram_dir
         else:
             self.tempdir = tempfile.mkdtemp(prefix="Dummy")
