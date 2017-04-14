@@ -42,33 +42,42 @@ def test_temp_directory(Model=Model):
 
 @pytest.mark.parametrize("element, file, charge, geom, dummies_xyz", [
                         ('zn', 'zinc.pdb', 2, 'tetrahedral',
-                         [chimera.Point(28.299, 41.696, 30.738), chimera.Point(29.650, 41.653, 30.161),
-                          chimera.Point(28.485, 41.307, 29.333), chimera.Point(28.916, 40.404, 30.409)]),
+                         [chimera.Point(28.448, 41.088, 28.914), chimera.Point(28.879, 40.185, 29.990),
+                          chimera.Point(29.612, 41.434, 29.741), chimera.Point(28.261, 41.477, 30.319)]),
                         ('zn', 'zinc.pdb', 2, 'square planar',
-                         [chimera.Point(27.961, 41.173, 30.409), chimera.Point(29.062, 40.624, 30.738),
-                          chimera.Point(29.648, 41.227, 29.782), chimera.Point(28.548, 41.776, 29.4536)]),
+                         [chimera.Point(29.643, 41.073, 29.428), chimera.Point(27.957, 41.019, 30.054),
+                          chimera.Point(29.057, 40.470, 30.383), chimera.Point(28.543, 41.622, 29.099)]),
+                        ('zn', 'zinc.pdb', 2, 'octahedron',
+                         [chimera.Point(29.549, 41.526, 29.876), chimera.Point(28.376, 41.530, 30.370),
+                          chimera.Point(29.224, 40.562, 29.112), chimera.Point(29.063, 40.459, 30.370),
+                          chimera.Point(28.051, 40.566, 29.606), chimera.Point(28.537, 41.633, 29.112)]),
 ])
 def test_include_dummies(element, file, charge, geom, dummies_xyz, Model=Model):
-    #Right Values
+    # Right Values
     ANGLE = {
         'tetrahedral': [60, ],
         'square planar': [90, 45],
-        'square pyramid': [80, ],
-        'octahedron': [180, ],
+        'square pyramid': [90, 45],
+        'octahedron': [90, 60, 45],
     }
-    #Create metal instance
+    # Create metal instance
     metal, metal_class = create_metal_class(element=element, charge=charge, geom=geom, file=file)
-    #Initialize variables
+    # Initialize variables
     metal_class.dummies_xyz = dummies_xyz
     Model.geometry = geom
-    #Func to test
+    # Func to test
     Model.include_dummies(metal_class)
-    #Selecting the included atoms
-    atoms_to_select = ','.join(['D' + str(i) for i in range(1, len(dummies_xyz) + 1)])
+    # Selecting the included atoms
+    number_of_dummies = len(dummies_xyz)
+    atoms_to_select = ','.join(['D' + str(i) for i in range(1, number_of_dummies + 1)])
     rc("sel ::" + str(metal.residue.type) + '@' + atoms_to_select)
     dummies = chimera.selection.currentAtoms()
-    #Eval Angles between them depending geometry
-    angle1 = chimera.angle(dummies[0].labelCoord(), dummies[1].labelCoord(), dummies[2].labelCoord())
-    angle2 = chimera.angle(dummies[0].labelCoord(), dummies[2].labelCoord(), dummies[3].labelCoord())
-    assert(int(round(angle1)) in ANGLE[geom])
-    assert(int(round(angle2)) in ANGLE[geom])
+
+    # Eval Angles between them depending geometry
+    for i in range(0, number_of_dummies - 2):
+        angle = chimera.angle(dummies[i].labelCoord(), dummies[i + 1].labelCoord(), dummies[i + 2].labelCoord())
+        assert(int(round(angle)) in ANGLE[geom])
+    # Eval Bonds between Dummy&Metal center
+    for i in range(0, number_of_dummies):
+        bond = chimera.distance(dummies[i].labelCoord(), metal.labelCoord())
+        assert(abs(bond - 0.9) < 0.001)

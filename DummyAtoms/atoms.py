@@ -124,7 +124,7 @@ class Metal(Dummy):
         dummies_xyz = []
         for vec in self.vecs:
             vec.length = self.dz_met_bondlenght
-            dummyposition = self.center + vec
+            dummyposition = self.metal.labelCoord() + vec
             dummies_xyz.append(dummyposition)
         return dummies_xyz
 

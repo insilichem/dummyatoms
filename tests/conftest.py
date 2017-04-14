@@ -57,9 +57,8 @@ def search_for_metal(path, metal_symbol):
 def metal_atom(metal, charge, geometry):
 
     Type = metal.element.name
-    residue = metal.residue.type
-    atomic_num = metal.element.number
 
-    return Metal(
-        metal, Type, residue, atomic_num, geometry, charge,
-        DZ_MASS, DZ_MET_BONDLENGHT, DZ_MASS, METAL_VWR)
+    return Metal.handle_metal_creation(metal=metal, Type=Type,
+                                       charge=charge, geometry=geometry,
+                                       dz_met_bondlenght=DZ_MET_BONDLENGHT,
+                                       dz_mass=DZ_MASS, metal_vwr=METAL_VWR)
