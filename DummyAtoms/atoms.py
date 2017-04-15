@@ -46,16 +46,29 @@ class Dummy(object):
 
         return self.retrieve(dummies)
 
-    @staticmethod
-    def order_retriever(dummies_xyz):
+    def order_retriever(self, dummies_xyz):
+        """
+        Base class method to order dummies
+        for types.
+
+        Logic:
+
+        - For each dummy we look for the
+          one being at the opposite side 
+          of the metal by looking for a
+          DZ-MET_DZ angle of 180.
+          Then we appned both together on
+          the list.
+        """
         new_order = []
         for dummy in dummies_xyz:
             if dummy not in new_order:
+                new_order.append(dummy)
                 for i in range(0, len(dummies_xyz)):
-                    if abs(chimera.distance(dummy, dummies_xyz[i]) - 1.8) < 0.01 and dummies_xyz[i] not in new_order:
-                        new_order.append(dummy)
+                    angle = chimera.angle(dummy, self.metal.labelCoord(), dummies_xyz[i])
+                    if abs(angle - 180) < 0.01 \
+                       and dummies_xyz[i] not in new_order:
                         new_order.append(dummies_xyz[i])
-                        print(new_order)
                         break
         return new_order
 

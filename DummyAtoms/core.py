@@ -11,7 +11,7 @@ import string
 import random
 # Chimera stuff
 import chimera
-from chimera import UserError
+from chimera import UserError, Element
 from MetalGeom.gui import geomDistEval
 from MetalGeom import geomData, Geometry
 from chimera.molEdit import addAtom
@@ -240,9 +240,7 @@ class Model(object):
         -----------
 
         metal_class: str
-                Build-in Metal clas
-
-                s pointer
+                Build-in Metal class pointer
         """
         metal = metal_class.metal
         residue = metal.residue
@@ -253,14 +251,14 @@ class Model(object):
         elif self.geometry == OCTAHEDRON:
             dummy_names = ["D1", "D2", "D3", "D4", "D5", "D6"]
         elif self.geometry == SQUARE_PYRAMID:
-            dummy_names = ["D1", "D5", "D2", "D3", "D4"]
+            dummy_names = ["D1", "D2", "D3", "D4", "D5"]
         else:
             raise UserError("Geometry not implemented")
 
         # Adding Dummies
         for i in range(0, len(dummy_names)):
             dummy = getattr(metal_class, "D{}".format(i + 1))
-            addAtom(dummy_names[i], dummy.Type, residue, chimera.Coord(dummy.xyz))
+            addAtom(dummy_names[i], Element(dummy.Type), residue, chimera.Coord(dummy.xyz))
 
     def specify_geometry(self, metal, temp_path):
         """
@@ -492,14 +490,19 @@ class Model(object):
         elif self.geometry == SQUARE_PYRAMID:
         # unimplemented
             geom_connectivity = [
-                    ' 1 3 1',
                     ' 1 2 1',
+                    ' 1 3 1',
                     ' 1 4 1',
                     ' 1 5 1',
+                    ' 1 6 1',
+                    ' 4 2 1',
+                    ' 4 5 1',
+                    ' 4 3 1',
+                    ' 4 6 1',
                     ' 2 5 1',
                     ' 5 3 1',
-                    ' 3 4 1',
-                    ' 4 2 1']
+                    ' 3 6 1',
+                    ' 6 2 1']
 
         connectivity.extend(geom_connectivity)
         return connectivity
