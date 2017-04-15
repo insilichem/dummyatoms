@@ -66,8 +66,7 @@ class Dummy(object):
                 new_order.append(dummy)
                 for i in range(0, len(dummies_xyz)):
                     angle = chimera.angle(dummy, self.metal.labelCoord(), dummies_xyz[i])
-                    if abs(angle - 180) < 0.01 \
-                       and dummies_xyz[i] not in new_order:
+                    if abs(angle - 180) < 0.01 and dummies_xyz[i] not in new_order:
                         new_order.append(dummies_xyz[i])
                         break
         return new_order

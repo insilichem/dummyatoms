@@ -245,20 +245,10 @@ class Model(object):
         metal = metal_class.metal
         residue = metal.residue
 
-        # Exact-order where ot draw the atoms for tleap
-        if self.geometry in (TETRAHEDRAL, SQUARE_PLANAR):
-            dummy_names = ["D1", "D2", "D3", "D4"]
-        elif self.geometry == OCTAHEDRON:
-            dummy_names = ["D1", "D2", "D3", "D4", "D5", "D6"]
-        elif self.geometry == SQUARE_PYRAMID:
-            dummy_names = ["D1", "D2", "D3", "D4", "D5"]
-        else:
-            raise UserError("Geometry not implemented")
-
         # Adding Dummies
-        for i in range(0, len(dummy_names)):
+        for i in range(0, len(metal_class.dummies_xyz)):
             dummy = getattr(metal_class, "D{}".format(i + 1))
-            addAtom(dummy_names[i], Element(dummy.Type), residue, chimera.Coord(dummy.xyz))
+            addAtom("D{}".format(i + 1), Element(dummy.Type), residue, chimera.Coord(dummy.xyz))
 
     def specify_geometry(self, metal, temp_path):
         """
