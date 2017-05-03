@@ -28,6 +28,7 @@ with one or more metal centers.
 # Constants
 SUPPORTED_FILE_TYPES = ['lib', 'frcmod']
 
+
 class Controller(object):
 
     """
@@ -220,9 +221,8 @@ class Model(object):
             Metal center where to build the system.
 
         """
-        metal_class = Metal.handle_metal_creation(
-            metal=metal, Type=Type,
-            charge=self.charge, geometry=self.geometry,
+        metal_class = Metal(
+            metal=metal, charge=self.charge, geometry=self.geometry,
             dz_met_bondlenght=self.dz_met_bondlenght,
             dz_mass=self.dz_mass, metal_vwr=self.metal_vwr)
 

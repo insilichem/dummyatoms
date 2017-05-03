@@ -112,19 +112,18 @@ class Metal(Dummy):
      orientation and metal type.
     """
 
-    def __init__(self, metal, symbol, atomicnumber, mass,
-                 residue, geometry, charge, dz_met_bondlenght,
-                 metal_vwr, dz_mass):
+    def __init__(self, metal, geometry, charge,
+                 dz_met_bondlenght, metal_vwr, dz_mass):
         self.metal = metal
-        self.symbol = symbol
-        self.atomicnumber = atomicnumber
-        self.mass = mass
-        self.residue = residue
         self.geometry = geometry
         self.charge = charge
         self.dz_met_bondlenght = dz_met_bondlenght
         self.metal_vwr = metal_vwr
         self.dz_mass = dz_mass
+        self.residue = str(metal.residue.type)
+        self.symbol = str(metal.element.name).upper()
+        self.atomicnumber = metal.element.number
+        self.mass = metal.element.mass
 
     def search_for_orientation(self, metal):
         """
@@ -227,29 +226,3 @@ class Metal(Dummy):
                         continue
             data.append(candidate)
         return data
-
-    @classmethod
-    def handle_metal_creation(cls, metal, Type, geometry,
-                              charge, dz_met_bondlenght, metal_vwr, dz_mass):
-        """
-        Handle metal creation by using a classmethod generator
-        for each type of metal we can find on the input file.
-
-        Parameters:
-        -----------
-        metal: chimera metal object
-        Type: pdb/mol2 metal type
-        res: metal residue name
-        model: Modeller class
-
-        Output:
-        -------
-        Metal class object
-        """
-
-        if str(metal.element.name).lower() in SUPPORTED_ELEMENTS:
-
-            return cls(metal=metal, symbol=Type, residue=str(metal.residue.type),
-                       mass=metal.element.mass, atomicnumber=metal.element.number,
-                       geometry=geometry, charge=charge, dz_mass=dz_mass,
-                       dz_met_bondlenght=dz_met_bondlenght, metal_vwr=metal_vwr)
