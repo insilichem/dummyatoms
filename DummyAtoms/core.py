@@ -455,16 +455,16 @@ class Model(object):
 
         elif self.geometry == OCTAHEDRON:
             geom_connectivity = [
-                    ' 1 5 1',
-                    ' 1 2 1',
-                    ' 2 6 1',
-                    ' 2 4 1', 
-                    ' 6 5 1',
-                    ' 4 5 1',
-                    ' 7 2 1',
+                    ' 1 6 1',
+                    ' 1 7 1',
+                    ' 4 2 1',
+                    ' 4 3 1', 
+                    ' 5 2 1',
                     ' 5 3 1',
-                    ' 3 2 1',
-                    ' 7 5 1']
+                    ' 2 6 1',
+                    ' 3 6 1',
+                    ' 4 7 1',
+                    ' 5 7 1']
 
         elif self.geometry == SQUARE_PLANAR:
             geom_connectivity = [
@@ -661,6 +661,18 @@ class Model(object):
         tleapfile_content.extend([
             "logFile leap.log",
             "source " + source,
+            "parm10 = loadamberparams parm10.dat",
+            "frcmod12SB = loadamberparams frcmod.ff12SB",
+            "frcmdod= loadamberparams frcmod.ionsjc_tip3p",
+            "gaff  = loadamberparams gaff.dat",
+            "loadOff amino12.lib",
+            "loadOff aminoct12.lib",
+            "loadOff aminont12.lib",
+            "loadOff nucleic12.lib",
+            "loadOff atomic_ions.lib",
+            "loadOff solvents.lib",
+            "HOH = TP3",
+            "WAT = TP3",
             'addAtomTypes {{ "DZ" "%s" "sp3" } { "%s" "%s" "sp3" }}' % (met, met, met),
             'addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}' % (met, met)
             ])
@@ -718,4 +730,4 @@ class Model(object):
     def remove_temporary_directory(self):
         if os.path.exists(self.tempdir):
             print('Cleaning Memory')
-            shutil.rmtree(self.tempdir,ignore_errors=True)
+            #shutil.rmtree(self.tempdir,ignore_errors=True)

@@ -23,6 +23,8 @@ DY-$metal_name-DZ    55.0      90.00
 $metal_name-DX-DY    55.0      45.00
 $metal_name-DX-DZ    55.0      45.00
 $metal_name-DY-DZ    55.0      45.00
+$metal_name-DZ-DY    55.0      45.00
+$metal_name-DZ-DX    55.0      45.00
 DX-DY-DX    55.0      90.00
 DX-DZ-DX    55.0      90.00
 DY-DX-DY    55.0      90.00
@@ -34,15 +36,16 @@ DX-DZ-DY    55.0      60
 
 DIHE
 DX-$metal_name-DX-DZ  4   0.0    0.0    1.
+DZ-DX-DY-DZ  4   0.0    0.0    1.
+DY-DX-DY-DZ  4   0.0    0.0    1.
 DX-DY-DX-DZ  4   0.0    0.0    1.
-DX-DZ-DX-DZ  4   0.0    0.0    1.
-DY-DX-DZ-DX  4   0.0    0.0    1.
-DY-DX-$metal_name-DX  4   0.0    0.0    1. 
-DX-$metal_name-DX-DY  4   0.0    0.0    1. 
-DY-DX-DY-DX  4   0.0    0.0    1.
-$metal_name-DX-DY-DX  4   0.0    0.0    1.
-$metal_name-DX-DZ-DX  4   0.0    0.0    1. 
+DY-DZ-$metal_name-DZ  4   0.0    0.0    1.
+DX-DZ-FE-DZ  4   0.0    0.0    1.
+DX-DY-DZ-DY  4   0.0    0.0    1.
 DX-DY-DX-DY  4   0.0    0.0    1.
+DX-DZ-DX-DY  4   0.0    0.0    1.
+$metal_name-DZ-DX-DY  4   0.0    0.0    1.
+$metal_name-DZ-DY-DX  4   0.0    0.0    1.
 
 IMPR
 
