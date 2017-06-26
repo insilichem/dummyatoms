@@ -3,10 +3,8 @@
 
 from __future__ import print_function, division
 # Python stdlib
-from multiprocessing.pool import ThreadPool
 import os
 import subprocess
-import thread
 import tempfile
 import shutil
 import string
@@ -739,4 +737,4 @@ class Model(object):
     def remove_temporary_directory(self):
         if os.path.exists(self.tempdir):
             print('Cleaning Memory')
-            # shutil.rmtree(self.tempdir,ignore_errors=True)
+            shutil.rmtree(self.tempdir,ignore_errors=True)
