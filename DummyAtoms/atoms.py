@@ -148,7 +148,10 @@ class Metal(Dummy):
 
         ligands = self.search_for_ligands(metal)
         # Find the optimium metal ligands vectors for the given geometry
-        rmsd, self.center, self.vecs = geomDistEval(geom, metal, ligands)
+        try:
+            rmsd, self.center, self.vecs = geomDistEval(geom, metal, ligands)
+        except ValueError:
+            raise UserError("The desired geometry does not\nmatch with the system topology")
         # From the optimium vectors find all best dummies coordinates
         dummies_xyz = []
         for vec in self.vecs:
