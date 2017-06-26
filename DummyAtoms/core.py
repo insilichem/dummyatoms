@@ -126,8 +126,21 @@ class Model(object):
         self.lib = []
         self.frcmod = []
         self.tempfiles = []
-        self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
 
+        try:
+            self.amber_path = os.environ["AMBERHOME"]
+        except KeyError:
+            root = os.path.expanduser("~/")
+            with open(os.path.join(root, ".bashrc"), "a+") as f:  # 'a' stands for "append"
+                if not any(line.rstrip('\r\n').startswith("export AMBERHOME") for line in f):
+                    self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
+                    f.write('\nexport AMBERHOME="' + self.amber_path + '"\n')
+                    command =["source", "~/.bashrc"]
+                    subprocess.call(command, shell=True)
+
+                
+
+    
     @staticmethod
     def search_for_amberhome():
         """
