@@ -3,8 +3,10 @@
 
 from __future__ import print_function, division
 # Python stdlib
+from multiprocessing.pool import ThreadPool
 import os
 import subprocess
+import thread
 import tempfile
 import shutil
 import string
@@ -16,7 +18,7 @@ from MetalGeom.gui import geomDistEval
 from MetalGeom import geomData, Geometry
 from chimera.molEdit import addAtom
 from chimera import runCommand as rc
-#my own
+# my own
 from atoms import Metal, TETRAHEDRAL, OCTAHEDRON, SQUARE_PLANAR, SQUARE_PYRAMID
 
 """
@@ -101,7 +103,7 @@ class Controller(object):
         self.model.create_system(inputpath=self.inputpath,
                                  met=metal_class.symbol,
                                  output=self.gui.var_outputpath.get())
-        #self.model.remove_temporary_directory()
+        # self.model.remove_temporary_directory()
 
 
 class Model(object):
@@ -126,12 +128,19 @@ class Model(object):
         self.lib = []
         self.frcmod = []
         self.tempfiles = []
-        """try:
-            self.amber_path = os.environ['AMBERHOME']
-        except KeyError:
-            raise UserError("AMBERHOME environment variable must be set")
-        """
-        self.amber_path = os.environ['AMBERHOME'] = "/home/daniel/Baixades/amber14/"
+        self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
+
+    def search_for_amberhome(self):
+        possible_amberhome = []
+        for root, dirs, files in os.walk(os.path.expanduser("~/")):
+            for name in files:
+                if(name == 'amber.sh'):
+                    possible_amberhome.append(os.path.abspath(os.path.join(root, name)))
+
+        for path in possible_amberhome:
+            if(os.path.basename(path).startswith('amber')):
+                return(os.path.dirname(path))
+        raise UserError('Install Amber1X before starting\nor be sure the amber.sh exisits on the amberX root folder')
 
     def save_variables(self, metal):
         """
@@ -145,43 +154,43 @@ class Model(object):
         """
 
         # Saving last metal params
-        metal_dicts = self.gui.metals
+        metal_dicts=self.gui.metals
 
         for dic in metal_dicts:
             if dic["title"] == metal.name:
-                dic["geom"] = self.gui.var_metal_geometry.get()
-                dic["charge"] = self.gui.var_metal_charge.get()
-                dic["vw_radius"] = self.gui.var_vw_radius.get()
-                dic["dz_mass"] = self.gui.var_dz_mass.get()
-                dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
+                dic["geom"]=self.gui.var_metal_geometry.get()
+                dic["charge"]=self.gui.var_metal_charge.get()
+                dic["vw_radius"]=self.gui.var_vw_radius.get()
+                dic["dz_mass"]=self.gui.var_dz_mass.get()
+                dic["dz_met_bond"]=self.gui.var_dz_met_bondlenght.get()
                 return
 
-        dic = {}
-        dic["title"] = metal.name
-        dic["geom"] = self.gui.var_metal_geometry.get()
-        dic["charge"] = self.gui.var_metal_charge.get()
-        dic["vw_radius"] = self.gui.var_vw_radius.get()
-        dic["dz_mass"] = self.gui.var_dz_mass.get()
-        dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
+        dic={}
+        dic["title"]=metal.name
+        dic["geom"]=self.gui.var_metal_geometry.get()
+        dic["charge"]=self.gui.var_metal_charge.get()
+        dic["vw_radius"]=self.gui.var_vw_radius.get()
+        dic["dz_mass"]=self.gui.var_dz_mass.get()
+        dic["dz_met_bond"]=self.gui.var_dz_met_bondlenght.get()
         metal_dicts.append(dic)
 
     def retrieve_variables(self, metal):
         # Updating variables for each metal
-        metal_dicts = self.gui.metals
+        metal_dicts=self.gui.metals
         for dic in metal_dicts:
             if dic["title"] == metal.name:
-                self.geometry = dic["geom"]
-                self.charge = dic["charge"]
-                self.metal_vwr = dic["vw_radius"]
-                self.dz_mass = dic["dz_mass"]
-                self.dz_met_bondlenght = dic["dz_met_bond"]
+                self.geometry=dic["geom"]
+                self.charge=dic["charge"]
+                self.metal_vwr=dic["vw_radius"]
+                self.dz_mass=dic["dz_mass"]
+                self.dz_met_bondlenght=dic["dz_met_bond"]
                 return
 
-        self.geometry = "tetrahedral"
-        self.charge = 2
-        self.metal_vwr = 3.1
-        self.dz_mass = 3
-        self.dz_met_bondlenght = 0.9
+        self.geometry="tetrahedral"
+        self.charge=2
+        self.metal_vwr=3.1
+        self.dz_mass=3
+        self.dz_met_bondlenght=0.9
 
     def temp_directory(self):
         """
@@ -191,15 +200,15 @@ class Model(object):
         -------
         Temporary Folder Path
         """
-        RAM_PATH = "/dev/shm"
+        RAM_PATH="/dev/shm"
         if os.path.isdir(RAM_PATH):
-            random_directory = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-            ram_dir = os.path.abspath(os.path.join(RAM_PATH, random_directory))
+            random_directory=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+            ram_dir=os.path.abspath(os.path.join(RAM_PATH, random_directory))
             if not os.path.isdir(ram_dir):
                 os.makedirs(ram_dir)
-            self.tempdir = ram_dir
+            self.tempdir=ram_dir
         else:
-            self.tempdir = tempfile.mkdtemp(prefix="Dummy")
+            self.tempdir=tempfile.mkdtemp(prefix="Dummy")
         return self.tempdir
 
     def create_metal_center(self, metal, Type):
@@ -221,12 +230,12 @@ class Model(object):
             Metal center where to build the system.
 
         """
-        metal_class = Metal(
+        metal_class=Metal(
             metal=metal, charge=self.charge, geometry=self.geometry,
             dz_met_bondlenght=self.dz_met_bondlenght,
             dz_mass=self.dz_mass, metal_vwr=self.metal_vwr)
 
-        metal_class.dummies_xyz = metal_class.search_for_orientation(metal)
+        metal_class.dummies_xyz=metal_class.search_for_orientation(metal)
         metal_class.build_dummies(metal_class.dummies_xyz, metal_class.geometry, metal_class.charge)
 
         return metal_class
@@ -242,12 +251,12 @@ class Model(object):
         metal_class: str
                 Build-in Metal class pointer
         """
-        metal = metal_class.metal
-        residue = metal.residue
+        metal=metal_class.metal
+        residue=metal.residue
 
         # Adding Dummies
         for i in range(0, len(metal_class.dummies_xyz)):
-            dummy = getattr(metal_class, "D{}".format(i + 1))
+            dummy=getattr(metal_class, "D{}".format(i + 1))
             addAtom("D{}".format(i + 1), Element(dummy.Type), residue, chimera.Coord(dummy.xyz))
 
     def specify_geometry(self, metal, temp_path):
@@ -278,19 +287,19 @@ class Model(object):
 
         """
 
-        metal_residue = metal.residue
-        metal_name = metal.symbol
-        metal_xyz = metal.center
-        dummies = metal.dummies_xyz
-        filename = os.path.join(temp_path, "dummymetal.pdb")
+        metal_residue=metal.residue
+        metal_name=metal.symbol
+        metal_xyz=metal.center
+        dummies=metal.dummies_xyz
+        filename=os.path.join(temp_path, "dummymetal.pdb")
 
-        template = "HETATM    %d  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n"
+        template="HETATM    %d  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n"
 
-        pdb = []
+        pdb=[]
         pdb.append(template % (1, metal_name, metal_residue, metal_xyz[0],
                                metal_xyz[1], metal_xyz[2], metal_name))
         for i, dummy in enumerate(dummies, start=1):
-            dummy = getattr(metal, "D{}".format(i))
+            dummy=getattr(metal, "D{}".format(i))
 
             pdb.append(template % ((i + 1), "D{}".format(i),
                                     metal_residue, dummy.xyz[0],
@@ -300,7 +309,7 @@ class Model(object):
         with open(filename, 'w') as f:
             f.write('\n'.join(pdb))
 
-        self.num_of_dummies = len(dummies)
+        self.num_of_dummies=len(dummies)
 
     def create_lib(self, temp_path, res, i, output, output_name):  # ambermini
         """
@@ -323,12 +332,12 @@ class Model(object):
             Desires output name
         """
         # file_paths
-        tleap_input = os.path.join(temp_path, "leaprc.metal")
-        forcefield = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
-        pdbfile = os.path.join(temp_path, "dummymetal.pdb")
-        output_lib = os.path.join(temp_path, "met%d.lib" % i)
-        self.tleap_path = os.path.join(self.amber_path, "bin/tleap")
-        log_file = os.path.join(output, output_name + ".log")
+        tleap_input=os.path.join(temp_path, "leaprc.metal")
+        forcefield=os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
+        pdbfile=os.path.join(temp_path, "dummymetal.pdb")
+        output_lib=os.path.join(temp_path, "met%d.lib" % i)
+        self.tleap_path=os.path.join(self.amber_path, "bin/tleap")
+        log_file=os.path.join(output, output_name + ".log")
         # tleap_input
         with open(tleap_input, 'w') as f:
             f.write("logFile leap.log\n"
@@ -338,7 +347,7 @@ class Model(object):
                 "quit")
         # tleap launch
         # os.environ["AMBERHOME"] = self.amber_path
-        command = [self.tleap_path, "-s", "-f", tleap_input]
+        command=[self.tleap_path, "-s", "-f", tleap_input]
         with open(log_file, 'w') as log:
             subprocess.call(command, stdout=log, stderr=log)
         # save library file
@@ -350,25 +359,25 @@ class Model(object):
         to include charge and metal connectivity
         """
         # Initialize variables
-        residue = metal.residue
-        lib_file = os.path.join(self.tempdir, "met%d.lib" % i)
+        residue=metal.residue
+        lib_file=os.path.join(self.tempdir, "met%d.lib" % i)
 
         # Retrieve charge&connectivity
-        charge = self.retrieve_charge(metal, metal_name)
-        connectivity = self.retrieve_connectivity(residue)
+        charge=self.retrieve_charge(metal, metal_name)
+        connectivity=self.retrieve_connectivity(residue)
 
         # connectivity insert index variable
-        lastindex_charges = len(charge) + 3
-        startindex_connectivity = lastindex_charges + 11  # not to overwrite coordinates in lib file
+        lastindex_charges=len(charge) + 3
+        startindex_connectivity=lastindex_charges + 11  # not to overwrite coordinates in lib file
 
         # Reading and reordering lines
         with open(lib_file, "r") as file:
-            lineas = file.read().splitlines()
+            lineas=file.read().splitlines()
             for i, new_line in enumerate(charge, start=3):
                 # starts at 3 to preserve the residue info
                 # we don't want to overwrite from .lib
-                lineas[i] = new_line
-            lineas[startindex_connectivity:startindex_connectivity] = connectivity
+                lineas[i]=new_line
+            lineas[startindex_connectivity:startindex_connectivity]=connectivity
 
         # Re-writing lib
         with open(lib_file, "w") as f:
@@ -390,26 +399,26 @@ class Model(object):
         i: int
             Metal Number
         """
-        metal_type = metal.symbol
-        atomicnumber = metal.atomicnumber
-        residue = metal.residue
-        lib_charge_lines = []
+        metal_type=metal.symbol
+        atomicnumber=metal.atomicnumber
+        residue=metal.residue
+        lib_charge_lines=[]
 
         # template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
-        template = ' "{0}" "{1}" 0 1 196609 {2} {3} {4}'
+        template=' "{0}" "{1}" 0 1 196609 {2} {3} {4}'
         lib_charge_lines.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
         for i in range(1, self.num_of_dummies + 1):
-            dummy = getattr(metal, "D{}".format(i))
+            dummy=getattr(metal, "D{}".format(i))
             lib_charge_lines.append(template.format("D{}".format(i), dummy.Type, i + 1, -1, dummy.charge))
 
         # t-leap line to understand residues type
         lib_charge_lines.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg".format(residue))
 
         # template =  "{name} {type} 0 1 0.0\n"
-        template = ' "{0}" "{1}" 0 -1 0.0'
+        template=' "{0}" "{1}" 0 -1 0.0'
         lib_charge_lines.append(template.format(metal_name, metal_type))
         for i in range(1, self.num_of_dummies + 1):
-            dummy = getattr(metal, "D{}".format(i))
+            dummy=getattr(metal, "D{}".format(i))
             lib_charge_lines.append(template.format("D{}".format(i), dummy.Type))
 
         return lib_charge_lines
@@ -437,11 +446,11 @@ class Model(object):
             .lib lines
         """
         # we started the fro loop at 3 before
-        connectivity = []
+        connectivity=[]
         connectivity.append('!entry.{}.unit.connectivity table  int atom1x  int atom2x  int flags'.format(residue))
 
         if self.geometry == TETRAHEDRAL:
-            geom_connectivity = [
+            geom_connectivity=[
                     ' 1 3 1',
                     ' 1 2 1',
                     ' 1 4 1',
@@ -454,11 +463,11 @@ class Model(object):
                     ' 4 5 1']
 
         elif self.geometry == OCTAHEDRON:
-            geom_connectivity = [
+            geom_connectivity=[
                     ' 1 6 1',
                     ' 1 7 1',
                     ' 4 2 1',
-                    ' 4 3 1', 
+                    ' 4 3 1',
                     ' 5 2 1',
                     ' 5 3 1',
                     ' 2 6 1',
@@ -467,7 +476,7 @@ class Model(object):
                     ' 5 7 1']
 
         elif self.geometry == SQUARE_PLANAR:
-            geom_connectivity = [
+            geom_connectivity=[
                    ' 1 3 1',
                    ' 1 2 1',
                    ' 1 4 1',
@@ -479,7 +488,7 @@ class Model(object):
 
         elif self.geometry == SQUARE_PYRAMID:
         # unimplemented
-            geom_connectivity = [
+            geom_connectivity=[
                     ' 1 2 1',
                     ' 1 3 1',
                     ' 1 4 1',
@@ -522,12 +531,12 @@ class Model(object):
         """
 
         # initialize file paths
-        base_directory = os.path.dirname(os.path.abspath(__file__))
-        frcmod_filename = "frcmod/{}.frcmod".format(self.geometry.replace(" ", ""))
-        template = os.path.join(base_directory, frcmod_filename)
-        frcmod_output = os.path.join(temp_path, "zinc{}.frcmod".format(i))
+        base_directory=os.path.dirname(os.path.abspath(__file__))
+        frcmod_filename="frcmod/{}.frcmod".format(self.geometry.replace(" ", ""))
+        template=os.path.join(base_directory, frcmod_filename)
+        frcmod_output=os.path.join(temp_path, "zinc{}.frcmod".format(i))
         # variable dictionary
-        frcmod_parameters = {"$metal_name": metal_name,
+        frcmod_parameters={"$metal_name": metal_name,
                                "$metal_mass": metal_mass - self.num_of_dummies * dz_mass,
                                "$dz_mass": dz_mass,
                                "$dz_metal_bond": dz_met_bondlenght,
@@ -535,11 +544,11 @@ class Model(object):
                             }
         # Read frcmod template
         with open(template, 'r') as file:
-            filedata = file.read()
+            filedata=file.read()
 
         # Replace the target string
         for target, replacement in frcmod_parameters.iteritems():
-            filedata = filedata.replace(target, str(replacement))
+            filedata=filedata.replace(target, str(replacement))
 
         # Write the file out again
         with open(frcmod_output, 'w') as file:
@@ -547,7 +556,7 @@ class Model(object):
 
         self.frcmod.append(frcmod_output)
 
-    def create_system(self, inputpath,  met, output):
+    def create_system(self, inputpath, met, output):
 
         """
         1- Produce tleap topology
@@ -577,12 +586,12 @@ class Model(object):
         topology: prmtop
         coordinates: inpcrd
         """
- 
-        topology_format, topology_path = self.define_tleap_topology(inputpath)
-        
+
+        topology_format, topology_path=self.define_tleap_topology(inputpath)
+
         self.write_tleap_instructions(output, met, topology_format, topology_path)
 
-        #self.remove_temporary_directory()
+        # self.remove_temporary_directory()
 
     def define_tleap_topology(self, inputpath):
 
@@ -611,11 +620,11 @@ class Model(object):
 
         # Saving model
         if inputpath.endswith(".pdb"):
-            topology_format = 'pdb'
+            topology_format='pdb'
         elif inputpath.endswith(".mol2"):
-            topology_format = 'mol2'
-        input_name = self.gui.var_outputname.get() + '.{}'.format(topology_format)
-        tleap_topology_path = os.path.join(self.tempdir, input_name)
+            topology_format='mol2'
+        input_name=self.gui.var_outputname.get() + '.{}'.format(topology_format)
+        tleap_topology_path=os.path.join(self.tempdir, input_name)
         rc('write format {0} 0 {1}'.format(topology_format, tleap_topology_path))
         return topology_format, tleap_topology_path
 
@@ -648,16 +657,16 @@ class Model(object):
         topology: prmtop
         coordinates: inpcrd
         """
-        
-        #Initialize filepaths
-        output_name = self.gui.var_outputname.get()
-        log_file = os.path.join(output, output_name + ".log")
-        tleap_input = os.path.join(self.tempdir, "leaprc.final")
-        source = os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
+
+        # Initialize filepaths
+        output_name=self.gui.var_outputname.get()
+        log_file=os.path.join(output, output_name + ".log")
+        tleap_input=os.path.join(self.tempdir, "leaprc.final")
+        source=os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
 
         # Tleap content
         # Forcefield and atomtypes
-        tleapfile_content = [] 
+        tleapfile_content=[]
         tleapfile_content.extend([
             "logFile leap.log",
             "source " + source,
@@ -686,7 +695,7 @@ class Model(object):
                 tleapfile_content.append("loadOff {}".format(lib))
 
         # externals lib and frcomd file
-        files_to_load = self.gui.ui_files_to_load.get(0, 'end')
+        files_to_load=self.gui.ui_files_to_load.get(0, 'end')
         if files_to_load:
             for file in list(files_to_load):
                 if file.endswith('.lib'):
@@ -711,7 +720,7 @@ class Model(object):
 
         # create cord and top
         for filetype in ["prmtop", "inpcrd", "mol2", "pdb"]:
-            file_path = os.path.join(output, "{0}.{1}".format(output_name, filetype))
+            file_path=os.path.join(output, "{0}.{1}".format(output_name, filetype))
             setattr(self, filetype, file_path)
         tleapfile_content.extend([
             "saveamberparm sys {0} {1}".format(self.prmtop, self.inpcrd),
@@ -723,11 +732,11 @@ class Model(object):
             f.write('\n'.join(tleapfile_content))
 
         # Run&Output errors
-        command = [self.tleap_path, "-s", "-f", tleap_input]
+        command=[self.tleap_path, "-s", "-f", tleap_input]
         with open(log_file, 'a') as log:
             subprocess.call(command, stdout=log, stderr=log)
 
     def remove_temporary_directory(self):
         if os.path.exists(self.tempdir):
             print('Cleaning Memory')
-            #shutil.rmtree(self.tempdir,ignore_errors=True)
+            # shutil.rmtree(self.tempdir,ignore_errors=True)
