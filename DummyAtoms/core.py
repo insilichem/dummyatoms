@@ -18,6 +18,7 @@ from chimera.molEdit import addAtom
 from chimera import runCommand as rc
 # my own
 from atoms import Metal, TETRAHEDRAL, OCTAHEDRON, SQUARE_PLANAR, SQUARE_PYRAMID
+#from amberhome import set_amberhome, search_for_amberhome
 
 """
 This module contains the business logic of MetaDummy.
@@ -126,25 +127,25 @@ class Model(object):
         self.lib = []
         self.frcmod = []
         self.tempfiles = []
-
-        try:
+        """
+        try:  #env variable laready set up
             self.amber_path = os.environ["AMBERHOME"]
-        except KeyError:
-            root = os.path.expanduser("~/")
-            with open(os.path.join(root, ".bashrc"), "a+") as f:  # 'a' stands for "append"
-                if not any(line.rstrip('\r\n').startswith("export AMBERHOME") for line in f):
-                    self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
-                    f.write('\nexport AMBERHOME="' + self.amber_path + '"\n')
-                    command =["source", "~/.bashrc"]
-                    subprocess.call(command, shell=True)
+        except KeyError:  #Include env variable inside .bashrc
+        """
+        self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
+        #self.search_for_amberhome()
+        #root = os.path.expanduser("~/")
+        #with open(os.path.join(root, ".bashrc"), "a+") as f:
+            #if not any(line.rstrip('\r\n').startswith("export AMBERHOME") for line in f):
+                #self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
+                #f.write('\nexport AMBERHOME="' + self.amber_path + '"\n')
+                #subprocess.call(["source", "~/.bashrc"], shell=True)
 
-                
 
-    
     @staticmethod
     def search_for_amberhome():
         """
-        Search for amberX folder and return its path
+        # Search for amberX folder and return its path
         """
         for root, dirs, files in os.walk(os.path.expanduser("~/")):
             possible_amberhome = [os.path.abspath(os.path.join(root, name)) for name in files if(name == 'amber.sh')]
@@ -152,6 +153,7 @@ class Model(object):
                 if(os.path.basename(path).startswith('amber')):
                     return(os.path.dirname(path))
         raise UserError('Install Amber1X before starting\nor be sure the amber.sh exisits on the amberX root folder')
+ 
 
     def save_variables(self, metal):
         """
@@ -228,10 +230,10 @@ class Model(object):
         Dummy atoms object around already
         oriented to its ligands by:
 
-        1- Create Metal class
-        2- Apply method to find Dummy Atoms oriented coord
-        3- Build Dummy atoms class around the metela center
-        4- Return this system
+        1 - Create Metal class
+        2 - Apply method to find Dummy Atoms oriented coord
+        3 - Build Dummy atoms class around the metela center
+        4 - Return this system
 
         Parameters:
         -----------
@@ -260,7 +262,7 @@ class Model(object):
         -----------
 
         metal_class: str
-                Build-in Metal class pointer
+                Build - in Metal class pointer
         """
         metal=metal_class.metal
         residue=metal.residue
@@ -284,14 +286,14 @@ class Model(object):
 
 
         Parameters
-        ----------
+        - ---------
         res: str
             Metal residue Name
         met: str
             Metal Symbol
         Metal: str
             Metal object
-        dum: list (matrix)
+        dum: list(matrix)
             Dummy Oriented Positions
         temp_path: str
             temp directory path
@@ -330,7 +332,7 @@ class Model(object):
         our metal center and 4 dummy atoms with connectivity missing.
 
         Parameters
-        ----------
+        - ---------
         temp_path: str
             Temporary file location
         res: str
@@ -400,12 +402,12 @@ class Model(object):
         within the .lib file created before.
 
         Parameters
-        ----------
+        - ---------
         temp_path: str
             Temp Folder Path
-        metal:Chimera obj
+        metal: Chimera obj
             Metal
-        name:str
+        name: str
             Metal name
         i: int
             Metal Number
@@ -444,7 +446,7 @@ class Model(object):
         where:
             first atom: first atom of bond
             second atom: second atom of bond
-            bond type: single (1), double (2), triple (3), aromatic (ar)
+            bond type: single(1), double(2), triple(3), aromatic(ar)
 
 
         Parameters:
@@ -521,10 +523,10 @@ class Model(object):
         """
         Creates a frcmod containig all the parameters about
         the connectivity of our metal center for each Geom.
-        (Bonds and angles for met-met and met-Dummy)
+        (Bonds and angles for met - met and met - Dummy)
 
         Parameters
-        ----------
+        - ---------
         temp_path: str
             Temp Folder Path
         metal_mass: int
@@ -532,7 +534,7 @@ class Model(object):
         dz_mass: int
             Dummies mass
         dz_met_bondlenght: int
-            Metal-Dummy lenght bond
+            Metal - Dummy lenght bond
         metal_vwr:
             VW metal radius
         met: str
@@ -570,13 +572,13 @@ class Model(object):
     def create_system(self, inputpath, met, output):
 
         """
-        1- Produce tleap topology
-        2- write tleap instructions
-        3- Create topology and coordinates for simulation
-        4- Clear memory
+        1 - Produce tleap topology
+        2 - write tleap instructions
+        3 - Create topology and coordinates for simulation
+        4 - Clear memory
 
         Parameters
-        ----------
+        - ---------
         inputpath: str
             Input path File
         temp_path: str
@@ -616,7 +618,7 @@ class Model(object):
 
         Input)
 
-        inputpath:  str
+        inputpath: str
             Path to chimera input file
 
         Output)
@@ -643,16 +645,16 @@ class Model(object):
 
         """
         System Creation through leaprc file:
-            1-Load organic forcefield
-            2-Load  Libraries
-            3-Load  Metal Frcmods
-            4-Build Water Box+
-            5-System Neutralization
-            6-Create Coordinates and Topology
-            7-Report Errors to .log file
+            1 - Load organic forcefield
+            2 - Load  Libraries
+            3 - Load  Metal Frcmods
+            4 - Build Water Box +
+            5 - System Neutralization
+            6 - Create Coordinates and Topology
+            7 - Report Errors to .log file
 
          Parameters
-        ----------
+        - ---------
 
         met: str
             Metal symbol
