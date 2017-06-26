@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 # Get used to importing this in your Py27 projects!
-from __future__ import print_function, division 
+from __future__ import print_function, division
 # Python stdlib
 from os import path
 import Tkinter as tk
@@ -48,6 +48,8 @@ STYLES = {
 
 # This is a Chimera thing. Do it, and deal with it.
 ui = None
+
+
 def showUI(callback=None, *args, **kwargs):
     if chimera.nogui:
         tk.Tk().withdraw()
@@ -60,17 +62,18 @@ def showUI(callback=None, *args, **kwargs):
     if callback:
         ui.addCallback(callback)
 
+
 def center(window):
-            """
-            Update "requested size" from geometry manager
-            """
-            window.update_idletasks()
-            x = (window.winfo_screenwidth() -
-                 window.winfo_reqwidth()) / 2
-            y = (window.winfo_screenheight() -
-                 window.winfo_reqheight()) / 2
-            window.geometry("+%d+%d" % (x, y))
-            window.deiconify()
+    """
+    Update "requested size" from geometry manager
+    """
+    window.update_idletasks()
+    x = (window.winfo_screenwidth() -
+         window.winfo_reqwidth()) / 2
+    y = (window.winfo_screenheight() -
+         window.winfo_reqheight()) / 2
+    window.geometry("+%d+%d" % (x, y))
+    window.deiconify()
 
 
 class DummyDialog(ModelessDialog):
@@ -91,13 +94,13 @@ class DummyDialog(ModelessDialog):
         # GUI init
         self.title = 'Plume Blank Dialog'
 
-        #Dummy Variables
+        # Dummy Variables
         self.var_files_to_load = tk.StringVar()
         self.var_metal_geometry = tk.StringVar()
         self.var_metal_charge = tk.IntVar()
         self.var_vw_radius = tk.DoubleVar()
         self.var_dz_mass = tk.DoubleVar()
-        self.var_outputpath= tk.StringVar()
+        self.var_outputpath = tk.StringVar()
         self.var_outputname = tk.StringVar()
         self.var_waterbox = tk.IntVar()
         self.var_dz_met_bondlenght = tk.DoubleVar()
@@ -111,8 +114,6 @@ class DummyDialog(ModelessDialog):
         self.var_metal_geometry.set('tetrahedral')
         self.previous_metal = None
         self.metals = []
-
-
 
         # Fire up
         ModelessDialog.__init__(self)
@@ -153,7 +154,7 @@ class DummyDialog(ModelessDialog):
             setattr(self, frame, tk.LabelFrame(self.canvas, text=description))
         # Select Metal
         self.ui_metals_menu = MetalOptionMenu(self.canvas, command=self._populateframe)
-        
+
         # Select Parameters
         self.ui_metalgeometry = ttk.Combobox(
             self.canvas, textvariable=self.var_metal_geometry)
@@ -161,16 +162,16 @@ class DummyDialog(ModelessDialog):
         self.ui_metalcharge = tk.Entry(
             self.canvas, textvariable=self.var_metal_charge)
         self.ui_vw_radius = tk.Entry(
-        	self.canvas, textvariable=self.var_vw_radius)
+            self.canvas, textvariable=self.var_vw_radius)
         self.ui_dzmass = tk.Entry(
-        	self.canvas,textvariable=self.var_dz_mass)
+            self.canvas, textvariable=self.var_dz_mass)
         self.ui_dz_met_bondlenght = tk.Entry(
-        	self.canvas, textvariable=self.var_dz_met_bondlenght)
+            self.canvas, textvariable=self.var_dz_met_bondlenght)
         grid_metalcenter_frame = [['Metal Geometry', self.ui_metalgeometry],
-                                 ['Metal Charge', self.ui_metalcharge],
-                                 ['Metal VandeWals Radius', self.ui_vw_radius],
-                                 ['Dummy Mass', self.ui_dzmass],
-                                 ['Metal-Dummy Bond Lenght', self.ui_dz_met_bondlenght]]
+                                  ['Metal Charge', self.ui_metalcharge],
+                                  ['Metal VandeWals Radius', self.ui_vw_radius],
+                                  ['Dummy Mass', self.ui_dzmass],
+                                  ['Metal-Dummy Bond Lenght', self.ui_dz_met_bondlenght]]
         self.auto_grid(self.ui_metalcenter_frame, grid_metalcenter_frame)
 
         # Select Output
@@ -187,21 +188,20 @@ class DummyDialog(ModelessDialog):
         self.ui_outputname = tk.Entry(
             self.canvas, textvariable=self.var_outputname)
         self.ui_waterbox = tk.Checkbutton(
-        	self.canvas, variable=self.var_waterbox)
+            self.canvas, variable=self.var_waterbox)
         grid_systemparam_frame = [['Files to be Loaded', self.ui_files_to_load,
-                                 (self.ui_addfiles, self.ui_removefiles)],
-                                 ['', ('Water Box', self.ui_waterbox), ''],
-                                 ['Output Path', self.ui_outputpath, self.ui_browseoutput],
-                                 ['Output Name', self.ui_outputname]]
+                                   (self.ui_addfiles, self.ui_removefiles)],
+                                  ['', ('Water Box', self.ui_waterbox), ''],
+                                  ['Output Path', self.ui_outputpath, self.ui_browseoutput],
+                                  ['Output Name', self.ui_outputname]]
         self.auto_grid(self.ui_systemparam_frame, grid_systemparam_frame)
 
         # Grid Frames
         self.ui_metals_menu.grid(row=0, column=0, columnspan=2)
         self.ui_metalcenter_frame.grid(row=1, column=0)
         self.ui_systemparam_frame.grid(row=2, column=0, columnspan=2)
-    
-    def _populateframe(self, metal):
 
+    def _populateframe(self, metal):
         """
         Save metal parameters and output the
         metal center choosen for the user.
@@ -209,12 +209,14 @@ class DummyDialog(ModelessDialog):
         each metal and updating them regurlary
         when needed
         """
-        
-        setattr(self, metal.name, {})
+        try:
+            setattr(self, metal.name, {})
+        except AttributeError:
+            return
         next_metal = getattr(self, metal.name)
         next_metal["title"] = metal.name
         if self.previous_metal:
-            #save previous
+            # save previous
             previous_metal = self.previous_metal
             if any(dic["title"] == previous_metal["title"] for dic in self.metals):
                 for dic in self.metals:
@@ -222,20 +224,20 @@ class DummyDialog(ModelessDialog):
                         index = self.metals.index(dic)
                         previous_metal = self.metals[index] = previous_metal
                         previous_metal["geom"] = self.var_metal_geometry.get()
-                        previous_metal["charge"] =  self.var_metal_charge.get()
+                        previous_metal["charge"] = self.var_metal_charge.get()
                         previous_metal["vw_radius"] = self.var_vw_radius.get()
                         previous_metal["dz_mass"] = self.var_dz_mass.get()
                         previous_metal["dz_met_bond"] = self.var_dz_met_bondlenght.get()
-                
+
             elif not any(dic["title"] == previous_metal["title"] for dic in self.metals):
                 previous_metal["geom"] = self.var_metal_geometry.get()
-                previous_metal["charge"] =  self.var_metal_charge.get()
+                previous_metal["charge"] = self.var_metal_charge.get()
                 previous_metal["vw_radius"] = self.var_vw_radius.get()
                 previous_metal["dz_mass"] = self.var_dz_mass.get()
                 previous_metal["dz_met_bond"] = self.var_dz_met_bondlenght.get()
                 self.metals.append(previous_metal)
 
-            #output next
+            # output next
             if any(dic["title"] == next_metal["title"] for dic in self.metals):
                 for dic in self.metals:
                     if dic["title"] == next_metal["title"]:
@@ -249,7 +251,7 @@ class DummyDialog(ModelessDialog):
                 self.var_metal_charge.set(2)
                 self.var_vw_radius.set(3.1)
                 self.var_dz_mass.set(3)
-                self.var_dz_met_bondlenght.set(0.9)  
+                self.var_dz_met_bondlenght.set(0.9)
         self.previous_metal = next_metal
 
     def _add_files(self):
