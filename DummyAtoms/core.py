@@ -130,16 +130,16 @@ class Model(object):
         self.tempfiles = []
         self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
 
-    def search_for_amberhome(self):
-        possible_amberhome = []
+    @staticmethod
+    def search_for_amberhome():
+        """
+        Search for amberX folder and return its path
+        """
         for root, dirs, files in os.walk(os.path.expanduser("~/")):
-            for name in files:
-                if(name == 'amber.sh'):
-                    possible_amberhome.append(os.path.abspath(os.path.join(root, name)))
-
-        for path in possible_amberhome:
-            if(os.path.basename(path).startswith('amber')):
-                return(os.path.dirname(path))
+            possible_amberhome = [os.path.abspath(os.path.join(root, name)) for name in files if(name == 'amber.sh')]
+            for path in possible_amberhome:
+                if(os.path.basename(path).startswith('amber')):
+                    return(os.path.dirname(path))
         raise UserError('Install Amber1X before starting\nor be sure the amber.sh exisits on the amberX root folder')
 
     def save_variables(self, metal):
