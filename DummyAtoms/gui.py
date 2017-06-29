@@ -144,7 +144,7 @@ class DummyDialog(ModelessDialog):
         """
         # Frames
         frames = [('ui_metalcenter_frame', 'Metal Center Parameters'),
-                  ('ui_systemparam_frame', 'System Characteristics'),
+                  ('ui_systemparam_frame', 'System Properties'),
                   ('ui_table_frame', 'Geometries Table')]
 
         # Create main window
