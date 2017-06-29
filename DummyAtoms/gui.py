@@ -169,9 +169,9 @@ class DummyDialog(ModelessDialog):
             self.canvas, textvariable=self.var_dz_met_bondlenght)
         grid_metalcenter_frame = [['Metal Geometry', self.ui_metalgeometry],
                                   ['Metal Charge', self.ui_metalcharge],
-                                  ['Metal VandeWals Radius', self.ui_vw_radius],
-                                  ['Dummy Mass', self.ui_dzmass],
-                                  ['Metal-Dummy Bond Lenght', self.ui_dz_met_bondlenght]]
+                                  ['Metal Van der Waals Radius', self.ui_vw_radius],
+                                  ['Mass per Dummy', self.ui_dzmass],
+                                  ['Metal-Dummy Bond Length', self.ui_dz_met_bondlenght]]
         self.auto_grid(self.ui_metalcenter_frame, grid_metalcenter_frame)
 
         # Select Output
@@ -189,7 +189,7 @@ class DummyDialog(ModelessDialog):
             self.canvas, textvariable=self.var_outputname)
         self.ui_waterbox = tk.Checkbutton(
             self.canvas, variable=self.var_waterbox)
-        grid_systemparam_frame = [['Files to be Loaded', self.ui_files_to_load,
+        grid_systemparam_frame = [['Files to be Load', self.ui_files_to_load,
                                    (self.ui_addfiles, self.ui_removefiles)],
                                   ['', ('Water Box', self.ui_waterbox), ''],
                                   ['Output Path', self.ui_outputpath, self.ui_browseoutput],
