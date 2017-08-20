@@ -33,11 +33,13 @@ Usage
 
 1. Open your metal system
 
-	All input configuration is done through Chimera which mainly accepts .pdb and .mol2 files. A couple of sample inputs are included in `examples` folder; parameters should be self-explaining.
+	All input configuration is done through Chimera which mainly accepts .pdb and .mol2 files. A couple of sample inputs are included in `examples` folder; parameters should be self-explaining. 
 
-	There's just on catch on these files: 
+    However, there a couple of rules:
 
 	*Metals residues: Each metal must be a single residue with a unique name.
+    *Atom types: All atoms must be described with AMBER gaff. Otherwise chimera will not regonise them properly making an implausible parametrization which will raise an error.
+
 
 2. Choose your desired parameters
 
@@ -50,9 +52,7 @@ Usage
 
 3. Upload externals files [.lib, .frcmod]
 
-	All systems ask for the right parametrization the software already takes care
-	of all metal centers parametrization but peptides, cofactors or any other
-	non-standard residue wants his own .lib and .frcmod as need it.
+	The software takes care	of all metal centers parametrization but peptides, cofactors or any other non-standard residue wants his own .lib (for charges) and .frcmod (for missing parameters) as need it.
 
 4. Output Option
 
