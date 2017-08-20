@@ -37,8 +37,8 @@ Usage
 
     However, there a couple of rules:
 
-	*Metals residues: Each metal must be a single residue with a unique name.
-    *Atom types: All atoms must be described with AMBER gaff. Otherwise chimera will not regonise them properly making an implausible parametrization which will raise an error.
+    * Metals residues: Each metal must be a single residue with a unique name.
+    * Atom types: All atoms must be described with AMBER gaff. Otherwise chimera will not regonise them properly making an implausible parametrization which will raise an error.
 
 
 2. Choose your desired parameters
