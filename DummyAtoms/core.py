@@ -9,6 +9,7 @@ import tempfile
 import shutil
 import string
 import random
+from distutils.spawn import find_executable
 # Chimera stuff
 import chimera
 from chimera import UserError, Element
@@ -127,33 +128,27 @@ class Model(object):
         self.lib = []
         self.frcmod = []
         self.tempfiles = []
-        """
-        try:  #env variable laready set up
-            self.amber_path = os.environ["AMBERHOME"]
-        except KeyError:  #Include env variable inside .bashrc
-        """
         self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
-        #self.search_for_amberhome()
-        #root = os.path.expanduser("~/")
-        #with open(os.path.join(root, ".bashrc"), "a+") as f:
-            #if not any(line.rstrip('\r\n').startswith("export AMBERHOME") for line in f):
-                #self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
-                #f.write('\nexport AMBERHOME="' + self.amber_path + '"\n')
-                #subprocess.call(["source", "~/.bashrc"], shell=True)
-
 
     @staticmethod
     def search_for_amberhome():
         """
         # Search for amberX folder and return its path
         """
-        for root, dirs, files in os.walk(os.path.expanduser("~/")):
-            possible_amberhome = [os.path.abspath(os.path.join(root, name)) for name in files if(name == 'amber.sh')]
-            for path in possible_amberhome:
-                if(os.path.basename(path).startswith('amber')):
-                    return(os.path.dirname(path))
-        raise UserError('Install Amber1X before starting\nor be sure the amber.sh exisits on the amberX root folder')
- 
+        paths = [os.path.expanduser("~"), "/amber14/bin", "/Baixades/amber14/bin",
+                "/Downloads/amber14/bin", "/.local"]
+        path = (os.pathsep + os.path.expanduser("~")).join(paths)
+        tleap_path = find_executable('teLeap', path=path)
+
+        if tleap_path is not None:
+            amberfolder_path = os.path.dirname(os.path.dirname(tleap_path))
+            if(os.path.basename(amberfolder_path).startswith('amber')):
+                return(amberfolder_path)
+
+        raise UserError('''CaDAS couldn't find your Amber folder set AMBERHOME env before run''')
+
+
+     
 
     def save_variables(self, metal):
         """
