@@ -133,19 +133,22 @@ class Model(object):
     @staticmethod
     def search_for_amberhome():
         """
-        # Search for amberX folder and return its path
+        # Search for an executable inside amberX folder and returns the folder's path
         """
-        paths = [os.path.expanduser("~"), "/amber14/bin", "/Baixades/amber14/bin",
-                "/Downloads/amber14/bin", "/.local"]
-        path = (os.pathsep + os.path.expanduser("~")).join(paths)
-        tleap_path = find_executable('teLeap', path=path)
+        try:
+            return(os.environ['AMBERHOME'])
+        except KeyError:
+            paths = [os.path.expanduser("~"), "/amber14/bin", "/Baixades/amber14/bin",
+                    "/Downloads/amber14/bin", "/.local"]
+            path = (os.pathsep + os.path.expanduser("~")).join(paths)
+            tleap_path = find_executable('teLeap', path=path)
 
-        if tleap_path is not None:
-            amberfolder_path = os.path.dirname(os.path.dirname(tleap_path))
-            if(os.path.basename(amberfolder_path).startswith('amber')):
-                return(amberfolder_path)
+            if tleap_path is not None:
+                amberfolder_path = os.path.dirname(os.path.dirname(tleap_path))
+                if(os.path.basename(amberfolder_path).startswith('amber')):
+                    return(amberfolder_path)
 
-        raise UserError('''CaDAS couldn't find your Amber folder set AMBERHOME env before run''')
+            raise UserError('''CaDAS couldn't find your Amber folder set AMBERHOME env before run''')
 
 
      
