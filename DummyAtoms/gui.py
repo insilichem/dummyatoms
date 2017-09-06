@@ -92,7 +92,7 @@ class DummyDialog(ModelessDialog):
 
     def __init__(self, *args, **kwarg):
         # GUI init
-        self.title = 'Plume Blank Dialog'
+        self.title = 'Plume Dummy'
 
         # Dummy Variables
         self.var_files_to_load = tk.StringVar()

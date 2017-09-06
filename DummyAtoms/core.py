@@ -133,25 +133,14 @@ class Model(object):
     @staticmethod
     def search_for_amberhome():
         """
-        # Search for an executable inside amberX folder and returns the folder's path
+        Try to locate an Amber system installation. 
+        Otherwise, return Chimera's bundled one.
         """
         try:
-            return(os.environ['AMBERHOME'])
+            return os.environ['AMBERHOME']
         except KeyError:
-            paths = [os.path.expanduser("~"), "/amber14/bin", "/Baixades/amber14/bin",
-                    "/Downloads/amber14/bin", "/.local"]
-            path = (os.pathsep + os.path.expanduser("~")).join(paths)
-            tleap_path = find_executable('teLeap', path=path)
-
-            if tleap_path is not None:
-                amberfolder_path = os.path.dirname(os.path.dirname(tleap_path))
-                if(os.path.basename(amberfolder_path).startswith('amber')):
-                    return(amberfolder_path)
-
-            raise UserError('''CaDAS couldn't find your Amber folder set AMBERHOME env before run''')
-
-
-     
+            chimera_root = os.path.sep + os.path.join(*chimera.__path__[0].split(os.path.sep)[:-2])
+            return os.path.join(chimera_root, 'bin', 'amber14')
 
     def save_variables(self, metal):
         """
@@ -230,7 +219,7 @@ class Model(object):
 
         1 - Create Metal class
         2 - Apply method to find Dummy Atoms oriented coord
-        3 - Build Dummy atoms class around the metela center
+        3 - Build Dummy atoms class around the metal center
         4 - Return this system
 
         Parameters:
@@ -247,7 +236,8 @@ class Model(object):
             dz_mass=self.dz_mass, metal_vwr=self.metal_vwr)
 
         metal_class.dummies_xyz=metal_class.search_for_orientation(metal)
-        metal_class.build_dummies(metal_class.dummies_xyz, metal_class.geometry, metal_class.charge)
+        metal_class.build_dummies(metal_class.dummies_xyz, metal_class.geometry,
+                                  metal_class.charge)
 
         return metal_class
 
@@ -268,7 +258,10 @@ class Model(object):
         # Adding Dummies
         for i in range(0, len(metal_class.dummies_xyz)):
             dummy=getattr(metal_class, "D{}".format(i + 1))
-            addAtom("D{}".format(i + 1), Element(dummy.Type), residue, chimera.Coord(dummy.xyz))
+            atom = addAtom("D{}".format(i + 1), Element(dummy.Type), residue, 
+                           chimera.Coord(dummy.xyz))
+            atom.drawMode = 3
+            atom.radius = 0.2
 
     def specify_geometry(self, metal, temp_path):
         """
@@ -284,7 +277,7 @@ class Model(object):
 
 
         Parameters
-        - ---------
+        -----------
         res: str
             Metal residue Name
         met: str
@@ -343,12 +336,12 @@ class Model(object):
             Desires output name
         """
         # file_paths
-        tleap_input=os.path.join(temp_path, "leaprc.metal")
-        forcefield=os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
-        pdbfile=os.path.join(temp_path, "dummymetal.pdb")
-        output_lib=os.path.join(temp_path, "met%d.lib" % i)
-        self.tleap_path=os.path.join(self.amber_path, "bin/tleap")
-        log_file=os.path.join(output, output_name + ".log")
+        tleap_input = os.path.join(temp_path, "leaprc.metal")
+        forcefield = os.path.join(self.amber_path, 'dat', 'leap', 'cmd', 'oldff', 'leaprc.ff99SB')
+        pdbfile = os.path.join(temp_path, "dummymetal.pdb")
+        output_lib = os.path.join(temp_path, "met%d.lib" % i)
+        self.tleap_path = os.path.join(self.amber_path, 'bin', 'tleap')
+        log_file = os.path.join(output, output_name + ".log")
         # tleap_input
         with open(tleap_input, 'w') as f:
             f.write("logFile leap.log\n"
@@ -357,10 +350,12 @@ class Model(object):
                 "saveoff {0} {1}\n".format(res, output_lib) +
                 "quit")
         # tleap launch
-        # os.environ["AMBERHOME"] = self.amber_path
         command=[self.tleap_path, "-s", "-f", tleap_input]
         with open(log_file, 'w') as log:
-            subprocess.call(command, stdout=log, stderr=log)
+            try:
+                subprocess.call(command, stdout=log, stderr=log)
+            except Exception as e:
+                raise chimera.UserError('Command {} could not be finished due to exception {}'.format(command, e))
         # save library file
         self.lib.append(output_lib)
 
@@ -548,10 +543,10 @@ class Model(object):
         frcmod_output=os.path.join(temp_path, "zinc{}.frcmod".format(i))
         # variable dictionary
         frcmod_parameters={"$metal_name": metal_name,
-                               "$metal_mass": metal_mass - self.num_of_dummies * dz_mass,
-                               "$dz_mass": dz_mass,
-                               "$dz_metal_bond": dz_met_bondlenght,
-                               "$metal_vwr": metal_vwr
+                           "$metal_mass": metal_mass - self.num_of_dummies * dz_mass,
+                           "$dz_mass": dz_mass,
+                           "$dz_metal_bond": dz_met_bondlenght,
+                           "$metal_vwr": metal_vwr
                             }
         # Read frcmod template
         with open(template, 'r') as file:
@@ -651,8 +646,8 @@ class Model(object):
             6 - Create Coordinates and Topology
             7 - Report Errors to .log file
 
-         Parameters
-        - ---------
+        Parameters
+        -----------
 
         met: str
             Metal symbol
@@ -673,7 +668,7 @@ class Model(object):
         output_name=self.gui.var_outputname.get()
         log_file=os.path.join(output, output_name + ".log")
         tleap_input=os.path.join(self.tempdir, "leaprc.final")
-        source=os.path.join(self.amber_path, "dat/leap/cmd/oldff/leaprc.ff99SB")
+        source=os.path.join(self.amber_path, 'dat', 'leap', 'cmd', 'oldff', 'leaprc.ff99SB')
 
         # Tleap content
         # Forcefield and atomtypes

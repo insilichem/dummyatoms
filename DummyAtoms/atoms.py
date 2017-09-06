@@ -151,7 +151,7 @@ class Metal(Dummy):
         try:
             rmsd, self.center, self.vecs = geomDistEval(geom, metal, ligands)
         except (ValueError, IndexError):
-            raise UserError("The desired geometry does not\nmatch with the system topology")
+            raise UserError("Could not match selected geometry to current metal environment.")
         # From the optimium vectors find all best dummies coordinates
         dummies_xyz = []
         for vec in self.vecs:
@@ -163,7 +163,7 @@ class Metal(Dummy):
     @staticmethod
     def search_for_ligands(metal):
         """
-        Search for lingands near by the metal center
+        Search for ligands near by the metal center
         excluding candidates through the next steps:
             1-How many electrons on the outter shell
             2-Metal-Ligand distance
