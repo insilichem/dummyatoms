@@ -205,15 +205,7 @@ class Model(object):
         -------
         Temporary Folder Path
         """
-        RAM_PATH="/dev/shm"
-        if os.path.isdir(RAM_PATH):
-            random_directory=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-            ram_dir=os.path.abspath(os.path.join(RAM_PATH, random_directory))
-            if not os.path.isdir(ram_dir):
-                os.makedirs(ram_dir)
-            self.tempdir=ram_dir
-        else:
-            self.tempdir=tempfile.mkdtemp(prefix="Dummy")
+        self.tempdir = tempfile.mkdtemp(prefix="Dummy")
         return self.tempdir
 
     def create_metal_center(self, metal, Type):
