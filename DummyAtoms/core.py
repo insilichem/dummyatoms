@@ -50,6 +50,7 @@ class Controller(object):
     def run(self):
         self.gui.buttonWidgets['Run'].configure(state='disabled')
         tempdir = self.model.temp_directory()
+        print('Created temp directory:', tempdir)
 
         # Save last frame variables
         metal_menu = self.gui.ui_metals_menu
@@ -97,9 +98,13 @@ class Controller(object):
         output, log = self.model.create_system(molecule=self.molecule, 
                                  met=metal_class.symbol,
                                  output=self.gui.var_outputpath.get())
-        # self.model.remove_temporary_directory()
 
+        print('Checking...')
+        if self.model._check_results(output.values(), log):
+            print('Cleaning...')
+            self.model.remove_temporary_directory()
         self.gui.buttonWidgets['Run'].configure(state='active')
+
 
 class Model(object):
 
@@ -124,6 +129,7 @@ class Model(object):
         self.frcmod = []
         self.tempfiles = []
         self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
+        self._here = os.path.dirname(os.path.abspath(__file__))
 
     @staticmethod
     def search_for_amberhome():
@@ -318,7 +324,7 @@ class Model(object):
         our metal center and 4 dummy atoms with connectivity missing.
 
         Parameters
-        - ---------
+        ----------
         temp_path: str
             Temporary file location
         res: str
@@ -360,16 +366,16 @@ class Model(object):
         to include charge and metal connectivity
         """
         # Initialize variables
-        residue=metal.residue
-        lib_file=os.path.join(self.tempdir, "met%d.lib" % i)
+        residue = metal.residue
+        lib_file = os.path.join(self.tempdir, "met%d.lib" % i)
 
         # Retrieve charge&connectivity
-        charge=self.retrieve_charge(metal, metal_name)
-        connectivity=self.retrieve_connectivity(residue)
+        charge = self.retrieve_charge(metal, metal_name)
+        connectivity = self.retrieve_connectivity(residue)
 
         # connectivity insert index variable
-        lastindex_charges=len(charge) + 3
-        startindex_connectivity=lastindex_charges + 11  # not to overwrite coordinates in lib file
+        lastindex_charges = len(charge) + 3
+        startindex_connectivity = lastindex_charges + 11  # not to overwrite coordinates in lib file
 
         # Reading and reordering lines
         with open(lib_file, "r") as file:
@@ -377,7 +383,7 @@ class Model(object):
             for i, new_line in enumerate(charge, start=3):
                 # starts at 3 to preserve the residue info
                 # we don't want to overwrite from .lib
-                lineas[i]=new_line
+                lineas[i] = new_line
             lineas[startindex_connectivity:startindex_connectivity]=connectivity
 
         # Re-writing lib
@@ -390,7 +396,7 @@ class Model(object):
         within the .lib file created before.
 
         Parameters
-        - ---------
+        -----------
         temp_path: str
             Temp Folder Path
         metal: Chimera obj
@@ -400,26 +406,26 @@ class Model(object):
         i: int
             Metal Number
         """
-        metal_type=metal.symbol
-        atomicnumber=metal.atomicnumber
-        residue=metal.residue
-        lib_charge_lines=[]
+        metal_type = metal.symbol
+        atomicnumber = metal.atomicnumber
+        residue = metal.residue
+        lib_charge_lines = []
 
         # template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
         template=' "{0}" "{1}" 0 1 196609 {2} {3} {4}'
         lib_charge_lines.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
         for i in range(1, self.num_of_dummies + 1):
-            dummy=getattr(metal, "D{}".format(i))
+            dummy = getattr(metal, "D{}".format(i))
             lib_charge_lines.append(template.format("D{}".format(i), dummy.Type, i + 1, -1, dummy.charge))
 
         # t-leap line to understand residues type
         lib_charge_lines.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg".format(residue))
 
         # template =  "{name} {type} 0 1 0.0\n"
-        template=' "{0}" "{1}" 0 -1 0.0'
+        template = ' "{0}" "{1}" 0 -1 0.0'
         lib_charge_lines.append(template.format(metal_name, metal_type))
         for i in range(1, self.num_of_dummies + 1):
-            dummy=getattr(metal, "D{}".format(i))
+            dummy = getattr(metal, "D{}".format(i))
             lib_charge_lines.append(template.format("D{}".format(i), dummy.Type))
 
         return lib_charge_lines
@@ -509,12 +515,12 @@ class Model(object):
 
     def create_frcmod(self, temp_path, metal_mass, dz_mass, dz_met_bondlenght, metal_vwr, metal_name, i):
         """
-        Creates a frcmod containig all the parameters about
+        Creates a frcmod containing all the parameters about
         the connectivity of our metal center for each Geom.
         (Bonds and angles for met - met and met - Dummy)
 
         Parameters
-        - ---------
+        -----------
         temp_path: str
             Temp Folder Path
         metal_mass: int
@@ -532,9 +538,7 @@ class Model(object):
         """
 
         # initialize file paths
-        base_directory=os.path.dirname(os.path.abspath(__file__))
-        frcmod_filename="frcmod/{}.frcmod".format(self.geometry.replace(" ", ""))
-        template=os.path.join(base_directory, frcmod_filename)
+        template=os.path.join(self._here, frcmod_filename)
         frcmod_output=os.path.join(temp_path, "zinc{}.frcmod".format(i))
         # variable dictionary
         frcmod_parameters={"$metal_name": metal_name,
@@ -593,27 +597,20 @@ class Model(object):
 
     def define_tleap_topology(self, mol):
 
-        # self.remove_temporary_directory()
-
-    def define_tleap_topology(self, inputpath):
-
         """
         Produce tleap topology
         from chimera input considering
         file format compatibility.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
+        mol: chimera.Molecule
+            Chimera input mol
 
-        Input)
-
-        inputpath: str
-            Path to chimera input file
-
-        Output)
-
-        topology_format: str
-            Tleap topology input file format
+        Returns
+        -------
+        ext: str
+            Tleap topology input file extension
 
         tleap_topology_path: str
             Topology of chimera system used
@@ -625,11 +622,14 @@ class Model(object):
             ext = os.path.splitext(mol.openedAs[0])[1][1:]
         else:
             ext = 'pdb'
+        
         if self.gui.var_rebuild_hydrogens.get():
             rc('del element.H')
+        input_name = '{}.{}'.format(self.gui.var_outputname.get(), ext)
         tleap_topology_path=os.path.join(self.tempdir, input_name)
-        rc('write format {0} 0 {1}'.format(topology_format, tleap_topology_path))
-        return topology_format, tleap_topology_path
+
+        rc('write format {} {}.{} {}'.format(ext, mol.id, mol.subid, tleap_topology_path))
+        return ext, tleap_topology_path
 
     def write_tleap_instructions(self, output, met, topology_format, topology_path):
 
@@ -662,55 +662,38 @@ class Model(object):
         """
 
         # Initialize filepaths
-        output_name=self.gui.var_outputname.get()
-        log_file=os.path.join(output, output_name + ".log")
-        tleap_input=os.path.join(self.tempdir, "leaprc.final")
-        source=os.path.join(self.amber_path, 'dat', 'leap', 'cmd', 'oldff', 'leaprc.ff99SB')
+        output_name = self.gui.var_outputname.get()
+        log_file = os.path.join(output, output_name + ".log")
+        tleap_input = os.path.join(self.tempdir, "leaprc.final")
 
         # Tleap content
         # Forcefield and atomtypes
         tleapfile_content=[]
         tleapfile_content.extend([
-            "logFile leap.log",
-            "source " + source,
-            "parm10 = loadamberparams parm10.dat",
-            "frcmod12SB = loadamberparams frcmod.ff12SB",
-            "frcmdod= loadamberparams frcmod.ionsjc_tip3p",
-            "gaff  = loadamberparams gaff.dat",
-            "loadOff amino12.lib",
-            "loadOff aminoct12.lib",
-            "loadOff aminont12.lib",
-            "loadOff nucleic12.lib",
-            "loadOff atomic_ions.lib",
-            "loadOff solvents.lib",
-            "HOH = TP3",
-            "WAT = TP3",
-            'addAtomTypes {{ "DZ" "%s" "sp3" } { "%s" "%s" "sp3" }}' % (met, met, met),
-            'addAtomTypes {{ "DX" "%s" "sp3" } { "DY" "%s" "sp3" }}' % (met, met)
+            'addAtomTypes {{{{ "DZ" "{0}" "sp3" }} {{ "{0}" "{0}" "sp3" }}}}\n'.format(met),
+            'addAtomTypes {{{{ "DX" "{0}" "sp3" }} {{ "DY" "{0}" "sp3" }}}}\n'.format(met)
             ])
 
         # metal frcmod&lib file
-        if self.frcmod:
             for frcmod in self.frcmod:
-                tleapfile_content.append("loadamberparams {}".format(frcmod))
-        if self.lib:
+            tleapfile_content.append("loadamberparams {}\n".format(frcmod))
             for lib in self.lib:
-                tleapfile_content.append("loadOff {}".format(lib))
+            tleapfile_content.append("loadOff {}\n".format(lib))
 
         # externals lib and frcomd file
-        files_to_load=self.gui.ui_files_to_load.get(0, 'end')
+        files_to_load = self.gui.ui_files_to_load.get(0, 'end')
         if files_to_load:
             for file in list(files_to_load):
                 if file.endswith('.lib'):
-                    tleapfile_content.append("loadOff {}".format(file))
+                    tleapfile_content.append("loadOff {}\n".format(file))
                 elif file.endswith('.frcmod'):
-                    tleapfile_content.append("loadamberparams {}".format(file))
+                    tleapfile_content.append("loadamberparams {}\n".format(file))
 
         # load system
         if topology_format == 'pdb':
-            tleapfile_content.append("sys=loadpdb {}".format(topology_path))
+            tleapfile_content.append("sys=loadpdb {}\n".format(topology_path))
         elif topology_format == 'mol2':
-            tleapfile_content.append("sys=loadmol2 {}".format(topology_path))
+            tleapfile_content.append("sys=loadmol2 {}\n".format(topology_path))
 
         # neutralize system
         tleapfile_content.extend([
@@ -722,24 +705,25 @@ class Model(object):
             tleapfile_content.append("solvatebox sys TIP3PBOX 10")
 
         # create cord and top
-        for filetype in ["prmtop", "inpcrd", "mol2", "pdb"]:
-            file_path=os.path.join(output, "{0}.{1}".format(output_name, filetype))
-            setattr(self, filetype, file_path)
+        files = {ext: os.path.join(output, '{}.{}'.format(output_name, ext))
+                for ext in "prmtop inpcrd mol2 pdb".split()}
         tleapfile_content.extend([
-            "saveamberparm sys {0} {1}".format(self.prmtop, self.inpcrd),
-            "savemol2 sys {} 0".format(self.mol2),
-            "savepdb sys {}\n".format(self.pdb)])
+            "saveamberparm sys {} {}\n".format(files['prmtop'], files['inpcrd']),
+            "savemol2 sys {} 0\n".format(files['mol2']),
+            "savepdb sys {}\n\n".format(files['pdb']),
+            "quit"])
 
         # Writing tleap
         with open(tleap_input, "w") as f:
-            f.write('\n'.join(tleapfile_content))
+            f.write(''.join(tleapfile_content))
 
         # Run&Output errors
-        command=[self.tleap_path, "-s", "-f", tleap_input]
+        command = [self.tleap_path, "-s", "-f", tleap_input]
         with open(log_file, 'a') as log:
             subprocess.call(command, stdout=log, stderr=log)
 
+        return files, log_file
+    
     def remove_temporary_directory(self):
         if os.path.exists(self.tempdir):
-            print('Cleaning Memory')
-            shutil.rmtree(self.tempdir,ignore_errors=True)
+            shutil.rmtree(self.tempdir, ignore_errors=True)
