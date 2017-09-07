@@ -252,6 +252,10 @@ class Model(object):
         metal=metal_class.metal
         residue=metal.residue
 
+        # Remove existing pseudobonds
+        if hasattr(metal, 'pseudoBonds') and metal.pseudoBonds:
+            metal.pseudoBonds[0].pseudoBondGroup.deleteAll()
+
         # Adding Dummies
         for i in range(0, len(metal_class.dummies_xyz)):
             dummy=getattr(metal_class, "D{}".format(i + 1))
