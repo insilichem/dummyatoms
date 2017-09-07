@@ -140,8 +140,12 @@ class Model(object):
         try:
             return os.environ['AMBERHOME']
         except KeyError:
-            chimera_root = os.path.sep + os.path.join(*chimera.__path__[0].split(os.path.sep)[:-2])
-            return os.path.join(chimera_root, 'bin', 'amber14')
+            print('$AMBERHOME not set, trying to auto locate AMBER installation folder...')
+            tleap = find_executable('tleap')
+            if tleap:
+                return os.path.sep + os.path.join(*tleap.split(os.path.sep)[:-2])
+            else:
+                raise UserError('$AMBERHOME env var must be set to use Plume Dummy.')
 
     def save_variables(self, metal):
         """
