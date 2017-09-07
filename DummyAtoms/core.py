@@ -100,7 +100,7 @@ class Controller(object):
                                                output=self.gui.var_outputpath.get())
         
         print('Checking...')
-        if self.model._check_results(output.values(), log):
+        if self.model._check_results(output.values(), log) and not chimera.debug:
             print('Cleaning...')
             self.model.remove_temporary_directory()
         self.gui.buttonWidgets['Run'].configure(state='active')
@@ -366,16 +366,16 @@ class Model(object):
         to include charge and metal connectivity
         """
         # Initialize variables
-        residue=metal.residue
-        lib_file=os.path.join(self.tempdir, "met%d.lib" % i)
+        residue = metal.residue
+        lib_file = os.path.join(self.tempdir, "met%d.lib" % i)
 
         # Retrieve charge&connectivity
-        charge=self.retrieve_charge(metal, metal_name)
-        connectivity=self.retrieve_connectivity(residue)
+        charge = self.retrieve_charge(metal, metal_name)
+        connectivity = self.retrieve_connectivity(residue)
 
         # connectivity insert index variable
-        lastindex_charges=len(charge) + 3
-        startindex_connectivity=lastindex_charges + 11  # not to overwrite coordinates in lib file
+        lastindex_charges = len(charge) + 3
+        startindex_connectivity = lastindex_charges + 11  # not to overwrite coordinates in lib file
 
         # Reading and reordering lines
         with open(lib_file, "r") as file:
@@ -383,7 +383,7 @@ class Model(object):
             for i, new_line in enumerate(charge, start=3):
                 # starts at 3 to preserve the residue info
                 # we don't want to overwrite from .lib
-                lineas[i]=new_line
+                lineas[i] = new_line
             lineas[startindex_connectivity:startindex_connectivity]=connectivity
 
         # Re-writing lib
@@ -406,26 +406,26 @@ class Model(object):
         i: int
             Metal Number
         """
-        metal_type=metal.symbol
-        atomicnumber=metal.atomicnumber
-        residue=metal.residue
-        lib_charge_lines=[]
+        metal_type = metal.symbol
+        atomicnumber = metal.atomicnumber
+        residue = metal.residue
+        lib_charge_lines = []
 
         # template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
         template=' "{0}" "{1}" 0 1 196609 {2} {3} {4}'
         lib_charge_lines.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
         for i in range(1, self.num_of_dummies + 1):
-            dummy=getattr(metal, "D{}".format(i))
+            dummy = getattr(metal, "D{}".format(i))
             lib_charge_lines.append(template.format("D{}".format(i), dummy.Type, i + 1, -1, dummy.charge))
 
         # t-leap line to understand residues type
         lib_charge_lines.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg".format(residue))
 
         # template =  "{name} {type} 0 1 0.0\n"
-        template=' "{0}" "{1}" 0 -1 0.0'
+        template = ' "{0}" "{1}" 0 -1 0.0'
         lib_charge_lines.append(template.format(metal_name, metal_type))
         for i in range(1, self.num_of_dummies + 1):
-            dummy=getattr(metal, "D{}".format(i))
+            dummy = getattr(metal, "D{}".format(i))
             lib_charge_lines.append(template.format("D{}".format(i), dummy.Type))
 
         return lib_charge_lines
