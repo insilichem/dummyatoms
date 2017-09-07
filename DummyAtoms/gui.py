@@ -182,7 +182,7 @@ class DummyDialog(ModelessDialog):
 
         # Select Output 
         self.ui_files_to_load = Pmw.ScrolledListBox(
-            self.canvas, listbox_height=3)
+            self.canvas, listbox_height=3, listbox_selectmode='multiple')
         self.ui_addfiles = tk.Button(
             self.canvas, text='+', command=self._add_files)
         self.ui_removefiles = tk.Button(
@@ -278,8 +278,8 @@ class DummyDialog(ModelessDialog):
         """
         Remove the selected stage from the stage listbox
         """
-        selection = self.ui_files_to_load._listbox.getcurselection()
-        self.ui_files_to_load.delete(selection)
+        selection = self.ui_files_to_load._listbox.curselection()
+        self.ui_files_to_load.delete(*selection)
 
     def _add_outputdirectory(self):
         directorypath = filedialog.askdirectory(
