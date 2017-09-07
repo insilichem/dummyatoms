@@ -60,15 +60,10 @@ class Controller(object):
         for i, metal in enumerate(metals):
 
             # Get variables
-            self.inputpath = metal_menu.getvalue().molecule.openedAs[0]
+            self.molecule = metal_menu.getvalue().molecule
             self.metal_residue = str(metal.residue.type)
             self.metal_name = str(metal.name)
-            if self.inputpath.endswith(".pdb"):
-                self.metal_type = str(metal.element.name)
-            elif self.inputpath.endswith(".mol2"):
-                self.metal_type = str(metal.mol2type)
-            else:
-                raise UserError("No Valid Input File Type")
+            self.metal_type = str(getattr(metal, 'mol2type', metal.element.name))
 
             # Retrieve metal parameters from gui
             self.model.retrieve_variables(metal)
@@ -99,7 +94,7 @@ class Controller(object):
                                      dz_mass=metal_class.dz_mass)
 
         print('Saving system...')
-        self.model.create_system(inputpath=self.inputpath,
+        output, log = self.model.create_system(molecule=self.molecule, 
                                  met=metal_class.symbol,
                                  output=self.gui.var_outputpath.get())
         # self.model.remove_temporary_directory()
@@ -562,7 +557,7 @@ class Model(object):
 
         self.frcmod.append(frcmod_output)
 
-    def create_system(self, inputpath, met, output):
+    def create_system(self, molecule, met, output):
 
         """
         1 - Produce tleap topology
@@ -571,9 +566,9 @@ class Model(object):
         4 - Clear memory
 
         Parameters
-        - ---------
-        inputpath: str
-            Input path File
+        -----------
+        molecule: chimera.Molecule
+            Input molecule
         temp_path: str
             Temp Folder Path
         pdb: str
@@ -593,9 +588,10 @@ class Model(object):
         coordinates: inpcrd
         """
 
-        topology_format, topology_path=self.define_tleap_topology(inputpath)
+        topology_format, topology_path = self.define_tleap_topology(molecule)
+        return self.write_tleap_instructions(output, met, topology_format, topology_path)
 
-        self.write_tleap_instructions(output, met, topology_format, topology_path)
+    def define_tleap_topology(self, mol):
 
         # self.remove_temporary_directory()
 
@@ -625,6 +621,10 @@ class Model(object):
         """
 
         # Saving model
+        if hasattr(mol, 'openedAs'):
+            ext = os.path.splitext(mol.openedAs[0])[1][1:]
+        else:
+            ext = 'pdb'
         if self.gui.var_rebuild_hydrogens.get():
             rc('del element.H')
         tleap_topology_path=os.path.join(self.tempdir, input_name)
