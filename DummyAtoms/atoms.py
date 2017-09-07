@@ -29,6 +29,7 @@ class Dummy(object):
         self.Type = Type
         self.xyz = xyz
         self.charge = charge
+        self.dummies = None
 
     def build_dummies(self, dummies_xyz, geom, charge):
         """
@@ -43,8 +44,8 @@ class Dummy(object):
         dummies = [Dummy(dummy_type, dummy_xyz, dummy_charge)
                    for dummy_type, dummy_xyz, dummy_charge
                    in zip(dummies_types, dummies_ordered_xyz, dummies_charges)]
-
-        return self.retrieve(dummies)
+        self.dummies = dummies
+        self.retrieve(dummies)
 
     def order_retriever(self, dummies_xyz):
         """
@@ -95,12 +96,7 @@ class Dummy(object):
         for each dummy instance
         as self.D1, self.D2 ...
         """
-
         for i, dummy in enumerate(dummies, start=1):
-            # self.D1 = Dummy(D1, DZ)
-            print(dummy.Type)
-            print(dummy.xyz)
-            print(i)
             setattr(self, "D{}".format(i), dummy)
 
 

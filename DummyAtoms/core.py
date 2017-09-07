@@ -47,6 +47,15 @@ class Controller(object):
 
     def run(self):
         self.gui.buttonWidgets['Run'].configure(state='disabled')
+        try:
+            self._run()
+        except Exception as e:
+            raise e
+        finally:
+            self.gui.buttonWidgets['Run'].configure(state='active')
+
+    
+    def _run(self):
         tempdir = self.model.temp_directory()
         print('Created temp directory:', tempdir)
 
@@ -98,10 +107,10 @@ class Controller(object):
                                                output=self.gui.var_outputpath.get())
 
         print('Checking...')
-        if self.model._check_results(output.values(), log) and not chimera.debug:
+        success = self.model._check_results(output.values(), log)
+
             print('Cleaning...')
-            self.model.remove_temporary_directory()
-        self.gui.buttonWidgets['Run'].configure(state='active')
+        self.model.clean(remove_temp=success and not chimera.debug)
 
 
 class Model(object):
@@ -128,6 +137,8 @@ class Model(object):
         self.tempfiles = []
         self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
         self._here = os.path.dirname(os.path.abspath(__file__))
+        self._metal_cls = None
+
 
     @staticmethod
     def search_for_amberhome():
@@ -224,24 +235,25 @@ class Model(object):
             Metal center where to build the system.
 
         """
-        metal_class = Metal(
+        metal_cls = Metal(
             metal=metal, charge=self.charge, geometry=self.geometry,
             dz_met_bondlenght=self.dz_met_bondlenght,
             dz_mass=self.dz_mass, metal_vwr=self.metal_vwr)
 
-        metal_class.dummies_xyz = metal_class.search_for_orientation(metal)
-        metal_class.build_dummies(metal_class.dummies_xyz, metal_class.geometry,
-                                  metal_class.charge)
-
-        return metal_class
+        metal_cls.dummies_xyz = metal_cls.search_for_orientation(metal)
+        dummies = metal_cls.build_dummies(metal_cls.dummies_xyz, 
+                                          metal_cls.geometry,
+                                          metal_cls.charge)
+        self._metal_cls = metal_cls
+        return metal_cls
 
     def include_dummies(self, metal_class):
         """
         Include oriented Dummy Atoms
         inside the molecular system.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
 
         metal_class: str
                 Build - in Metal class pointer
@@ -254,12 +266,11 @@ class Model(object):
             metal.pseudoBonds[0].pseudoBondGroup.deleteAll()
 
         # Adding Dummies
-        for i in range(0, len(metal_class.dummies_xyz)):
-            dummy = getattr(metal_class, "D{}".format(i + 1))
-            atom = addAtom("D{}".format(i + 1), Element(dummy.Type), residue,
+        for i, dummy in enumerate(metal_class.dummies):
+            dummy.atom = addAtom("D{}".format(i + 1), Element(dummy.Type), residue,
                            chimera.Coord(dummy.xyz))
-            atom.drawMode = 3
-            atom.radius = 0.2
+            dummy.atom.drawMode = 3
+            dummy.atom.radius = 0.2
 
     def specify_geometry(self, metal, temp_path):
         """
@@ -721,7 +732,15 @@ class Model(object):
 
         return files, log_file
 
-    def remove_temporary_directory(self):
+    def clean(self, remove_temp=True):
+        for dummy in self._metal_cls.dummies:
+            dummy.atom.molecule.deleteAtom(dummy.atom)
+        self._metal_cls.dummies = []
+        self._metal_cls = None
+        if remove_temp:
+            self._remove_temporary_directory()
+
+    def _remove_temporary_directory(self):
         if os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir, ignore_errors=True)
 
