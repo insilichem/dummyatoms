@@ -4,10 +4,11 @@
 # Get used to importing this in your Py27 projects!
 from __future__ import print_function, division
 # Python stdlib
-from os import path
+import os
 import Tkinter as tk
 import tkFileDialog as filedialog
 import ttk
+import Pmw
 # Chimera stuff
 import chimera
 from chimera.baseDialog import ModelessDialog
@@ -27,26 +28,26 @@ STYLES = {
         'background': 'white',
         'borderwidth': 1,
         'highlightthickness': 0,
-        'width': 20,
-    },
-    tk.Listbox: {
-        'height': '5',
-        'width': '5',
-        'background': 'white',
-
+        'insertwidth': 1,
     },
     tk.Button: {
         'borderwidth': 1,
         'highlightthickness': 0,
-
     },
     tk.Checkbutton: {
-        #'highlightbackground': chimera.tkgui.app.cget('bg'),
-        #'activebackground': chimera.tkgui.app.cget('bg'),
-    }
+        'highlightbackground': chimera.tkgui.app.cget('bg'),
+        'activebackground': chimera.tkgui.app.cget('bg'),
+    },
+    Pmw.ScrolledListBox: {
+        'listbox_borderwidth': 1,
+        'listbox_background': 'white',
+        'listbox_relief': 'ridge',
+        'listbox_highlightthickness': 0,
+        'listbox_selectbackground': '#DDD',
+        'listbox_selectborderwidth': 0
+    },
 }
 
-# This is a Chimera thing. Do it, and deal with it.
 ui = None
 
 
@@ -109,8 +110,8 @@ class DummyDialog(ModelessDialog):
         self.var_rebuild_hydrogens = tk.IntVar()
         self.var_dz_met_bondlenght = tk.DoubleVar()
         self.ui_labels = {}
-        self.var_outputpath.set(path.expanduser('~'))  # HARDCODED PATHS ARE BAD
-        self.var_outputname.set('sys')
+        self.var_outputpath.set(os.path.expanduser('~'))
+        self.var_outputname.set('system')
         self.var_vw_radius.set(3.1)
         self.var_metal_charge.set(2)
         self.var_dz_mass.set(3)
@@ -120,7 +121,7 @@ class DummyDialog(ModelessDialog):
         self.metals = []
 
         # Fire up
-        ModelessDialog.__init__(self)
+        ModelessDialog.__init__(self, resizable=False)
         if not chimera.nogui:  # avoid useless errors during development
             chimera.extension.manager.registerInstance(self)
 
@@ -153,7 +154,7 @@ class DummyDialog(ModelessDialog):
 
         # Create main window
         self.canvas = tk.Frame(parent)
-        self.canvas.pack(expand=True, fill='both')
+        self.canvas.pack(expand=True, fill='x', padx=5, pady=5)
         for frame, description in frames:
             setattr(self, frame, tk.LabelFrame(self.canvas, text=description))
         # Select Metal
@@ -162,8 +163,8 @@ class DummyDialog(ModelessDialog):
         # Select Parameters
         self.ui_metalgeometry = ttk.Combobox(
             self.canvas, textvariable=self.var_metal_geometry)
-        self.ui_metalgeometry.config(
-            values=('tetrahedral', 'octahedron', 'square planar', 'square pyramid'))
+        self.ui_metalgeometry.config(values=('tetrahedral', 'octahedron', 
+                                             'square planar', 'square pyramid'))
         self.ui_metalcharge = tk.Entry(
             self.canvas, textvariable=self.var_metal_charge)
         self.ui_vw_radius = tk.Entry(
@@ -179,9 +180,9 @@ class DummyDialog(ModelessDialog):
                                   ['Metal-Dummy Bond Length', self.ui_dz_met_bondlenght]]
         self.auto_grid(self.ui_metalcenter_frame, grid_metalcenter_frame)
 
-        # Select Output
-        self.ui_files_to_load = tk.Listbox(
-            self.canvas, listvariable=self.var_files_to_load)
+        # Select Output 
+        self.ui_files_to_load = Pmw.ScrolledListBox(
+            self.canvas, listbox_height=3)
         self.ui_addfiles = tk.Button(
             self.canvas, text='+', command=self._add_files)
         self.ui_removefiles = tk.Button(
@@ -196,18 +197,18 @@ class DummyDialog(ModelessDialog):
             self.canvas, variable=self.var_waterbox)
         self.ui_rebuild_hydrogens = tk.Checkbutton(
             self.canvas, variable=self.var_rebuild_hydrogens)
-        grid_systemparam_frame = [['Files to be Load', self.ui_files_to_load,
+        grid_systemparam_frame = [['Extra parameters', self.ui_files_to_load,
                                    (self.ui_addfiles, self.ui_removefiles)],
                                   ['', ('Water Box', self.ui_waterbox),
                                    ('Rebuild H', self.ui_rebuild_hydrogens)],
                                   ['Output Path', self.ui_outputpath, self.ui_browseoutput],
                                   ['Output Name', self.ui_outputname]]
         self.auto_grid(self.ui_systemparam_frame, grid_systemparam_frame)
-
+        
         # Grid Frames
-        self.ui_metals_menu.grid(row=0, column=0, columnspan=2)
-        self.ui_metalcenter_frame.grid(row=1, column=0)
-        self.ui_systemparam_frame.grid(row=2, column=0, columnspan=2)
+        self.ui_metals_menu.grid(row=0, column=0, sticky='we')
+        self.ui_metalcenter_frame.grid(row=1, column=0, pady=5, sticky='we')
+        self.ui_systemparam_frame.grid(row=2, column=0, sticky='we')
 
     def _populateframe(self, metal):
         """
@@ -268,18 +269,17 @@ class DummyDialog(ModelessDialog):
         chimera.runCommand('focus sel za < 5')
 
     def _add_files(self):
-        filepath = filedialog.askopenfilename(initialdir='~/', filetypes=(
+        filepaths = filedialog.askopenfilenames(initialdir='~/', filetypes=(
             ('Lib File', '*.lib'), ('Frcmod File', '*.frcmod'), ('Xml File', '*.xml')))
-        if filepath:
+        for filepath in filepaths:
             self.ui_files_to_load.insert('end', filepath)
 
     def _remove_files(self):
         """
         Remove the selected stage from the stage listbox
         """
-        selection = self.ui_files_to_load.curselection()
-        if selection:
-            self.ui_files_to_load.delete(selection)
+        selection = self.ui_files_to_load._listbox.getcurselection()
+        self.ui_files_to_load.delete(selection)
 
     def _add_outputdirectory(self):
         directorypath = filedialog.askdirectory(
@@ -294,6 +294,7 @@ class DummyDialog(ModelessDialog):
         global ui
         ui = None
         ModelessDialog.Close(self)
+        chimera.extension.manager.deregisterInstance(self)
         self.destroy()
 
     def auto_grid(self, parent, grid, resize_columns=(1,), label_sep=':', **options):

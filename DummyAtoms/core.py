@@ -109,7 +109,7 @@ class Controller(object):
         print('Checking...')
         success = self.model._check_results(output.values(), log)
 
-            print('Cleaning...')
+        print('Cleaning...')
         self.model.clean(remove_temp=success and not chimera.debug)
 
 
@@ -268,7 +268,7 @@ class Model(object):
         # Adding Dummies
         for i, dummy in enumerate(metal_class.dummies):
             dummy.atom = addAtom("D{}".format(i + 1), Element(dummy.Type), residue,
-                           chimera.Coord(dummy.xyz))
+                                 chimera.Coord(dummy.xyz))
             dummy.atom.drawMode = 3
             dummy.atom.radius = 0.2
 
@@ -692,13 +692,11 @@ class Model(object):
             tleapfile_content.append("loadOff {}\n".format(lib))
 
         # externals lib and frcomd file
-        files_to_load = self.gui.ui_files_to_load.get(0, 'end')
-        if files_to_load:
-            for file in list(files_to_load):
-                if file.endswith('.lib'):
-                    tleapfile_content.append("loadOff {}\n".format(file))
-                elif file.endswith('.frcmod'):
-                    tleapfile_content.append("loadamberparams {}\n".format(file))
+        for file in self.gui.ui_files_to_load.get(0, 'end'):
+            if file.endswith('.lib'):
+                tleapfile_content.append("loadOff {}\n".format(file))
+            elif file.endswith('.frcmod'):
+                tleapfile_content.append("loadamberparams {}\n".format(file))
 
         # load system
         if topology_format == 'pdb':
@@ -731,7 +729,7 @@ class Model(object):
             subprocess.call(command, stdout=log, stderr=log)
 
         return files, log_file
-
+    
     def clean(self, remove_temp=True):
         for dummy in self._metal_cls.dummies:
             dummy.atom.molecule.deleteAtom(dummy.atom)
