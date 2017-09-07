@@ -699,15 +699,12 @@ class Model(object):
         elif topology_format == 'mol2':
             tleapfile_content.append("sys=loadmol2 {}\n".format(topology_path))
 
-        # neutralize system
+        # add waterbox & neutralize
+        if self.gui.var_waterbox.get():
         tleapfile_content.extend([
-            "addIons sys Cl- 0",
-            "addIons sys Na+ 0"])
-
-        # add waterbox
-        if self.gui.var_waterbox.get() == 1:
-            tleapfile_content.append("solvatebox sys TIP3PBOX 10")
-
+            "solvatebox sys TIP3PBOX 10\n",
+            "addIons sys Cl- 0\n",
+            "addIons sys Na+ 0\n"])
         # create cord and top
         files = {ext: os.path.join(output, '{}.{}'.format(output_name, ext))
                 for ext in "prmtop inpcrd mol2 pdb".split()}
