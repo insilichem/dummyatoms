@@ -538,6 +538,8 @@ class Model(object):
         """
 
         # initialize file paths
+        
+        frcmod_filename="data/{}.frcmod".format(self.geometry.replace(" ", ""))
         template=os.path.join(self._here, frcmod_filename)
         frcmod_output=os.path.join(temp_path, "zinc{}.frcmod".format(i))
         # variable dictionary
@@ -668,7 +670,9 @@ class Model(object):
 
         # Tleap content
         # Forcefield and atomtypes
-        tleapfile_content=[]
+        with open(os.path.join(self._here, 'data', 'leaprc.template')) as f:
+            tleapfile_content = f.readlines()
+        
         tleapfile_content.extend([
             'addAtomTypes {{{{ "DZ" "{0}" "sp3" }} {{ "{0}" "{0}" "sp3" }}}}\n'.format(met),
             'addAtomTypes {{{{ "DX" "{0}" "sp3" }} {{ "DY" "{0}" "sp3" }}}}\n'.format(met)
