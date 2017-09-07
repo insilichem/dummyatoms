@@ -161,7 +161,8 @@ class DummyDialog(ModelessDialog):
         # Select Parameters
         self.ui_metalgeometry = ttk.Combobox(
             self.canvas, textvariable=self.var_metal_geometry)
-        self.ui_metalgeometry.config(values=('tetrahedral', 'octahedron', 'square planar', 'square pyramid'))
+        self.ui_metalgeometry.config(
+            values=('tetrahedral', 'octahedron', 'square planar', 'square pyramid'))
         self.ui_metalcharge = tk.Entry(
             self.canvas, textvariable=self.var_metal_charge)
         self.ui_vw_radius = tk.Entry(
@@ -196,7 +197,7 @@ class DummyDialog(ModelessDialog):
             self.canvas, variable=self.var_rebuild_hydrogens)
         grid_systemparam_frame = [['Files to be Load', self.ui_files_to_load,
                                    (self.ui_addfiles, self.ui_removefiles)],
-                                  ['', ('Water Box', self.ui_waterbox), 
+                                  ['', ('Water Box', self.ui_waterbox),
                                    ('Rebuild H', self.ui_rebuild_hydrogens)],
                                   ['Output Path', self.ui_outputpath, self.ui_browseoutput],
                                   ['Output Name', self.ui_outputname]]

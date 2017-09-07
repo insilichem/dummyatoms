@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from __future__ import print_function, division 
+from __future__ import print_function, division
 import chimera.extension
 
 ##############
@@ -11,6 +11,7 @@ import chimera.extension
 #            <daniel.soler@e-campus.uab.cat>
 # Web: https://github.com/miniaoshi/
 ##############
+
 
 class DummyExtension(chimera.extension.EMO):
 
