@@ -40,7 +40,7 @@ DZ-DX-DY-DZ  4   0.0    0.0    1.
 DY-DX-DY-DZ  4   0.0    0.0    1.
 DX-DY-DX-DZ  4   0.0    0.0    1.
 DY-DZ-$metal_name-DZ  4   0.0    0.0    1.
-DX-DZ-FE-DZ  4   0.0    0.0    1.
+DX-DZ-$metal_name-DZ  4   0.0    0.0    1.
 DX-DY-DZ-DY  4   0.0    0.0    1.
 DX-DY-DX-DY  4   0.0    0.0    1.
 DX-DZ-DX-DY  4   0.0    0.0    1.
