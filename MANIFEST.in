@@ -1,0 +1,2 @@
+recursive-include DummyAtoms/data *
+recursive-include DummyAtoms/examples *
