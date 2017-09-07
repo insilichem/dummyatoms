@@ -48,8 +48,7 @@ class Controller(object):
         self.gui.buttonWidgets['Run'].configure(command=self.run)
 
     def run(self):
-
-        print('Creating tmp directory...')
+        self.gui.buttonWidgets['Run'].configure(state='disabled')
         tempdir = self.model.temp_directory()
 
         # Save last frame variables
@@ -105,6 +104,7 @@ class Controller(object):
                                  output=self.gui.var_outputpath.get())
         # self.model.remove_temporary_directory()
 
+        self.gui.buttonWidgets['Run'].configure(state='active')
 
 class Model(object):
 
