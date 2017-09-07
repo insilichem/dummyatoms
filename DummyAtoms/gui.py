@@ -88,6 +88,8 @@ class DummyDialog(ModelessDialog):
     # Defaults
     defaults = None
     buttons = ('Run', 'Close')
+    provideStatus = True
+    statusPosition = 'left'
     help = 'https://www.insilichem.com'
 
     def __init__(self, *args, **kwarg):
