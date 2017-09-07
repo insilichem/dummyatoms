@@ -96,9 +96,9 @@ class Controller(object):
 
         print('Saving system...')
         output, log = self.model.create_system(molecule=self.molecule, 
-                                 met=metal_class.symbol,
-                                 output=self.gui.var_outputpath.get())
-
+                                               met=metal_class.symbol,
+                                               output=self.gui.var_outputpath.get())
+        
         print('Checking...')
         if self.model._check_results(output.values(), log):
             print('Cleaning...')
@@ -130,7 +130,7 @@ class Model(object):
         self.tempfiles = []
         self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
         self._here = os.path.dirname(os.path.abspath(__file__))
-
+    
     @staticmethod
     def search_for_amberhome():
         """
@@ -366,16 +366,16 @@ class Model(object):
         to include charge and metal connectivity
         """
         # Initialize variables
-        residue = metal.residue
-        lib_file = os.path.join(self.tempdir, "met%d.lib" % i)
+        residue=metal.residue
+        lib_file=os.path.join(self.tempdir, "met%d.lib" % i)
 
         # Retrieve charge&connectivity
-        charge = self.retrieve_charge(metal, metal_name)
-        connectivity = self.retrieve_connectivity(residue)
+        charge=self.retrieve_charge(metal, metal_name)
+        connectivity=self.retrieve_connectivity(residue)
 
         # connectivity insert index variable
-        lastindex_charges = len(charge) + 3
-        startindex_connectivity = lastindex_charges + 11  # not to overwrite coordinates in lib file
+        lastindex_charges=len(charge) + 3
+        startindex_connectivity=lastindex_charges + 11  # not to overwrite coordinates in lib file
 
         # Reading and reordering lines
         with open(lib_file, "r") as file:
@@ -383,7 +383,7 @@ class Model(object):
             for i, new_line in enumerate(charge, start=3):
                 # starts at 3 to preserve the residue info
                 # we don't want to overwrite from .lib
-                lineas[i] = new_line
+                lineas[i]=new_line
             lineas[startindex_connectivity:startindex_connectivity]=connectivity
 
         # Re-writing lib
@@ -406,26 +406,26 @@ class Model(object):
         i: int
             Metal Number
         """
-        metal_type = metal.symbol
-        atomicnumber = metal.atomicnumber
-        residue = metal.residue
-        lib_charge_lines = []
+        metal_type=metal.symbol
+        atomicnumber=metal.atomicnumber
+        residue=metal.residue
+        lib_charge_lines=[]
 
         # template =  "{name} {type} 0 1 196609 {atom_num} {atomic_number} {charge}\n"
         template=' "{0}" "{1}" 0 1 196609 {2} {3} {4}'
         lib_charge_lines.append(template.format(metal_name, metal_type, 1, atomicnumber, 0))
         for i in range(1, self.num_of_dummies + 1):
-            dummy = getattr(metal, "D{}".format(i))
+            dummy=getattr(metal, "D{}".format(i))
             lib_charge_lines.append(template.format("D{}".format(i), dummy.Type, i + 1, -1, dummy.charge))
 
         # t-leap line to understand residues type
         lib_charge_lines.append("!entry.{}.unit.atomspertinfo table  str pname  str ptype  int ptypex  int pelmnt  dbl pchg".format(residue))
 
         # template =  "{name} {type} 0 1 0.0\n"
-        template = ' "{0}" "{1}" 0 -1 0.0'
+        template=' "{0}" "{1}" 0 -1 0.0'
         lib_charge_lines.append(template.format(metal_name, metal_type))
         for i in range(1, self.num_of_dummies + 1):
-            dummy = getattr(metal, "D{}".format(i))
+            dummy=getattr(metal, "D{}".format(i))
             lib_charge_lines.append(template.format("D{}".format(i), dummy.Type))
 
         return lib_charge_lines
@@ -679,9 +679,9 @@ class Model(object):
             ])
 
         # metal frcmod&lib file
-            for frcmod in self.frcmod:
+        for frcmod in self.frcmod:
             tleapfile_content.append("loadamberparams {}\n".format(frcmod))
-            for lib in self.lib:
+        for lib in self.lib:
             tleapfile_content.append("loadOff {}\n".format(lib))
 
         # externals lib and frcomd file
@@ -698,10 +698,10 @@ class Model(object):
             tleapfile_content.append("sys=loadpdb {}\n".format(topology_path))
         elif topology_format == 'mol2':
             tleapfile_content.append("sys=loadmol2 {}\n".format(topology_path))
-
+        
         # add waterbox & neutralize
         if self.gui.var_waterbox.get():
-        tleapfile_content.extend([
+            tleapfile_content.extend([
             "solvatebox sys TIP3PBOX 10\n",
             "addIons sys Cl- 0\n",
             "addIons sys Na+ 0\n"])
@@ -722,9 +722,23 @@ class Model(object):
         command = [self.tleap_path, "-s", "-f", tleap_input]
         with open(log_file, 'a') as log:
             subprocess.call(command, stdout=log, stderr=log)
-
+    
         return files, log_file
     
     def remove_temporary_directory(self):
         if os.path.exists(self.tempdir):
             shutil.rmtree(self.tempdir, ignore_errors=True)
+
+    def _check_results(self, files, log):
+        for f in files:
+            if not os.path.exists(f) or os.path.getsize(f) < 10:
+                with open(log) as logf:
+                    chimera.replyobj.error('Some files could not be created '
+                                            'successfully. Open Reply Log for '
+                                            'more info!')
+                    chimera.replyobj.message('\nContents of {}:\n'.format(log))
+                    chimera.replyobj.message(logf.read())
+                    self.gui.status('Failed...', color='red', blankAfter=5)
+                return False
+        self.gui.status('Success!', color='blue', blankAfter=5)
+        return True
