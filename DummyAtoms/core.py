@@ -132,8 +132,7 @@ class Model(object):
     @staticmethod
     def search_for_amberhome():
         """
-        Try to locate an Amber system installation. 
-        Otherwise, return Chimera's bundled one.
+        Try to locate an Amber system installation.
         """
         try:
             return os.environ['AMBERHOME']
