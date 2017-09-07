@@ -625,11 +625,8 @@ class Model(object):
         """
 
         # Saving model
-        if inputpath.endswith(".pdb"):
-            topology_format='pdb'
-        elif inputpath.endswith(".mol2"):
-            topology_format='mol2'
-        input_name=self.gui.var_outputname.get() + '.{}'.format(topology_format)
+        if self.gui.var_rebuild_hydrogens.get():
+            rc('del element.H')
         tleap_topology_path=os.path.join(self.tempdir, input_name)
         rc('write format {0} 0 {1}'.format(topology_format, tleap_topology_path))
         return topology_format, tleap_topology_path

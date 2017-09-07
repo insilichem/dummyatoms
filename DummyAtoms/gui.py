@@ -105,6 +105,7 @@ class DummyDialog(ModelessDialog):
         self.var_outputpath = tk.StringVar()
         self.var_outputname = tk.StringVar()
         self.var_waterbox = tk.IntVar()
+        self.var_rebuild_hydrogens = tk.IntVar()
         self.var_dz_met_bondlenght = tk.DoubleVar()
         self.ui_labels = {}
         self.var_outputpath.set(path.expanduser('~'))  # HARDCODED PATHS ARE BAD
@@ -191,9 +192,12 @@ class DummyDialog(ModelessDialog):
             self.canvas, textvariable=self.var_outputname)
         self.ui_waterbox = tk.Checkbutton(
             self.canvas, variable=self.var_waterbox)
+        self.ui_rebuild_hydrogens = tk.Checkbutton(
+            self.canvas, variable=self.var_rebuild_hydrogens)
         grid_systemparam_frame = [['Files to be Load', self.ui_files_to_load,
                                    (self.ui_addfiles, self.ui_removefiles)],
-                                  ['', ('Water Box', self.ui_waterbox), ''],
+                                  ['', ('Water Box', self.ui_waterbox), 
+                                   ('Rebuild H', self.ui_rebuild_hydrogens)],
                                   ['Output Path', self.ui_outputpath, self.ui_browseoutput],
                                   ['Output Name', self.ui_outputname]]
         self.auto_grid(self.ui_systemparam_frame, grid_systemparam_frame)
