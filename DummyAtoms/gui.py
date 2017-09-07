@@ -260,6 +260,11 @@ class DummyDialog(ModelessDialog):
                 self.var_dz_met_bondlenght.set(0.9)
         self.previous_metal = next_metal
 
+        # Focus on metal for easy identification
+        chimera.selection.setCurrent([metal])
+        chimera.runCommand('disp sel za < 3.5')
+        chimera.runCommand('focus sel za < 5')
+
     def _add_files(self):
         filepath = filedialog.askopenfilename(initialdir='~/', filetypes=(
             ('Lib File', '*.lib'), ('Frcmod File', '*.frcmod'), ('Xml File', '*.xml')))
