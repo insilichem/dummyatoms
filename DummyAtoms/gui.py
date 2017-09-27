@@ -14,6 +14,7 @@ import chimera
 from chimera.baseDialog import ModelessDialog
 from chimera.widgets import MetalOptionMenu
 # Own
+from plumesuite.ui import PlumeBaseDialog
 from core import Controller, Model
 
 """
@@ -78,7 +79,7 @@ def center(window):
     window.deiconify()
 
 
-class DummyDialog(ModelessDialog):
+class DummyDialog(PlumeBaseDialog):
 
     """
     To display a new dialog on the interface, you will normally inherit from
@@ -88,13 +89,10 @@ class DummyDialog(ModelessDialog):
     claim exclusive usage, use ModalDialog.
     """
     # Defaults
-    defaults = None
     buttons = ('Run', 'Close')
-    provideStatus = True
-    statusPosition = 'left'
-    help = 'https://www.insilichem.com'
 
-    def __init__(self, *args, **kwarg):
+
+    def __init__(self, *args, **kwargs):
         # GUI init
         self.title = 'Plume Dummy'
 
@@ -121,28 +119,10 @@ class DummyDialog(ModelessDialog):
         self.metals = []
 
         # Fire up
-        ModelessDialog.__init__(self, resizable=False)
-        if not chimera.nogui:  # avoid useless errors during development
-            chimera.extension.manager.registerInstance(self)
+        super(DummyDialog, self).__init__(self, *args, **kwargs)
 
-        # Fix styles
-        self._fix_styles(*self.buttonWidgets.values())
 
-    def _initialPositionCheck(self, *args):
-        try:
-            ModelessDialog._initialPositionCheck(self, *args)
-        except Exception as e:
-            if not chimera.nogui:  # avoid useless errors during development
-                raise e
-
-    def _fix_styles(self, *widgets):
-        for widget in widgets:
-            try:
-                widget.configure(**STYLES[widget.__class__])
-            except Exception as e:
-                print('Error fixing styles:', type(e), str(e))
-
-    def fillInUI(self, parent):
+    def fill_in_ui(self, parent):
         """
         This is the main part of the interface. With this method you code
         the whole dialog, buttons, textareas and everything.
@@ -151,10 +131,6 @@ class DummyDialog(ModelessDialog):
         frames = [('ui_metalcenter_frame', 'Metal Center Parameters'),
                   ('ui_systemparam_frame', 'System Properties'),
                   ('ui_table_frame', 'Geometries Table')]
-
-        # Create main window
-        self.canvas = tk.Frame(parent)
-        self.canvas.pack(expand=True, fill='x', padx=5, pady=5)
         for frame, description in frames:
             setattr(self, frame, tk.LabelFrame(self.canvas, text=description))
         # Select Metal
@@ -286,80 +262,3 @@ class DummyDialog(ModelessDialog):
             initialdir='~/')
         if directorypath:
             self.var_outputpath.set(directorypath)
-
-    def Close(self):
-        """
-        Default! Triggered action if you click on the Close button
-        """
-        global ui
-        ui = None
-        ModelessDialog.Close(self)
-        chimera.extension.manager.deregisterInstance(self)
-        self.destroy()
-
-    def auto_grid(self, parent, grid, resize_columns=(1,), label_sep=':', **options):
-        """
-        Auto grid an ordered matrix of Tkinter widgets.
-
-        Parameters
-        ----------
-        parent : tk.Widget
-            The widget that will host the widgets on the grid
-        grid : list of list of tk.Widget
-            A row x columns matrix of widgets. It is built on lists.
-            Each list in the toplevel list represents a row. Each row
-            contains widgets, tuples or strings, in column order.  
-            If it's a widget, it will be grid at the row i (index of first level
-            list) and column j (index of second level list).
-            If a tuple of widgets is found instead of a naked widget,
-            they will be packed in a frame, and grid'ed as a single cell.
-            If it's a string, a Label will be created with that text, and grid'ed. 
-
-            For example:
-            >>> grid = [['A custom label', widget_0_1, widget_0_2], # first row
-            >>>         [widget_1_0, widget_1_1, widget_1_2],       # second row
-            >>>         [widget_2_0, widget_2_1, (widgets @ 2_2)]]  # third row
-
-        """
-        for column in resize_columns:
-            parent.columnconfigure(
-                column, weight=int(100 / len(resize_columns)))
-        _kwargs = {'padx': 2, 'pady': 2, 'ipadx': 2, 'ipady': 2}
-        _kwargs.update(options)
-        for i, row in enumerate(grid):
-            for j, item in enumerate(row):
-                kwargs = _kwargs.copy()
-                sticky = 'ew'
-                if isinstance(item, tuple):
-                    frame = tk.Frame(parent)
-                    self.auto_pack(frame, item, side='left',
-                                   padx=2, pady=2, expand=True, fill='both',
-                                   label_sep=label_sep)
-                    item = frame
-                elif isinstance(item, basestring):
-                    sticky = 'e'
-                    label = self.ui_labels[item] = tk.Label(
-                        parent, text=item + label_sep if item else '')
-                    item = label
-                elif isinstance(item, tk.Checkbutton):
-                    sticky = 'w'
-                if 'sticky' not in kwargs:
-                    kwargs['sticky'] = sticky
-                item.grid(in_=parent, row=i, column=j, **kwargs)
-                self._fix_styles(item)
-
-    def auto_pack(self, parent, widgets, label_sep=':', **kwargs):
-        for widget in widgets:
-            options = kwargs.copy()
-            if isinstance(widget, basestring):
-                label = self.ui_labels[widget] = tk.Label(
-                    parent, text=widget + label_sep if widget else '')
-                widget = label
-            if isinstance(widget, (tk.Button, tk.Label)):
-                options['expand'] = False
-            widget.pack(in_=parent, **options)
-            self._fix_styles(widget)
-
-    # Below this line, implement all your custom methods for the GUI.
-    def load_controller(self):
-        pass
