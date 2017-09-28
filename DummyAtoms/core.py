@@ -19,23 +19,12 @@ from chimera.molEdit import addAtom
 # my own
 from atoms import Metal, TETRAHEDRAL, OCTAHEDRON, SQUARE_PLANAR, SQUARE_PYRAMID
 
-"""
-This module contains the business logic of MetaDummy.
-A GUI to apply cationc dummy atom method to systems
-with one or more metal centers.
-"""
 
 # Constants
 SUPPORTED_FILE_TYPES = ['lib', 'frcmod']
 
 
 class Controller(object):
-
-    """
-    The controller manages the communication between the UI (graphic interface)
-    and the data model. Actions such as clicks on buttons, enabling certain areas,
-    or running external programs, are the responsibility of the controller.
-    """
 
     def __init__(self, gui, model, *args, **kwargs):
         self.gui = gui

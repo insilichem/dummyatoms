@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Get used to importing this in your Py27 projects!
+
 from __future__ import print_function, division
 # Python stdlib
 import os
@@ -17,41 +17,8 @@ from chimera.widgets import MetalOptionMenu
 from plumesuite.ui import PlumeBaseDialog
 from core import Controller, Model
 
-"""
-The gui.py module contains the interface code, and only that. 
-It should only 'draw' the window, and should NOT contain any
-business logic like parsing files or applying modifications
-to the opened molecules. That belongs to core.py.
-"""
-
-STYLES = {
-    tk.Entry: {
-        'background': 'white',
-        'borderwidth': 1,
-        'highlightthickness': 0,
-        'insertwidth': 1,
-    },
-    tk.Button: {
-        'borderwidth': 1,
-        'highlightthickness': 0,
-    },
-    tk.Checkbutton: {
-        'highlightbackground': chimera.tkgui.app.cget('bg'),
-        'activebackground': chimera.tkgui.app.cget('bg'),
-    },
-    Pmw.ScrolledListBox: {
-        'listbox_borderwidth': 1,
-        'listbox_background': 'white',
-        'listbox_relief': 'ridge',
-        'listbox_highlightthickness': 0,
-        'listbox_selectbackground': '#DDD',
-        'listbox_selectborderwidth': 0
-    },
-}
 
 ui = None
-
-
 def showUI(callback=None, *args, **kwargs):
     if chimera.nogui:
         tk.Tk().withdraw()
@@ -66,31 +33,10 @@ def showUI(callback=None, *args, **kwargs):
         ui.addCallback(callback)
 
 
-def center(window):
-    """
-    Update "requested size" from geometry manager
-    """
-    window.update_idletasks()
-    x = (window.winfo_screenwidth() -
-         window.winfo_reqwidth()) / 2
-    y = (window.winfo_screenheight() -
-         window.winfo_reqheight()) / 2
-    window.geometry("+%d+%d" % (x, y))
-    window.deiconify()
-
-
 class DummyDialog(PlumeBaseDialog):
 
-    """
-    To display a new dialog on the interface, you will normally inherit from
-    ModelessDialog class of chimera.baseDialog module. Being modeless means
-    you can have this dialog open while using other parts of the interface.
-    If you don't want this behaviour and instead you want your extension to 
-    claim exclusive usage, use ModalDialog.
-    """
     # Defaults
     buttons = ('Run', 'Close')
-
 
     def __init__(self, *args, **kwargs):
         # GUI init
@@ -123,10 +69,6 @@ class DummyDialog(PlumeBaseDialog):
 
 
     def fill_in_ui(self, parent):
-        """
-        This is the main part of the interface. With this method you code
-        the whole dialog, buttons, textareas and everything.
-        """
         # Frames
         frames = [('ui_metalcenter_frame', 'Metal Center Parameters'),
                   ('ui_systemparam_frame', 'System Properties'),
@@ -258,7 +200,11 @@ class DummyDialog(PlumeBaseDialog):
         self.ui_files_to_load.delete(*selection)
 
     def _add_outputdirectory(self):
-        directorypath = filedialog.askdirectory(
-            initialdir='~/')
+        directorypath = filedialog.askdirectory(initialdir='~/')
         if directorypath:
             self.var_outputpath.set(directorypath)
+
+    def Close(self):
+        global ui
+        ui = None
+        super(DummyDialog, self).Close()
