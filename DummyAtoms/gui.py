@@ -70,63 +70,68 @@ class DummyDialog(PlumeBaseDialog):
 
     def fill_in_ui(self, parent):
         # Frames
-        frames = [('ui_metalcenter_frame', 'Metal Center Parameters'),
-                  ('ui_systemparam_frame', 'System Properties'),
-                  ('ui_table_frame', 'Geometries Table')]
-        for frame, description in frames:
-            setattr(self, frame, tk.LabelFrame(self.canvas, text=description))
+        self.ui_metalcenter_frame = tk.LabelFrame(self.canvas, 
+            text='Metal Center Parameters')
+        self.ui_systemparam_frame = tk.LabelFrame(self.canvas, 
+            text='System Properties')
+        self.ui_table_frame = tk.LabelFrame(self.canvas, 
+            text='Geometries Table')
+        
         # Select Metal
-        self.ui_metals_menu = MetalOptionMenu(self.canvas, command=self._populateframe)
+        self.ui_metals_menu = MetalOptionMenu(self.canvas, 
+            command=self._populateframe)
 
         # Select Parameters
-        self.ui_metalgeometry = ttk.Combobox(
-            self.canvas, textvariable=self.var_metal_geometry)
+        self.ui_metalgeometry = ttk.Combobox(self.canvas, 
+            textvariable=self.var_metal_geometry)
         self.ui_metalgeometry.config(values=('tetrahedral', 'octahedron', 
                                              'square planar', 'square pyramid'))
-        self.ui_metalcharge = tk.Entry(
-            self.canvas, textvariable=self.var_metal_charge)
-        self.ui_vw_radius = tk.Entry(
-            self.canvas, textvariable=self.var_vw_radius)
-        self.ui_dzmass = tk.Entry(
-            self.canvas, textvariable=self.var_dz_mass)
-        self.ui_dz_met_bondlenght = tk.Entry(
-            self.canvas, textvariable=self.var_dz_met_bondlenght)
-        grid_metalcenter_frame = [['Metal Geometry', self.ui_metalgeometry],
-                                  ['Metal Charge', self.ui_metalcharge],
-                                  ['Metal Van der Waals Radius', self.ui_vw_radius],
-                                  ['Mass per Dummy', self.ui_dzmass],
-                                  ['Metal-Dummy Bond Length', self.ui_dz_met_bondlenght]]
+        self.ui_metalcharge = tk.Entry(self.canvas,
+        textvariable=self.var_metal_charge)
+        self.ui_vw_radius = tk.Entry(self.canvas, 
+            textvariable=self.var_vw_radius)
+        self.ui_dzmass = tk.Entry(self.canvas, 
+            textvariable=self.var_dz_mass)
+        self.ui_dz_met_bondlenght = tk.Entry(self.canvas, 
+            textvariable=self.var_dz_met_bondlenght)
+        grid_metalcenter_frame = [
+            ['Metal Geometry', self.ui_metalgeometry],
+            ['Metal Charge', self.ui_metalcharge],
+            ['Metal Van der Waals Radius', self.ui_vw_radius],
+            ['Mass per Dummy', self.ui_dzmass],
+            ['Metal-Dummy Bond Length', self.ui_dz_met_bondlenght]
+            ]
         self.auto_grid(self.ui_metalcenter_frame, grid_metalcenter_frame)
 
         # Select Output 
         self.ui_files_to_load = Pmw.ScrolledListBox(
             self.canvas, listbox_height=3, listbox_selectmode='multiple')
-        self.ui_addfiles = tk.Button(
-            self.canvas, text='+', command=self._add_files)
-        self.ui_removefiles = tk.Button(
-            self.canvas, text='-', command=self._remove_files)
-        self.ui_outputpath = tk.Entry(
-            self.canvas, textvariable=self.var_outputpath)
-        self.ui_browseoutput = tk.Button(
-            self.canvas, text='...', command=self._add_outputdirectory)
-        self.ui_outputname = tk.Entry(
-            self.canvas, textvariable=self.var_outputname)
-        self.ui_waterbox = tk.Checkbutton(
-            self.canvas, variable=self.var_waterbox)
-        self.ui_rebuild_hydrogens = tk.Checkbutton(
-            self.canvas, variable=self.var_rebuild_hydrogens)
-        grid_systemparam_frame = [['Extra parameters', self.ui_files_to_load,
-                                   (self.ui_addfiles, self.ui_removefiles)],
-                                  ['', ('Water Box', self.ui_waterbox),
-                                   ('Rebuild H', self.ui_rebuild_hydrogens)],
-                                  ['Output Path', self.ui_outputpath, self.ui_browseoutput],
-                                  ['Output Name', self.ui_outputname]]
+        self.ui_addfiles = tk.Button(self.canvas, 
+            text='+', command=self._add_files)
+        self.ui_removefiles = tk.Button(self.canvas, 
+            text='-', command=self._remove_files)
+        self.ui_outputpath = tk.Entry(self.canvas, 
+            textvariable=self.var_outputpath)
+        self.ui_browseoutput = tk.Button(self.canvas, 
+            text='...', command=self._add_outputdirectory)
+        self.ui_outputname = tk.Entry(self.canvas, 
+            textvariable=self.var_outputname)
+        self.ui_waterbox = tk.Checkbutton(self.canvas, 
+            variable=self.var_waterbox)
+        self.ui_rebuild_hydrogens = tk.Checkbutton(self.canvas, 
+            variable=self.var_rebuild_hydrogens)
+        grid_systemparam_frame = [
+            ['Extra parameters', self.ui_files_to_load, (self.ui_addfiles, self.ui_removefiles)],
+            ['', ('Water Box', self.ui_waterbox),  ('Rebuild H', self.ui_rebuild_hydrogens)],
+            ['Output Path', self.ui_outputpath, self.ui_browseoutput],
+            ['Output Name', self.ui_outputname]]
         self.auto_grid(self.ui_systemparam_frame, grid_systemparam_frame)
         
         # Grid Frames
-        self.ui_metals_menu.grid(row=0, column=0, sticky='we')
-        self.ui_metalcenter_frame.grid(row=1, column=0, pady=5, sticky='we')
-        self.ui_systemparam_frame.grid(row=2, column=0, sticky='we')
+        _opts = dict(column=0, sticky='we', padx=5, pady=5)
+        self.ui_metals_menu.grid(row=0, **_opts)
+        self.ui_metalcenter_frame.grid(row=1, **_opts)
+        self.ui_systemparam_frame.grid(row=2, **_opts)
 
     def _populateframe(self, metal):
         """
@@ -200,7 +205,7 @@ class DummyDialog(PlumeBaseDialog):
         self.ui_files_to_load.delete(*selection)
 
     def _add_outputdirectory(self):
-        directorypath = filedialog.askdirectory(initialdir='~/')
+        directorypath = filedialog.askdirectory()
         if directorypath:
             self.var_outputpath.set(directorypath)
 
