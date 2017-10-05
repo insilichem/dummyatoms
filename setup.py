@@ -40,4 +40,6 @@ setup(
         'Topic :: Scientific/Engineering :: Chemistry',
     ],
     install_requires=[],
+    # Conda requirements
+    # -c omnia ambermini
 )
