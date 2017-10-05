@@ -615,11 +615,11 @@ class Model(object):
             Topology of chimera system used
             as tleap input for bonds and position.
         """
-
+        ext = None
         # Saving model
         if hasattr(mol, 'openedAs'):
-            ext = os.path.splitext(mol.openedAs[0])[1][1:]
-        else:
+            ext = mol.openedAs[1]
+        if not ext:
             ext = 'pdb'
 
         if self.gui.var_rebuild_hydrogens.get():
@@ -627,7 +627,7 @@ class Model(object):
         input_name = '{}.{}'.format(self.gui.var_outputname.get(), ext)
         tleap_topology_path = os.path.join(self.tempdir, input_name)
 
-        rc('write format {} {}.{} {}'.format(ext, mol.id, mol.subid, tleap_topology_path))
+        rc('write format {} {}.{} {}'.format(ext.lower(), mol.id, mol.subid, tleap_topology_path))
         return ext, tleap_topology_path
 
     def write_tleap_instructions(self, output, met, topology_format, topology_path):
