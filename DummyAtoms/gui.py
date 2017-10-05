@@ -14,7 +14,7 @@ import chimera
 from chimera.baseDialog import ModelessDialog
 from chimera.widgets import MetalOptionMenu
 # Own
-from plumesuite.ui import PlumeBaseDialog
+from libplume.ui import PlumeBaseDialog
 from core import Controller, Model
 
 
