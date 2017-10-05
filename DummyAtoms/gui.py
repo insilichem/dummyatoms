@@ -65,7 +65,7 @@ class DummyDialog(PlumeBaseDialog):
         self.metals = []
 
         # Fire up
-        super(DummyDialog, self).__init__(self, *args, **kwargs)
+        super(DummyDialog, self).__init__(*args, **kwargs)
 
 
     def fill_in_ui(self, parent):
