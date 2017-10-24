@@ -19,7 +19,7 @@ from core import Controller, Model
 
 
 ui = None
-def showUI(callback=None, *args, **kwargs):
+def showUI(*args, **kwargs):
     if chimera.nogui:
         tk.Tk().withdraw()
     model = Model()
@@ -29,8 +29,6 @@ def showUI(callback=None, *args, **kwargs):
     model.gui = ui
     controller = Controller(gui=ui, model=model)
     ui.enter()
-    if callback:
-        ui.addCallback(callback)
 
 
 class DummyDialog(PlumeBaseDialog):
@@ -70,29 +68,29 @@ class DummyDialog(PlumeBaseDialog):
 
     def fill_in_ui(self, parent):
         # Frames
-        self.ui_metalcenter_frame = tk.LabelFrame(self.canvas, 
+        self.ui_metalcenter_frame = tk.LabelFrame(self.canvas,
             text='Metal Center Parameters')
-        self.ui_systemparam_frame = tk.LabelFrame(self.canvas, 
+        self.ui_systemparam_frame = tk.LabelFrame(self.canvas,
             text='System Properties')
-        self.ui_table_frame = tk.LabelFrame(self.canvas, 
+        self.ui_table_frame = tk.LabelFrame(self.canvas,
             text='Geometries Table')
-        
+
         # Select Metal
-        self.ui_metals_menu = MetalOptionMenu(self.canvas, 
+        self.ui_metals_menu = MetalOptionMenu(self.canvas,
             command=self._populateframe)
 
         # Select Parameters
-        self.ui_metalgeometry = ttk.Combobox(self.canvas, 
+        self.ui_metalgeometry = ttk.Combobox(self.canvas,
             textvariable=self.var_metal_geometry)
-        self.ui_metalgeometry.config(values=('tetrahedral', 'octahedron', 
+        self.ui_metalgeometry.config(values=('tetrahedral', 'octahedron',
                                              'square planar', 'square pyramid'))
         self.ui_metalcharge = tk.Entry(self.canvas,
         textvariable=self.var_metal_charge)
-        self.ui_vw_radius = tk.Entry(self.canvas, 
+        self.ui_vw_radius = tk.Entry(self.canvas,
             textvariable=self.var_vw_radius)
-        self.ui_dzmass = tk.Entry(self.canvas, 
+        self.ui_dzmass = tk.Entry(self.canvas,
             textvariable=self.var_dz_mass)
-        self.ui_dz_met_bondlenght = tk.Entry(self.canvas, 
+        self.ui_dz_met_bondlenght = tk.Entry(self.canvas,
             textvariable=self.var_dz_met_bondlenght)
         grid_metalcenter_frame = [
             ['Metal Geometry', self.ui_metalgeometry],
@@ -103,22 +101,22 @@ class DummyDialog(PlumeBaseDialog):
             ]
         self.auto_grid(self.ui_metalcenter_frame, grid_metalcenter_frame)
 
-        # Select Output 
+        # Select Output
         self.ui_files_to_load = Pmw.ScrolledListBox(
             self.canvas, listbox_height=3, listbox_selectmode='multiple')
-        self.ui_addfiles = tk.Button(self.canvas, 
+        self.ui_addfiles = tk.Button(self.canvas,
             text='+', command=self._add_files)
-        self.ui_removefiles = tk.Button(self.canvas, 
+        self.ui_removefiles = tk.Button(self.canvas,
             text='-', command=self._remove_files)
-        self.ui_outputpath = tk.Entry(self.canvas, 
+        self.ui_outputpath = tk.Entry(self.canvas,
             textvariable=self.var_outputpath)
-        self.ui_browseoutput = tk.Button(self.canvas, 
+        self.ui_browseoutput = tk.Button(self.canvas,
             text='...', command=self._add_outputdirectory)
-        self.ui_outputname = tk.Entry(self.canvas, 
+        self.ui_outputname = tk.Entry(self.canvas,
             textvariable=self.var_outputname)
-        self.ui_waterbox = tk.Checkbutton(self.canvas, 
+        self.ui_waterbox = tk.Checkbutton(self.canvas,
             variable=self.var_waterbox)
-        self.ui_rebuild_hydrogens = tk.Checkbutton(self.canvas, 
+        self.ui_rebuild_hydrogens = tk.Checkbutton(self.canvas,
             variable=self.var_rebuild_hydrogens)
         grid_systemparam_frame = [
             ['Extra parameters', self.ui_files_to_load, (self.ui_addfiles, self.ui_removefiles)],
@@ -126,7 +124,7 @@ class DummyDialog(PlumeBaseDialog):
             ['Output Path', self.ui_outputpath, self.ui_browseoutput],
             ['Output Name', self.ui_outputname]]
         self.auto_grid(self.ui_systemparam_frame, grid_systemparam_frame)
-        
+
         # Grid Frames
         _opts = dict(column=0, sticky='we', padx=5, pady=5)
         self.ui_metals_menu.grid(row=0, **_opts)
