@@ -3,7 +3,7 @@ Dummy Atoms
 
 Easy to prepare MD inputs for metal systems!
 
-Project started by Daniel Soler Viladrich ([@miniaoshi](https://github.com/miniaoshi/)). and further developed by [@jaimergp](https://github.com/jaimergp/). Lur Alonso is kindly acknowledged for her contributions and ideas.
+Project initially developed by Daniel Soler Viladrich ([@miniaoshi](https://github.com/miniaoshi/)), and currently maintained by [@jaimergp](https://github.com/jaimergp/). Lur Alonso is kindly acknowledged for her contributions and ideas.
 
 
 Usage
