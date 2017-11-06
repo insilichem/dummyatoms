@@ -3,56 +3,34 @@ Dummy Atoms
 
 Easy to prepare MD inputs for metal systems!
 
-*By  Daniel Soler Viladrich ([@dani-soler](https://github.com/miniaoshi/)). Contributors: [Jaime Rodríguez-Guerra](https://github.com/jaimergp/), Lur Alonso*
-
-### Some cool features
-
-- Fast MD parametrization of metal systems!
-- No coding required - just a pdb and his own .lib/.frcmod
-- Easy to use for all levels of knowloadge
-- Possibility of charge and geometry variations for a same system
-- No need of metal .frcmod or .lib everything is produced by the software
-
-Installation
-------------
-
-1. Git clone this repository by doing:
-
-	git clone https://github.com/miniaoshi/DummyAtoms.git
-
-2. Create a Symbolic link in UCSFChimera folder that points to your repo
-
-3. Restart chimera and sometimes your computer before trying.
-
-4. Open Chimera, if everything is OK, in ToolsMenu you should fine
-   a Plumme Dummy entry which brings you straight to the software.
+Project started by Daniel Soler Viladrich ([@miniaoshi](https://github.com/miniaoshi/)). and further developed by [@jaimergp](https://github.com/jaimergp/). Lur Alonso is kindly acknowledged for her contributions and ideas.
 
 
 Usage
 -----
 
-1. Open your metal system
+1. Open your metal-containing biosystem
 
-	All input configuration is done through Chimera which mainly accepts .pdb and .mol2 files. A couple of sample inputs are included in `examples` folder; parameters should be self-explaining. 
+	A couple of sample inputs are included in `examples` folder; parameters should be self-explaining.
 
     However, there a couple of rules:
 
     * Metals residues: Each metal must be a single residue with a unique name.
-    * Atom types: All atoms must be described with AMBER gaff. Otherwise chimera will not regonise them properly making an implausible parametrization which will raise an error.
+    * Atom types: All atoms must be described with AMBER gaff. Otherwise Chimera will not recognize them properly, resulting in a parameterization error.
 
 
 2. Choose your desired parameters
 
 	For each metal you can choose:
 
-	- Metal Geometry (Need to be feasable or DummyAtoms will complain)
+	- Metal Geometry (Must be feasible or DummyAtoms will complain)
 	- Metal Charge
 	- Dummy Atoms Mass
 	- Metal-Dummy bond distance
 
-3. Upload externals files [.lib, .frcmod]
+3. Load externals files [.lib, .frcmod]
 
-	The software takes care	of all metal centers parametrization but peptides, cofactors or any other non-standard residue wants his own .lib (for charges) and .frcmod (for missing parameters) as need it.
+	The software takes care	of all metal centers parameterization but peptides, cofactors or any other non-standard residue need their own .lib (for charges) and .frcmod (for missing parameters).
 
 4. Output Option
 
@@ -60,17 +38,6 @@ Usage
 
 5. Run
 
-	Press run and you will obtain the topology (.prmtop) and coordinates (.inpcrd)
-	of your programm and some visualitation outputs (.mol2, .pdb)
-
-6. MD
-	You can use [@Plumme OpenMM GUI](https://github.com/miniaoshi/Plumme_OpenMM) to easily run the MD inputs you just created.
-
-## Get help
-
-If you have problems running `DummyAtoms`, feel free to ask by e-mail! Also, make sure to visit our main webpage at [http://www.insilichem.com](http://www.insilichem.com).
-
-
-
-
+	Press Run and you will obtain the topology (.prmtop) and coordinates (.inpcrd)
+	of your program and some visualization outputs (.mol2, .pdb)
 
