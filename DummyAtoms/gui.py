@@ -35,6 +35,9 @@ class DummyDialog(PlumeBaseDialog):
 
     # Defaults
     buttons = ('Run', 'Close')
+    help = "https://github.com/insilichem/plume_dummyatoms"
+    VERSION = '0.0.1'
+    VERSION_URL = "https://api.github.com/repos/insilichem/plume_dummyatoms/releases/latest"
 
     def __init__(self, *args, **kwargs):
         # GUI init
