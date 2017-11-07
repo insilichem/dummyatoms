@@ -43,7 +43,7 @@ class Controller(object):
         finally:
             self.gui.buttonWidgets['Run'].configure(state='active')
 
-    
+
     def _run(self):
         tempdir = self.model.temp_directory()
         print('Created temp directory:', tempdir)
@@ -127,7 +127,6 @@ class Model(object):
         self.amber_path = os.environ['AMBERHOME'] = self.search_for_amberhome()
         self._here = os.path.dirname(os.path.abspath(__file__))
         self._metal_cls = None
-
 
     @staticmethod
     def search_for_amberhome():
@@ -230,7 +229,7 @@ class Model(object):
             dz_mass=self.dz_mass, metal_vwr=self.metal_vwr)
 
         metal_cls.dummies_xyz = metal_cls.search_for_orientation(metal)
-        dummies = metal_cls.build_dummies(metal_cls.dummies_xyz, 
+        dummies = metal_cls.build_dummies(metal_cls.dummies_xyz,
                                           metal_cls.geometry,
                                           metal_cls.charge)
         self._metal_cls = metal_cls
@@ -621,14 +620,13 @@ class Model(object):
             ext = mol.openedAs[1]
         if not ext:
             ext = 'pdb'
-
         if self.gui.var_rebuild_hydrogens.get():
             rc('del element.H')
         input_name = '{}.{}'.format(self.gui.var_outputname.get(), ext)
         tleap_topology_path = os.path.join(self.tempdir, input_name)
 
         rc('write format {} {}.{} {}'.format(ext.lower(), mol.id, mol.subid, tleap_topology_path))
-        return ext, tleap_topology_path
+        return ext.lower(), tleap_topology_path
 
     def write_tleap_instructions(self, output, met, topology_format, topology_path):
         """
@@ -688,9 +686,9 @@ class Model(object):
                 tleapfile_content.append("loadamberparams {}\n".format(file))
 
         # load system
-        if topology_format == 'pdb':
+        if topology_format.lower() == 'pdb':
             tleapfile_content.append("sys=loadpdb {}\n".format(topology_path))
-        elif topology_format == 'mol2':
+        elif topology_format.lower() == 'mol2':
             tleapfile_content.append("sys=loadmol2 {}\n".format(topology_path))
 
         # add waterbox & neutralize
@@ -718,7 +716,7 @@ class Model(object):
             subprocess.call(command, stdout=log, stderr=log)
 
         return files, log_file
-    
+
     def clean(self, remove_temp=True):
         for dummy in self._metal_cls.dummies:
             dummy.atom.molecule.deleteAtom(dummy.atom)
