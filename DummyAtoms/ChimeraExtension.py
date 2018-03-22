@@ -16,7 +16,7 @@ import chimera.extension
 class DummyExtension(chimera.extension.EMO):
 
     def name(self):
-        return 'Plume Dummy'
+        return 'Tangram Dummy'
 
     def description(self):
         return "Dummy Cathionic Method for metal centers"

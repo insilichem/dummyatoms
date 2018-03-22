@@ -55,7 +55,7 @@ class Dummy(object):
         Logic:
 
         - For each dummy we look for the
-          one being at the opposite side 
+          one being at the opposite side
           of the metal by looking for a
           DZ-MET_DZ angle of 180.
           Then we appned both together on
@@ -108,18 +108,19 @@ class Metal(Dummy):
      orientation and metal type.
     """
 
-    def __init__(self, metal, geometry, charge,
-                 dz_met_bondlenght, metal_vwr, dz_mass):
+    def __init__(self, metal, geometry, charge, dz_met_bondlenght,
+                 metal_vwr, dz_mass, type_=None, mass=None, eps=1e-6):
         self.metal = metal
         self.geometry = geometry
         self.charge = charge
+        self.eps = eps
         self.dz_met_bondlenght = dz_met_bondlenght
         self.metal_vwr = metal_vwr
         self.dz_mass = dz_mass
         self.residue = str(metal.residue.type)
-        self.symbol = str(metal.element.name).upper()
+        self.symbol = type_ if type_ is not None else str(metal.element.name).upper()
         self.atomicnumber = metal.element.number
-        self.mass = metal.element.mass
+        self.mass = metal.element.mass if mass is None else mass
 
     def search_for_orientation(self, metal):
         """

@@ -60,7 +60,7 @@ class Controller(object):
             self.molecule = metal_menu.getvalue().molecule
             self.metal_residue = str(metal.residue.type)
             self.metal_name = str(metal.name)
-            self.metal_type = str(getattr(metal, 'mol2type', metal.element.name))
+            self.metal_type = str(self.gui.var_metal_type.get())
 
             # Retrieve metal parameters from gui
             self.model.retrieve_variables(metal)
@@ -88,7 +88,8 @@ class Controller(object):
                                      metal_name=metal_class.symbol, i=i,
                                      metal_vwr=metal_class.metal_vwr,
                                      dz_met_bondlenght=metal_class.dz_met_bondlenght,
-                                     dz_mass=metal_class.dz_mass)
+                                     dz_mass=metal_class.dz_mass,
+                                     metal_eps=metal_class.eps)
 
         print('Saving system...')
         output, log = self.model.create_system(molecule=self.molecule,
@@ -128,6 +129,16 @@ class Model(object):
         self._here = os.path.dirname(os.path.abspath(__file__))
         self._metal_cls = None
 
+        # Default
+        self.geometry = "tetrahedral"
+        self.charge = 2.0
+        self.type = 'MT'
+        self.mass = 1.0
+        self.eps = 1e-6
+        self.metal_vwr = 3.1
+        self.dz_mass = 3
+        self.dz_met_bondlenght = 0.9
+
     @staticmethod
     def search_for_amberhome():
         """
@@ -141,7 +152,7 @@ class Model(object):
             if tleap:
                 return os.path.sep + os.path.join(*tleap.split(os.path.sep)[:-2])
             else:
-                raise UserError('$AMBERHOME env var must be set to use Plume Dummy.')
+                raise UserError('$AMBERHOME env var must be set to use Tangram Dummy.')
 
     def save_variables(self, metal):
         """
@@ -160,19 +171,25 @@ class Model(object):
         for dic in metal_dicts:
             if dic["title"] == metal.name:
                 dic["geom"] = self.gui.var_metal_geometry.get()
+                dic["type"] = self.gui.var_metal_type.get()
                 dic["charge"] = self.gui.var_metal_charge.get()
+                dic["mass"] = self.gui.var_metal_mass.get()
+                dic["eps"] = self.gui.var_metal_eps.get()
                 dic["vw_radius"] = self.gui.var_vw_radius.get()
                 dic["dz_mass"] = self.gui.var_dz_mass.get()
-                dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
+                dic["dz_met_bond"] = self.gui.var_dz_met_bondlength.get()
                 return
 
         dic = {}
         dic["title"] = metal.name
         dic["geom"] = self.gui.var_metal_geometry.get()
+        dic["type"] = self.gui.var_metal_type.get()
         dic["charge"] = self.gui.var_metal_charge.get()
+        dic["mass"] = self.gui.var_metal_mass.get()
+        dic["eps"] = self.gui.var_metal_eps.get()
         dic["vw_radius"] = self.gui.var_vw_radius.get()
         dic["dz_mass"] = self.gui.var_dz_mass.get()
-        dic["dz_met_bond"] = self.gui.var_dz_met_bondlenght.get()
+        dic["dz_met_bond"] = self.gui.var_dz_met_bondlength.get()
         metal_dicts.append(dic)
 
     def retrieve_variables(self, metal):
@@ -182,16 +199,12 @@ class Model(object):
             if dic["title"] == metal.name:
                 self.geometry = dic["geom"]
                 self.charge = dic["charge"]
+                self.mass = dic["mass"]
+                self.metal_eps = dic["eps"]
                 self.metal_vwr = dic["vw_radius"]
                 self.dz_mass = dic["dz_mass"]
                 self.dz_met_bondlenght = dic["dz_met_bond"]
                 return
-
-        self.geometry = "tetrahedral"
-        self.charge = 2
-        self.metal_vwr = 3.1
-        self.dz_mass = 3
-        self.dz_met_bondlenght = 0.9
 
     def temp_directory(self):
         """
@@ -204,7 +217,7 @@ class Model(object):
         self.tempdir = tempfile.mkdtemp(prefix="Dummy")
         return self.tempdir
 
-    def create_metal_center(self, metal, Type):
+    def create_metal_center(self, metal, type_):
         """
         Return a base class Metal with
         Dummy atoms object around already
@@ -224,9 +237,10 @@ class Model(object):
 
         """
         metal_cls = Metal(
-            metal=metal, charge=self.charge, geometry=self.geometry,
-            dz_met_bondlenght=self.dz_met_bondlenght,
-            dz_mass=self.dz_mass, metal_vwr=self.metal_vwr)
+            metal=metal, mass=self.mass, charge=self.charge,
+            geometry=self.geometry, dz_met_bondlenght=self.dz_met_bondlenght,
+            dz_mass=self.dz_mass, metal_vwr=self.metal_vwr,
+            type_=type_, eps=self.eps)
 
         metal_cls.dummies_xyz = metal_cls.search_for_orientation(metal)
         dummies = metal_cls.build_dummies(metal_cls.dummies_xyz,
@@ -290,21 +304,22 @@ class Model(object):
         metal_residue = metal.residue
         metal_name = metal.symbol
         metal_xyz = metal.center
+        metal_element = metal.metal.element.name
         dummies = metal.dummies_xyz
         filename = os.path.join(temp_path, "dummymetal.pdb")
 
-        template = "HETATM    %d  %s  %s    1      %.3f  %.3f  %.3f  1.00           %s\n"
-
-        pdb = []
-        pdb.append(template % (1, metal_name, metal_residue, metal_xyz[0],
-                               metal_xyz[1], metal_xyz[2], metal_name))
+        template = ('{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   '
+                    '{:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}\n')
+        pdb = [template.format(
+            'HETATM', 1, metal_name, '', metal_residue, '',  1, '',
+            metal_xyz[0], metal_xyz[1], metal_xyz[2], 1.0, 1.0, metal_element)]
         for i, dummy in enumerate(dummies, start=1):
-            dummy = getattr(metal, "D{}".format(i))
+            dname = "D{}".format(i)
+            dummy = getattr(metal, dname)
 
-            pdb.append(template % ((i + 1), "D{}".format(i),
-                                   metal_residue, dummy.xyz[0],
-                                   dummy.xyz[1], dummy.xyz[2],
-                                   dummy.Type))
+            pdb.append(template.format(
+                'HETATM', (i + 1), dname, '', metal_residue, '', 1, '',
+                dummy.xyz[0], dummy.xyz[1], dummy.xyz[2], 1.0, 1.0, dummy.Type))
 
         with open(filename, 'w') as f:
             f.write('\n'.join(pdb))
@@ -333,7 +348,8 @@ class Model(object):
         """
         # file_paths
         tleap_input = os.path.join(temp_path, "leaprc.metal")
-        forcefield = os.path.join(self.amber_path, 'dat', 'leap', 'cmd', 'oldff', 'leaprc.ff99SB')
+        forcefield = os.path.join(self.amber_path, 'dat', 'leap', 'cmd',
+                                  'oldff', 'leaprc.ff99SB')
         pdbfile = os.path.join(temp_path, "dummymetal.pdb")
         output_lib = os.path.join(temp_path, "met%d.lib" % i)
         self.tleap_path = os.path.join(self.amber_path, 'bin', 'tleap')
@@ -388,7 +404,7 @@ class Model(object):
 
     def retrieve_charge(self, metal, metal_name):
         """
-        Simple tmeplate method to include the charge
+        Simple template method to include the charge
         within the .lib file created before.
 
         Parameters
@@ -511,7 +527,8 @@ class Model(object):
         connectivity.extend(geom_connectivity)
         return connectivity
 
-    def create_frcmod(self, temp_path, metal_mass, dz_mass, dz_met_bondlenght, metal_vwr, metal_name, i):
+    def create_frcmod(self, temp_path, metal_mass, dz_mass, dz_met_bondlenght,
+                      metal_vwr, metal_name, i, metal_eps=1e-6):
         """
         Creates a frcmod containing all the parameters about
         the connectivity of our metal center for each Geom.
@@ -521,7 +538,7 @@ class Model(object):
         -----------
         temp_path: str
             Temp Folder Path
-        metal_mass: int
+        metal_mass: float
             Metal mass
         dz_mass: int
             Dummies mass
@@ -543,6 +560,7 @@ class Model(object):
         # variable dictionary
         frcmod_parameters = {"$metal_name": metal_name,
                              "$metal_mass": metal_mass - self.num_of_dummies * dz_mass,
+                             "$metal_eps": metal_eps,
                              "$dz_mass": dz_mass,
                              "$dz_metal_bond": dz_met_bondlenght,
                              "$metal_vwr": metal_vwr
@@ -552,7 +570,7 @@ class Model(object):
             filedata = file.read()
 
         # Replace the target string
-        for target, replacement in frcmod_parameters.iteritems():
+        for target, replacement in frcmod_parameters.items():
             filedata = filedata.replace(target, str(replacement))
 
         # Write the file out again

@@ -21,9 +21,9 @@ def read(*filenames, **kwargs):
 long_description = read('README.md')
 
 setup(
-    name='plume_dummyatoms',
+    name='tangram_dummyatoms',
     version='0.0.1',
-    url='https://github.com/insilichem/plume_dummyatoms',
+    url='https://github.com/insilichem/tangram_dummyatoms',
     author='Jaime Rodríguez-Guerra',
     author_email='jaime.rogue@gmail.com',
     description=long_description,
