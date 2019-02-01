@@ -1,2 +1,3 @@
 recursive-include DummyAtoms/data *
-recursive-include DummyAtoms/examples *
+recursive-include DummyAtoms/examples *include versioneer.py
+include dummyatoms/_version.py
