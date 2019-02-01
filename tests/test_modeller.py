@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 ##############
-# DummyAtoms: Cathionic Method algortihm for metal systems
+# dummyatoms: Cathionic Method algortihm for metal systems
 #
 # Description: Testing core.py class modeller
 #
 #
-# https://github.com/miniaoshi/DummyAtoms
+# https://github.com/miniaoshi/dummyatoms
 #
 # Copyright 2017 Daniel Soler, Jaime Rodriguez
 #
@@ -26,7 +26,7 @@
 
 
 import os
-from DummyAtoms.core import Model
+from dummyatoms.core import Model
 from conftest import create_metal_class
 import pytest
 import chimera

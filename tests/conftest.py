@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 ##############
-# DummyAtoms: Cathionic Method algortihm for metal systems
+# dummyatoms: Cathionic Method algortihm for metal systems
 #
 #
-# https://github.com/miniaoshi/DummyAtoms
+# https://github.com/miniaoshi/dummyatoms
 #
 # Copyright 2017 Daniel Soler, Jaime Rodriguez
 #
@@ -23,9 +23,9 @@
 ##############
 
 import os
-from DummyAtoms.atoms import Metal
+from dummyatoms.atoms import Metal
 import chimera
-from DummyAtoms.core import Model
+from dummyatoms.core import Model
 
 TESTPATH = os.path.dirname(os.path.abspath(__file__))
 DZ_MET_BONDLENGHT = 0.9

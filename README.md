@@ -23,7 +23,7 @@ Usage
 
 	For each metal you can choose:
 
-	- Metal Geometry (Must be feasible or DummyAtoms will complain)
+	- Metal Geometry (Must be feasible or dummyatoms will complain)
 	- Metal Charge
 	- Dummy Atoms Mass
 	- Metal-Dummy bond distance

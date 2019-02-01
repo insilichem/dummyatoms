@@ -1,0 +1,54 @@
+Amber Force Field Parameters for a Cathionic Dummy Atoms Method
+MASS
+DX  $dz_mass
+DY  $dz_mass
+DZ  $dz_mass
+$metal_name $metal_mass
+
+BOND
+$metal_name-DX  640      $dz_metal_bond
+$metal_name-DY  640      $dz_metal_bond
+$metal_name-DZ  640      $dz_metal_bond
+DX-DY  640      1.273
+DX-DZ  640      1.273
+DY-DZ  640      1.273
+
+ANGL
+DX-$metal_name-DX    55.0      180.00
+DY-$metal_name-DY    55.0      180.00
+DZ-$metal_name-DZ    55.0      180.00
+DX-$metal_name-DY    55.0      90.00
+DX-$metal_name-DZ    55.0      90.00
+DY-$metal_name-DZ    55.0      90.00
+$metal_name-DX-DY    55.0      45.00
+$metal_name-DX-DZ    55.0      45.00
+$metal_name-DY-DZ    55.0      45.00
+DX-DY-DX    55.0      90.00
+DX-DZ-DX    55.0      90.00
+DY-DX-DY    55.0      90.00
+DZ-DX-DZ    55.0      90.00
+DY-DZ-DY    55.0      90.00
+DY-DX-DZ    55.0      60
+DX-DY-DZ    55.0      60
+DX-DZ-DY    55.0      60
+
+DIHE
+DX-$metal_name-DX-DZ  4   0.0    0.0    1.
+DX-DY-DX-DZ  4   0.0    0.0    1.
+DX-DZ-DX-DZ  4   0.0    0.0    1.
+DY-DX-DZ-DX  4   0.0    0.0    1.
+DY-DX-$metal_name-DX  4   0.0    0.0    1. 
+DX-$metal_name-DX-DY  4   0.0    0.0    1. 
+DY-DX-DY-DX  4   0.0    0.0    1.
+$metal_name-DX-DY-DX  4   0.0    0.0    1.
+$metal_name-DX-DZ-DX  4   0.0    0.0    1. 
+DX-DY-DX-DY  4   0.0    0.0    1.
+
+IMPR
+
+NONB
+$metal_name          $metal_vwr   1.0E-6
+DX          0.0000  0.0000
+DY          0.0000  0.0000
+DZ          0.0000  0.0000
+

@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 ##############
-# DummyAtoms: Cathionic Method algortihm for metal systems
+# dummyatoms: Cathionic Method algortihm for metal systems
 #
 # Description: Testing atoms.py
 #
 #
-# https://github.com/miniaoshi/DummyAtoms
+# https://github.com/miniaoshi/dummyatoms
 #
 # Copyright 2017 Daniel Soler, Jaime Rodriguez
 #
